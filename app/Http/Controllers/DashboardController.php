@@ -388,6 +388,19 @@ class DashboardController extends Controller
             'notes' => $validated['notes'] ?? null,
         ]);
 
+        // Otomatis sinkronisasi ke tabel gudang (FarmStock) sebagai barang keluar
+        \App\Models\FarmStock::create([
+            'user_id' => $feed->user_id,
+            'date' => $feed->date,
+            'category' => 'pakan',
+            'item_name' => 'Konsumsi Pakan: ' . $feed->feed_name,
+            'type' => 'keluar',
+            'quantity' => $feed->quantity_kg,
+            'unit' => 'Kg',
+            'source' => isset($coop) ? $coop->name : 'Semua Blok',
+            'notes' => '[AUTO-KONSUMSI] ' . ($validated['notes'] ?? ''),
+        ]);
+
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,

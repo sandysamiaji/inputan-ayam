@@ -159,18 +159,20 @@ class OutboundIntegrationService
         $purchasedKarung = round($purchasedKg / $kgPerKarung, 1);
 
         // 4. Mutasi manual keluar di FarmStock jika ada
-        $stockKeluarQuery = FarmStock::where('category', 'pakan')->where('type', 'keluar');
+        $stockKeluarQuery = FarmStock::where('category', 'pakan')
+            ->where('type', 'keluar')
+            ->where(function($q) {
+                $q->whereNull('notes')
+                  ->orWhere('notes', 'not like', '[AUTO-KONSUMSI]%');
+            });
+            
         if ($startDate && $endDate) {
             $stockKeluarQuery->whereBetween('date', [$startDate, $endDate]);
         }
         $manualKeluarKg = (float) $stockKeluarQuery->sum('quantity');
 
-        // Total Pakan Keluar (Konsumsi Kandang + Penjualan Luar)
-        if ($consumptionKg > 0 || $soldInKg > 0) {
-            $totalKeluarKg = $consumptionKg + $soldInKg;
-        } else {
-            $totalKeluarKg = $manualKeluarKg > 0 ? $manualKeluarKg : 0.0;
-        }
+        // Total Pakan Keluar (Konsumsi Kandang + Penjualan Luar + Manual Keluar Gudang)
+        $totalKeluarKg = $consumptionKg + $soldInKg + $manualKeluarKg;
         
         $totalKeluarKarung = round($totalKeluarKg / $kgPerKarung, 1);
 

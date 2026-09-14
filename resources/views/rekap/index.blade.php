@@ -537,16 +537,31 @@
 
         <!-- Card: Pemakaian per Blok -->
         <div class="card">
-            <div class="card-title">PEMAKAIAN PER BLOK</div>
-            @foreach($blokRekap as $br)
-                <div class="row">
-                    <div>
-                        <span style="font-weight:800; color:#1e293b;">{{ $br['name'] }}</span>
-                        <small style="color:#64748b; margin-left:6px;">({{ $br['flock_name'] }})</small>
+            <div class="card-title">PEMAKAIAN PER BLOK <span style="font-size:9px; font-weight:normal; color:#64748b; float:right;">Aktual vs Master</span></div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                @foreach($blokRekap as $br)
+                    @php
+                        $diff = $br['feed_kg'] - $br['master_feed_kg'];
+                        $isOver = $diff > 0;
+                        $isUnder = $diff < 0;
+                        $diffColor = $isOver ? '#be123c' : ($isUnder ? '#b97400' : '#059669');
+                        $diffText = $isOver ? '+'.number_format($diff, 1, ',', '.') : ($isUnder ? number_format($diff, 1, ',', '.') : 'Sesuai');
+                    @endphp
+                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:8px 12px; display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div style="font-size:12px; font-weight:800; color:#1e293b;">{{ $br['name'] }} <span style="font-size:9px; font-weight:600; color:#64748b;">({{ $br['flock_name'] }})</span></div>
+                            <div style="font-size:10px; font-weight:600; color:#64748b; margin-top:2px;">Hitungan Master: <b>{{ number_format($br['master_feed_kg'], 1, ',', '.') }} kg</b></div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-size:10px; font-weight:600; color:#64748b;">Total Inputan</div>
+                            <div style="font-size:13px; font-weight:900; color:#1e293b; margin-top:1px;">{{ number_format($br['feed_kg'], 1, ',', '.') }} kg</div>
+                            <div style="font-size:10px; font-weight:800; color:{{ $diffColor }}; margin-top:2px;">
+                                Selisih: {{ $diffText }} {{ $diffText !== 'Sesuai' ? 'kg' : '' }}
+                            </div>
+                        </div>
                     </div>
-                    <b>{{ number_format($br['feed_kg'], 0, ',', '.') }} kg</b>
-                </div>
-            @endforeach
+                @endforeach
+            </div>
         </div>
 
     </div>

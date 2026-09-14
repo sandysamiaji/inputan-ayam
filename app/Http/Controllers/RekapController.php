@@ -293,6 +293,17 @@ class RekapController extends Controller
             $cFeedQuery = FeedConsumption::where('coop_id', $coop->id)->whereBetween('date', [$startDate, $endDate]);
             $cFeedKg = (float) $cFeedQuery->sum('quantity_kg');
 
+            // Hitung Standar Master Pakan (kg) untuk rentang tanggal yang dipilih
+            $cMasterFeedKg = 0;
+            $days = Carbon::parse($startDate)->diffInDays(Carbon::parse($endDate)) + 1;
+            $currentDate = Carbon::parse($startDate);
+            for ($i = 0; $i < $days; $i++) {
+                $dailyAgeWeeks = \App\Services\ProductionStandardService::getDynamicAgeWeeks($coop, $currentDate->toDateString());
+                $dailyStd = \App\Services\ProductionStandardService::getStandardForWeek($dailyAgeWeeks);
+                $cMasterFeedKg += ($coop->active_chickens * $dailyStd['gram_pakan']) / 1000;
+                $currentDate->addDay();
+            }
+
             $cMortQuery = Mortality::where('coop_id', $coop->id)->whereBetween('date', [$startDate, $endDate]);
             $cMortCount = (int) $cMortQuery->sum('count');
 
@@ -312,6 +323,7 @@ class RekapController extends Controller
                 'hdp' => $cHdp,
                 'percent' => $cPercent,
                 'feed_kg' => round($cFeedKg),
+                'master_feed_kg' => round($cMasterFeedKg),
                 'mortality_count' => $cMortCount,
             ];
         }

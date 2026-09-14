@@ -44,6 +44,22 @@ Route::prefix('rekap')->name('rekap.')->group(function () {
     Route::get('/', [RekapController::class, 'index'])->name('index');
     Route::get('/detail', [RekapController::class, 'detail'])->name('detail');
     Route::get('/export-excel', [RekapController::class, 'exportExcel'])->name('export-excel');
+    
+    // Fitur Kelola Data Historis (Admin Only, diverifikasi di Controller)
+    Route::put('/data/production/{id}', [RekapController::class, 'updateEggProduction'])->name('data.production.update');
+    Route::delete('/data/production/{id}', [RekapController::class, 'destroyEggProduction'])->name('data.production.destroy');
+    
+    Route::put('/data/feed/{id}', [RekapController::class, 'updateFeedConsumption'])->name('data.feed.update');
+    Route::delete('/data/feed/{id}', [RekapController::class, 'destroyFeedConsumption'])->name('data.feed.destroy');
+    
+    Route::put('/data/mortality/{id}', [RekapController::class, 'updateMortality'])->name('data.mortality.update');
+    Route::delete('/data/mortality/{id}', [RekapController::class, 'destroyMortality'])->name('data.mortality.destroy');
+    
+    Route::put('/data/weight/{id}', [RekapController::class, 'updateWeightSample'])->name('data.weight.update');
+    Route::delete('/data/weight/{id}', [RekapController::class, 'destroyWeightSample'])->name('data.weight.destroy');
+    
+    Route::put('/data/health/{id}', [RekapController::class, 'updateHealthTreatment'])->name('data.health.update');
+    Route::delete('/data/health/{id}', [RekapController::class, 'destroyHealthTreatment'])->name('data.health.destroy');
 });
 
 // Modul Master Data

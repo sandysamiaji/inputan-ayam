@@ -542,6 +542,7 @@ class RekapController extends Controller
                     'butir' => $b,
                     'broken' => $br,
                     'good' => $b - $br,
+                    'records' => $group
                 ];
                 $totalPeti += $p;
                 $totalButir += $b;
@@ -781,5 +782,138 @@ class RekapController extends Controller
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * ==========================================
+     * MANAJEMEN DATA HISTORIS (KHUSUS SUPERADMIN)
+     * ==========================================
+     */
+     
+    private function requireAdmin()
+    {
+        if (Auth::user()->role !== 'admin') {
+            abort(403, 'Hanya Superadmin yang diizinkan untuk mengubah atau menghapus data historis.');
+        }
+    }
+
+    // --- Produksi Telur ---
+    public function updateEggProduction(Request $request, $id)
+    {
+        $this->requireAdmin();
+        $record = EggProduction::findOrFail($id);
+        
+        $validated = $request->validate([
+            'total_eggs' => 'required|integer|min:0',
+            'broken_eggs' => 'required|integer|min:0',
+        ]);
+        
+        $validated['good_eggs'] = $validated['total_eggs'] - $validated['broken_eggs'];
+        if ($validated['good_eggs'] < 0) {
+            return back()->with('error', 'Jumlah telur retak tidak boleh melebihi total telur.');
+        }
+
+        // Kalkulasi ulang crates_count (peti) dan weight_kg (estimasi berat)
+        $isiTray = (int) \App\Models\Setting::getIsiTray();
+        $beratTelur = (float) \App\Models\Setting::getFloat('berat_telur', 0.06);
+        $validated['crates_count'] = round($validated['total_eggs'] / $isiTray, 1);
+        $validated['weight_kg'] = round($validated['total_eggs'] * $beratTelur, 2);
+
+        $record->update($validated);
+        return back()->with('success', 'Data produksi telur berhasil diperbarui.');
+    }
+
+    public function destroyEggProduction($id)
+    {
+        $this->requireAdmin();
+        EggProduction::findOrFail($id)->delete();
+        return back()->with('success', 'Data produksi telur berhasil dihapus.');
+    }
+
+    // --- Pakan ---
+    public function updateFeedConsumption(Request $request, $id)
+    {
+        $this->requireAdmin();
+        $record = FeedConsumption::findOrFail($id);
+        
+        $validated = $request->validate([
+            'quantity_kg' => 'required|numeric|min:0',
+        ]);
+        
+        $record->update($validated);
+        return back()->with('success', 'Data pemakaian pakan berhasil diperbarui.');
+    }
+
+    public function destroyFeedConsumption($id)
+    {
+        $this->requireAdmin();
+        FeedConsumption::findOrFail($id)->delete();
+        return back()->with('success', 'Data pemakaian pakan berhasil dihapus.');
+    }
+
+    // --- Mortalitas ---
+    public function updateMortality(Request $request, $id)
+    {
+        $this->requireAdmin();
+        $record = Mortality::findOrFail($id);
+        
+        $validated = $request->validate([
+            'count' => 'required|integer|min:1',
+            'cause' => 'nullable|string|max:255',
+        ]);
+        
+        $record->update($validated);
+        return back()->with('success', 'Data mortalitas berhasil diperbarui.');
+    }
+
+    public function destroyMortality($id)
+    {
+        $this->requireAdmin();
+        Mortality::findOrFail($id)->delete();
+        return back()->with('success', 'Data mortalitas berhasil dihapus.');
+    }
+
+    // --- Bobot ---
+    public function updateWeightSample(Request $request, $id)
+    {
+        $this->requireAdmin();
+        $record = WeightSample::findOrFail($id);
+        
+        $validated = $request->validate([
+            'average_weight_kg' => 'required|numeric|min:0.1',
+            'uniformity_percentage' => 'required|numeric|min:0|max:100',
+        ]);
+        
+        $record->update($validated);
+        return back()->with('success', 'Data bobot berhasil diperbarui.');
+    }
+
+    public function destroyWeightSample($id)
+    {
+        $this->requireAdmin();
+        WeightSample::findOrFail($id)->delete();
+        return back()->with('success', 'Data bobot berhasil dihapus.');
+    }
+
+    // --- Vaksin & Obat ---
+    public function updateHealthTreatment(Request $request, $id)
+    {
+        $this->requireAdmin();
+        $record = HealthTreatment::findOrFail($id);
+        
+        $validated = $request->validate([
+            'medicine_name' => 'required|string|max:255',
+            'dosage' => 'required|string|max:255',
+        ]);
+        
+        $record->update($validated);
+        return back()->with('success', 'Data vaksin/obat berhasil diperbarui.');
+    }
+
+    public function destroyHealthTreatment($id)
+    {
+        $this->requireAdmin();
+        HealthTreatment::findOrFail($id)->delete();
+        return back()->with('success', 'Data vaksin/obat berhasil dihapus.');
     }
 }

@@ -91,6 +91,9 @@
                             <th colspan="2" class="py-2.5 px-4 font-extrabold text-center border-l border-slate-200 bg-slate-100/60 text-slate-700 hidden sm:table-cell">
                                 Kondisi Telur
                             </th>
+                            @if(auth()->user()->role === 'admin')
+                            <th rowspan="2" class="py-3.5 px-4 font-extrabold text-center border-l border-slate-200 w-24">Aksi</th>
+                            @endif
                         </tr>
                         <tr class="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-500">
                             <th class="py-2 px-4 text-center border-l border-slate-200 text-maroon-800">Peti</th>
@@ -100,7 +103,7 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 text-slate-700 font-medium">
-                        @forelse($data as $row)
+                        @forelse($data as $index => $row)
                             <tr class="hover:bg-slate-50/70 transition-colors">
                                 <td class="py-3 px-4 font-bold text-slate-800">
                                     {{ $row['formatted_date'] }}
@@ -117,10 +120,67 @@
                                 <td class="py-3 px-4 text-center text-rose-600 hidden sm:table-cell">
                                     {{ number_format($row['broken'], 0, ',', '.') }}
                                 </td>
+                                @if(auth()->user()->role === 'admin')
+                                <td class="py-3 px-4 text-center border-l border-slate-100">
+                                    <button onclick="document.getElementById('modal-egg-{{ $index }}').classList.remove('hidden')" class="p-1.5 bg-white border border-slate-200 text-slate-500 rounded hover:text-maroon-800 hover:border-maroon-300 transition-colors" title="Kelola Riwayat">
+                                        <i data-lucide="edit" class="w-4 h-4"></i>
+                                    </button>
+                                    
+                                    <!-- Modal Kelola Data Produksi -->
+                                    <div id="modal-egg-{{ $index }}" class="hidden fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm overflow-y-auto flex items-center justify-center p-4">
+                                        <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl text-left overflow-hidden">
+                                            <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                                                <h3 class="font-extrabold text-lg text-slate-800">Riwayat Produksi: {{ $row['formatted_date'] }}</h3>
+                                                <button onclick="document.getElementById('modal-egg-{{ $index }}').classList.add('hidden')" class="p-1 text-slate-400 hover:bg-slate-100 rounded-lg">
+                                                    <i data-lucide="x" class="w-5 h-5"></i>
+                                                </button>
+                                            </div>
+                                            <div class="p-5">
+                                                <div class="space-y-4">
+                                                    @foreach($row['records'] as $record)
+                                                    <div class="p-4 border border-slate-200 rounded-xl bg-slate-50 relative">
+                                                        <div class="flex justify-between items-start mb-3">
+                                                            <div>
+                                                                <span class="text-xs font-black bg-maroon-100 text-maroon-900 px-2 py-0.5 rounded">
+                                                                    {{ $record->coop ? $record->coop->name : 'Semua Blok' }}
+                                                                </span>
+                                                                <div class="text-xs text-slate-500 mt-1">Waktu: {{ substr($record->time, 0, 5) }} | Dicatat oleh: {{ $record->user ? $record->user->name : '-' }}</div>
+                                                            </div>
+                                                            <div class="flex items-center gap-2">
+                                                                <form action="{{ route('rekap.data.production.destroy', $record->id) }}" method="POST" onsubmit="return confirm('Hapus data ini?');">
+                                                                    @csrf @method('DELETE')
+                                                                    <button type="submit" class="p-1.5 text-rose-500 hover:bg-rose-100 rounded-lg transition-colors" title="Hapus">
+                                                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                                                    </button>
+                                                                </form>
+                                                            </div>
+                                                        </div>
+                                                        <form action="{{ route('rekap.data.production.update', $record->id) }}" method="POST" class="grid grid-cols-2 gap-3">
+                                                            @csrf @method('PUT')
+                                                            <div>
+                                                                <label class="text-[10px] font-bold text-slate-500 uppercase">Total Butir</label>
+                                                                <input type="number" name="total_eggs" value="{{ $record->total_eggs }}" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-bold text-slate-800">
+                                                            </div>
+                                                            <div>
+                                                                <label class="text-[10px] font-bold text-slate-500 uppercase">Telur Retak</label>
+                                                                <input type="number" name="broken_eggs" value="{{ $record->broken_eggs }}" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-bold text-slate-800">
+                                                            </div>
+                                                            <div class="col-span-2 text-right mt-1">
+                                                                <button type="submit" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-lg transition-colors">Simpan Perubahan</button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                @endif
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="py-10 text-center text-slate-400">
+                                <td colspan="{{ auth()->user()->role === 'admin' ? '6' : '5' }}" class="py-10 text-center text-slate-400">
                                     Tidak ada data produksi telur pada periode ini.
                                 </td>
                             </tr>
@@ -143,6 +203,9 @@
                                 <td class="py-3.5 px-4 text-center text-rose-800 hidden sm:table-cell">
                                     {{ number_format($summary['total_broken'], 0, ',', '.') }}
                                 </td>
+                                @if(auth()->user()->role === 'admin')
+                                <td class="border-l border-rose-200"></td>
+                                @endif
                             </tr>
                         </tfoot>
                     @endif
@@ -161,6 +224,9 @@
                             <th class="py-3.5 px-4 text-right">Jumlah (Kg)</th>
                             <th class="py-3.5 px-4">Kandang / Blok</th>
                             <th class="py-3.5 px-4">Petugas</th>
+                            @if(auth()->user()->role === 'admin')
+                            <th class="py-3.5 px-4 text-center">Aksi</th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 text-slate-700 font-medium">
@@ -177,10 +243,46 @@
                                 </td>
                                 <td class="py-3 px-4">{{ $r->coop ? $r->coop->name : 'Semua Blok' }}</td>
                                 <td class="py-3 px-4 text-slate-500">{{ $r->user ? $r->user->name : 'Petugas' }}</td>
+                                @if(auth()->user()->role === 'admin')
+                                <td class="py-3 px-4 text-center flex items-center justify-center gap-2">
+                                    <button onclick="document.getElementById('modal-feed-{{ $r->id }}').classList.remove('hidden')" class="p-1.5 bg-white border border-slate-200 text-slate-500 rounded hover:text-maroon-800 hover:border-maroon-300 transition-colors" title="Edit">
+                                        <i data-lucide="edit" class="w-4 h-4"></i>
+                                    </button>
+                                    <form action="{{ route('rekap.data.feed.destroy', $r->id) }}" method="POST" onsubmit="return confirm('Hapus data pakan ini?');">
+                                        @csrf @method('DELETE')
+                                        <button type="submit" class="p-1.5 text-rose-500 hover:bg-rose-100 rounded-lg transition-colors" title="Hapus">
+                                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                        </button>
+                                    </form>
+
+                                    <!-- Modal Edit -->
+                                    <div id="modal-feed-{{ $r->id }}" class="hidden fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm overflow-y-auto flex items-center justify-center p-4">
+                                        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm text-left overflow-hidden">
+                                            <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                                                <h3 class="font-extrabold text-lg text-slate-800">Edit Pakan</h3>
+                                                <button onclick="document.getElementById('modal-feed-{{ $r->id }}').classList.add('hidden')" class="p-1 text-slate-400 hover:bg-slate-100 rounded-lg">
+                                                    <i data-lucide="x" class="w-5 h-5"></i>
+                                                </button>
+                                            </div>
+                                            <form action="{{ route('rekap.data.feed.update', $r->id) }}" method="POST" class="p-5 space-y-4">
+                                                @csrf @method('PUT')
+                                                <div>
+                                                    <label class="block text-xs font-bold text-slate-700 mb-1">Jumlah Pakan (Kg)</label>
+                                                    <input type="number" step="0.01" name="quantity_kg" value="{{ $r->quantity_kg }}" class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-maroon-800/20">
+                                                </div>
+                                                <div class="pt-2 text-right">
+                                                    <button type="button" onclick="document.getElementById('modal-feed-{{ $r->id }}').classList.add('hidden')" class="px-4 py-2 text-slate-500 font-semibold text-sm">Batal</button>
+                                                    <button type="submit" class="px-4 py-2 bg-maroon-800 hover:bg-maroon-900 text-white font-bold text-sm rounded-xl transition-all">Simpan</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </td>
+                                @endif
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="py-10 text-center text-slate-400">Tidak ada data pakan pada periode ini.</td>
+                                <td colspan="{{ auth()->user()->role === 'admin' ? '7' : '6' }}" class="py-10 text-center text-slate-400">Tidak ada data pakan pada periode ini.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -191,7 +293,7 @@
                                 <td class="py-3.5 px-4 text-right font-black text-emerald-900">
                                     {{ number_format($summary['total_kg'], 2, ',', '.') }} Kg
                                 </td>
-                                <td colspan="2" class="py-3.5 px-4"></td>
+                                <td colspan="{{ auth()->user()->role === 'admin' ? '3' : '2' }}" class="py-3.5 px-4"></td>
                             </tr>
                         </tfoot>
                     @endif
@@ -210,6 +312,9 @@
                             <th class="py-3.5 px-4">Penyebab / Keterangan</th>
                             <th class="py-3.5 px-4">Kandang</th>
                             <th class="py-3.5 px-4">Petugas</th>
+                            @if(auth()->user()->role === 'admin')
+                            <th class="py-3.5 px-4 text-center">Aksi</th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 text-slate-700 font-medium">
@@ -221,10 +326,50 @@
                                 <td class="py-3 px-4 text-slate-600">{{ $r->cause ?? '-' }}</td>
                                 <td class="py-3 px-4">{{ $r->coop ? $r->coop->name : '-' }}</td>
                                 <td class="py-3 px-4 text-slate-500">{{ $r->user ? $r->user->name : 'Petugas' }}</td>
+                                @if(auth()->user()->role === 'admin')
+                                <td class="py-3 px-4 text-center flex items-center justify-center gap-2">
+                                    <button onclick="document.getElementById('modal-mort-{{ $r->id }}').classList.remove('hidden')" class="p-1.5 bg-white border border-slate-200 text-slate-500 rounded hover:text-maroon-800 hover:border-maroon-300 transition-colors" title="Edit">
+                                        <i data-lucide="edit" class="w-4 h-4"></i>
+                                    </button>
+                                    <form action="{{ route('rekap.data.mortality.destroy', $r->id) }}" method="POST" onsubmit="return confirm('Hapus data mortalitas ini?');">
+                                        @csrf @method('DELETE')
+                                        <button type="submit" class="p-1.5 text-rose-500 hover:bg-rose-100 rounded-lg transition-colors" title="Hapus">
+                                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                        </button>
+                                    </form>
+
+                                    <!-- Modal Edit -->
+                                    <div id="modal-mort-{{ $r->id }}" class="hidden fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm overflow-y-auto flex items-center justify-center p-4">
+                                        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm text-left overflow-hidden">
+                                            <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                                                <h3 class="font-extrabold text-lg text-slate-800">Edit Mortalitas</h3>
+                                                <button onclick="document.getElementById('modal-mort-{{ $r->id }}').classList.add('hidden')" class="p-1 text-slate-400 hover:bg-slate-100 rounded-lg">
+                                                    <i data-lucide="x" class="w-5 h-5"></i>
+                                                </button>
+                                            </div>
+                                            <form action="{{ route('rekap.data.mortality.update', $r->id) }}" method="POST" class="p-5 space-y-4">
+                                                @csrf @method('PUT')
+                                                <div>
+                                                    <label class="block text-xs font-bold text-slate-700 mb-1">Jumlah Mati (Ekor)</label>
+                                                    <input type="number" name="count" value="{{ $r->count }}" class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-maroon-800/20">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-xs font-bold text-slate-700 mb-1">Penyebab / Keterangan</label>
+                                                    <input type="text" name="cause" value="{{ $r->cause }}" class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-maroon-800/20">
+                                                </div>
+                                                <div class="pt-2 text-right">
+                                                    <button type="button" onclick="document.getElementById('modal-mort-{{ $r->id }}').classList.add('hidden')" class="px-4 py-2 text-slate-500 font-semibold text-sm">Batal</button>
+                                                    <button type="submit" class="px-4 py-2 bg-maroon-800 hover:bg-maroon-900 text-white font-bold text-sm rounded-xl transition-all">Simpan</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </td>
+                                @endif
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="py-10 text-center text-slate-400">Tidak ada data mortalitas pada periode ini.</td>
+                                <td colspan="{{ auth()->user()->role === 'admin' ? '7' : '6' }}" class="py-10 text-center text-slate-400">Tidak ada data mortalitas pada periode ini.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -233,7 +378,7 @@
                             <tr class="bg-rose-50/80 border-t-2 border-rose-300 text-xs sm:text-sm font-extrabold text-rose-950">
                                 <td colspan="2" class="py-3.5 px-4 font-black">Total Kematian</td>
                                 <td class="py-3.5 px-4 text-right font-black text-rose-900">{{ $summary['total_ekor'] }} Ekor</td>
-                                <td colspan="3" class="py-3.5 px-4"></td>
+                                <td colspan="{{ auth()->user()->role === 'admin' ? '4' : '3' }}" class="py-3.5 px-4"></td>
                             </tr>
                         </tfoot>
                     @endif
@@ -253,6 +398,9 @@
                             <th class="py-3.5 px-4 text-right">Keseragaman</th>
                             <th class="py-3.5 px-4">Umur Ayam</th>
                             <th class="py-3.5 px-4">Catatan</th>
+                            @if(auth()->user()->role === 'admin')
+                            <th class="py-3.5 px-4 text-center">Aksi</th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 text-slate-700 font-medium">
@@ -265,10 +413,50 @@
                                 <td class="py-3 px-4 text-right font-bold text-slate-900">{{ number_format($r->uniformity_percentage, 1, ',', '.') }}%</td>
                                 <td class="py-3 px-4 text-slate-600">{{ $r->age_weeks }} Minggu</td>
                                 <td class="py-3 px-4 text-slate-400">{{ $r->notes ?? '-' }}</td>
+                                @if(auth()->user()->role === 'admin')
+                                <td class="py-3 px-4 text-center flex items-center justify-center gap-2">
+                                    <button onclick="document.getElementById('modal-weight-{{ $r->id }}').classList.remove('hidden')" class="p-1.5 bg-white border border-slate-200 text-slate-500 rounded hover:text-maroon-800 hover:border-maroon-300 transition-colors" title="Edit">
+                                        <i data-lucide="edit" class="w-4 h-4"></i>
+                                    </button>
+                                    <form action="{{ route('rekap.data.weight.destroy', $r->id) }}" method="POST" onsubmit="return confirm('Hapus data bobot ini?');">
+                                        @csrf @method('DELETE')
+                                        <button type="submit" class="p-1.5 text-rose-500 hover:bg-rose-100 rounded-lg transition-colors" title="Hapus">
+                                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                        </button>
+                                    </form>
+
+                                    <!-- Modal Edit -->
+                                    <div id="modal-weight-{{ $r->id }}" class="hidden fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm overflow-y-auto flex items-center justify-center p-4">
+                                        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm text-left overflow-hidden">
+                                            <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                                                <h3 class="font-extrabold text-lg text-slate-800">Edit Bobot</h3>
+                                                <button onclick="document.getElementById('modal-weight-{{ $r->id }}').classList.add('hidden')" class="p-1 text-slate-400 hover:bg-slate-100 rounded-lg">
+                                                    <i data-lucide="x" class="w-5 h-5"></i>
+                                                </button>
+                                            </div>
+                                            <form action="{{ route('rekap.data.weight.update', $r->id) }}" method="POST" class="p-5 space-y-4">
+                                                @csrf @method('PUT')
+                                                <div>
+                                                    <label class="block text-xs font-bold text-slate-700 mb-1">Bobot Rata-rata (Kg)</label>
+                                                    <input type="number" step="0.001" name="average_weight_kg" value="{{ $r->average_weight_kg }}" class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-maroon-800/20">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-xs font-bold text-slate-700 mb-1">Keseragaman (%)</label>
+                                                    <input type="number" step="0.1" name="uniformity_percentage" value="{{ $r->uniformity_percentage }}" class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-maroon-800/20">
+                                                </div>
+                                                <div class="pt-2 text-right">
+                                                    <button type="button" onclick="document.getElementById('modal-weight-{{ $r->id }}').classList.add('hidden')" class="px-4 py-2 text-slate-500 font-semibold text-sm">Batal</button>
+                                                    <button type="submit" class="px-4 py-2 bg-maroon-800 hover:bg-maroon-900 text-white font-bold text-sm rounded-xl transition-all">Simpan</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </td>
+                                @endif
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="py-10 text-center text-slate-400">Tidak ada sampling timbang bobot pada periode ini.</td>
+                                <td colspan="{{ auth()->user()->role === 'admin' ? '8' : '7' }}" class="py-10 text-center text-slate-400">Tidak ada sampling timbang bobot pada periode ini.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -288,6 +476,9 @@
                             <th class="py-3.5 px-4">Metode Pemberian</th>
                             <th class="py-3.5 px-4">Kandang</th>
                             <th class="py-3.5 px-4">Catatan</th>
+                            @if(auth()->user()->role === 'admin')
+                            <th class="py-3.5 px-4 text-center">Aksi</th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 text-slate-700 font-medium">
@@ -307,10 +498,50 @@
                                 <td class="py-3 px-4">{{ $r->application_method ?? '-' }}</td>
                                 <td class="py-3 px-4">{{ $r->coop ? $r->coop->name : '-' }}</td>
                                 <td class="py-3 px-4 text-slate-400">{{ $r->notes ?? '-' }}</td>
+                                @if(auth()->user()->role === 'admin')
+                                <td class="py-3 px-4 text-center flex items-center justify-center gap-2">
+                                    <button onclick="document.getElementById('modal-health-{{ $r->id }}').classList.remove('hidden')" class="p-1.5 bg-white border border-slate-200 text-slate-500 rounded hover:text-maroon-800 hover:border-maroon-300 transition-colors" title="Edit">
+                                        <i data-lucide="edit" class="w-4 h-4"></i>
+                                    </button>
+                                    <form action="{{ route('rekap.data.health.destroy', $r->id) }}" method="POST" onsubmit="return confirm('Hapus data vaksin/obat ini?');">
+                                        @csrf @method('DELETE')
+                                        <button type="submit" class="p-1.5 text-rose-500 hover:bg-rose-100 rounded-lg transition-colors" title="Hapus">
+                                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                        </button>
+                                    </form>
+
+                                    <!-- Modal Edit -->
+                                    <div id="modal-health-{{ $r->id }}" class="hidden fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm overflow-y-auto flex items-center justify-center p-4">
+                                        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm text-left overflow-hidden">
+                                            <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                                                <h3 class="font-extrabold text-lg text-slate-800">Edit Vaksin / Obat</h3>
+                                                <button onclick="document.getElementById('modal-health-{{ $r->id }}').classList.add('hidden')" class="p-1 text-slate-400 hover:bg-slate-100 rounded-lg">
+                                                    <i data-lucide="x" class="w-5 h-5"></i>
+                                                </button>
+                                            </div>
+                                            <form action="{{ route('rekap.data.health.update', $r->id) }}" method="POST" class="p-5 space-y-4">
+                                                @csrf @method('PUT')
+                                                <div>
+                                                    <label class="block text-xs font-bold text-slate-700 mb-1">Nama Obat / Vaksin</label>
+                                                    <input type="text" name="medicine_name" value="{{ $r->medicine_name }}" class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-maroon-800/20">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-xs font-bold text-slate-700 mb-1">Dosis</label>
+                                                    <input type="text" name="dosage" value="{{ $r->dosage }}" class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-maroon-800/20">
+                                                </div>
+                                                <div class="pt-2 text-right">
+                                                    <button type="button" onclick="document.getElementById('modal-health-{{ $r->id }}').classList.add('hidden')" class="px-4 py-2 text-slate-500 font-semibold text-sm">Batal</button>
+                                                    <button type="submit" class="px-4 py-2 bg-maroon-800 hover:bg-maroon-900 text-white font-bold text-sm rounded-xl transition-all">Simpan</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </td>
+                                @endif
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="py-10 text-center text-slate-400">Tidak ada kegiatan vaksinasi/obat pada periode ini.</td>
+                                <td colspan="{{ auth()->user()->role === 'admin' ? '8' : '7' }}" class="py-10 text-center text-slate-400">Tidak ada kegiatan vaksinasi/obat pada periode ini.</td>
                             </tr>
                         @endforelse
                     </tbody>

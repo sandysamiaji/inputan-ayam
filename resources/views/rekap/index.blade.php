@@ -471,7 +471,7 @@
             <div class="weekly-grid">
                 @foreach($weeklyRekap as $w)
                     <div class="weekly-box">
-                        <b>{{ $w['week'] }}</b>
+                        <b>Umur M{{ $w['age_week'] }}</b>
                         <small>{{ $w['date_range'] }}</small>
                         <strong>{{ number_format($w['eggs'], 0, ',', '.') }}</strong>
                         <span>butir · {{ number_format($w['crates'], 0, ',', '.') }} peti</span>
@@ -521,7 +521,7 @@
             <div class="weekly-grid">
                 @foreach($weeklyRekap as $w)
                     <div class="weekly-box">
-                        <b>{{ $w['week'] }}</b>
+                        <b>Umur M{{ $w['age_week'] }}</b>
                         <small>{{ $w['date_range'] }}</small>
                         <strong>{{ number_format($w['feed_kg'], 0, ',', '.') }}</strong>
                         <span>kg · {{ $w['feed_karung_str'] }}</span>
@@ -575,7 +575,7 @@
             <div class="weekly-grid">
                 @foreach($weeklyRekap as $w)
                     <div class="weekly-box">
-                        <b>{{ $w['week'] }}</b>
+                        <b>Umur M{{ $w['age_week'] }}</b>
                         <small>{{ $w['date_range'] }}</small>
                         <strong style="color:#be123c;">{{ number_format($w['mortality_count'], 0, ',', '.') }}</strong>
                         <span>ekor</span>

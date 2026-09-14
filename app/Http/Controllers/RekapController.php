@@ -181,13 +181,52 @@ class RekapController extends Controller
         $totalVaksinKegiatan = $totalVaksin + $totalObat + $totalVitamin;
         $healthTreatments = (clone $healthQuery)->with('coop')->latest('date')->take(10)->get();
 
-        // 6. Rekap Mingguan M1, M2, M3, M4
-        $weeklyRanges = [
-            ['week' => 'M1', 'label' => '1–6 Sep', 'start' => '2026-09-01', 'end' => '2026-09-06'],
-            ['week' => 'M2', 'label' => '7–13 Sep', 'start' => '2026-09-07', 'end' => '2026-09-13'],
-            ['week' => 'M3', 'label' => '14–20 Sep', 'start' => '2026-09-14', 'end' => '2026-09-20'],
-            ['week' => 'M4', 'label' => '21–27 Sep', 'start' => '2026-09-21', 'end' => '2026-09-27'],
-        ];
+        // 6. Rekap Mingguan M1, M2, dll. (Dinamis berdasarkan Tgl Pullet Masuk)
+        $pulletInDateStr = DB::table('settings')->where('key', 'pullet_in_date')->value('value') ?? '2026-04-20';
+        $pulletInDate = Carbon::parse($pulletInDateStr);
+
+        $startRange = Carbon::parse($startDate);
+        $endRange = Carbon::parse($endDate);
+
+        $diffDays = $pulletInDate->diffInDays($startRange, false); 
+        $firstWeekStart = $pulletInDate->copy();
+        if ($diffDays >= 0) {
+            $weeksPassed = floor($diffDays / 7);
+            $firstWeekStart->addDays($weeksPassed * 7);
+        } else {
+            $weeksBefore = ceil(abs($diffDays) / 7);
+            $firstWeekStart->subDays($weeksBefore * 7);
+        }
+
+        $weeklyRanges = [];
+        $currentWeekStart = $firstWeekStart->copy();
+        $mCounter = 1;
+
+        while ($currentWeekStart->lte($endRange)) {
+            $currentWeekEnd = $currentWeekStart->copy()->addDays(6);
+            $ageWeeks = (int) $pulletInDate->diffInWeeks($currentWeekStart) + 1; 
+
+            $overlapStart = $currentWeekStart->max($startRange);
+            $overlapEnd = $currentWeekEnd->min($endRange);
+
+            if ($overlapStart->lte($overlapEnd)) {
+                $startFmt = $overlapStart->format('j M');
+                $endFmt = $overlapEnd->format('j M');
+                $label = ($overlapStart->toDateString() === $overlapEnd->toDateString()) 
+                         ? $startFmt 
+                         : "{$startFmt} – {$endFmt}";
+
+                $weeklyRanges[] = [
+                    'week' => 'M' . $mCounter,
+                    'age_week' => $ageWeeks,
+                    'label' => $label,
+                    'start' => $overlapStart->toDateString(),
+                    'end' => $overlapEnd->toDateString(),
+                ];
+                $mCounter++;
+            }
+            $currentWeekStart->addDays(7);
+        }
 
         $weeklyRekap = [];
         foreach ($weeklyRanges as $wr) {
@@ -214,6 +253,7 @@ class RekapController extends Controller
 
             $weeklyRekap[] = [
                 'week' => $wr['week'],
+                'age_week' => $wr['age_week'],
                 'date_range' => $wr['label'],
                 'eggs' => $wEggs,
                 'crates' => $wPeti,

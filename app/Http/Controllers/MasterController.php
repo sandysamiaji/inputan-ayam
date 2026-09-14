@@ -80,6 +80,7 @@ class MasterController extends Controller
         $settings = [
             'farm_name' => $this->getSetting('farm_name', 'NOCHI FARM'),
             'farm_tagline' => $this->getSetting('farm_tagline', 'Peternak Telur Berkualitas'),
+            'pullet_in_date' => $this->getSetting('pullet_in_date', '2026-04-20'),
             'dashboard_motivation_message' => $this->getSetting('dashboard_motivation_message', 'Semangat bekerja dan tetap jaga kebersihan serta performa kandang hari ini!'),
             'dashboard_chicken_status_message' => $this->getSetting('dashboard_chicken_status_message', 'Kondisi ayam saat ini memasuki umur minggu ke-21 (Masa Awal Bertelur Produktif / Subur). Pastikan pencahayaan dan asupan kalsium optimal.'),
             'dashboard_info_schedule_start' => $this->getSetting('dashboard_info_schedule_start', '06:00'),
@@ -102,6 +103,7 @@ class MasterController extends Controller
         $validated = $request->validate([
             'farm_name' => 'required|string|max:255',
             'farm_tagline' => 'nullable|string|max:255',
+            'pullet_in_date' => 'required|date',
             'dashboard_motivation_message' => 'required|string|max:1000',
             'dashboard_chicken_status_message' => 'required|string|max:1000',
             'dashboard_info_schedule_start' => 'nullable|string',
@@ -111,6 +113,7 @@ class MasterController extends Controller
 
         $this->setSetting('farm_name', $validated['farm_name']);
         $this->setSetting('farm_tagline', $validated['farm_tagline'] ?? '');
+        $this->setSetting('pullet_in_date', $validated['pullet_in_date']);
         $this->setSetting('dashboard_motivation_message', $validated['dashboard_motivation_message']);
         $this->setSetting('dashboard_chicken_status_message', $validated['dashboard_chicken_status_message']);
         $this->setSetting('dashboard_info_schedule_start', $validated['dashboard_info_schedule_start'] ?? '06:00');

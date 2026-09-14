@@ -54,7 +54,7 @@
             @csrf
 
             <!-- Identitas Peternakan -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Nama Peternakan *</label>
                     <input type="text" name="farm_name" value="{{ $settings['farm_name'] }}" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-bold text-slate-800 focus:ring-2 focus:ring-maroon-800/20 focus:border-maroon-800">
@@ -62,6 +62,10 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Tagline Peternakan</label>
                     <input type="text" name="farm_tagline" value="{{ $settings['farm_tagline'] }}" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm text-slate-700 focus:ring-2 focus:ring-maroon-800/20 focus:border-maroon-800">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Tgl Pullet Masuk *</label>
+                    <input type="date" name="pullet_in_date" value="{{ $settings['pullet_in_date'] }}" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm text-slate-700 focus:ring-2 focus:ring-maroon-800/20 focus:border-maroon-800">
                 </div>
             </div>
 

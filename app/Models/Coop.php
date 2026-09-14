@@ -56,4 +56,15 @@ class Coop extends Model
     {
         return $this->hasMany(HealthTreatment::class);
     }
+
+    /**
+     * Dapatkan umur ayam dalam minggu, otomatis mengikuti umur flock-nya.
+     */
+    public function getChickenAgeWeeksAttribute($value)
+    {
+        if ($this->flock) {
+            return $this->flock->current_age_weeks;
+        }
+        return $value;
+    }
 }

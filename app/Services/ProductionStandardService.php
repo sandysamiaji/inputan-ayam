@@ -119,11 +119,34 @@ class ProductionStandardService
     }
 
     /**
-     * Hitung ringkasan kondisi farm berdasarkan seluruh blok kandang aktif di DB
+     * Hitung umur minggu dinamis untuk sebuah coop berdasarkan flock.start_date
+     * dan tanggal referensi (tanggal yang dipilih user).
+     *
+     * Jika flock tidak punya start_date, fallback ke chicken_age_weeks statis di DB.
      */
-    public static function getActiveFarmCondition(): array
+    public static function getDynamicAgeWeeks(Coop $coop, $referenceDate = null): int
     {
-        $coops = Coop::where('is_active', true)->get();
+        $refDate = $referenceDate ? \Carbon\Carbon::parse($referenceDate) : \Carbon\Carbon::today();
+
+        if ($coop->flock && $coop->flock->start_date) {
+            $startDate = \Carbon\Carbon::parse($coop->flock->start_date);
+            $weeks = (int) $startDate->diffInWeeks($refDate);
+            return max(1, $weeks); // minimal 1 minggu
+        }
+
+        // Fallback: hitung dari chicken_age_weeks statis + selisih hari dari updated_at
+        return max(1, (int) $coop->chicken_age_weeks);
+    }
+
+    /**
+     * Hitung ringkasan kondisi farm berdasarkan seluruh blok kandang aktif di DB.
+     *
+     * @param string|null $referenceDate  Tanggal referensi (misal tanggal dipilih user di dashboard).
+     *                                     Null = hari ini.
+     */
+    public static function getActiveFarmCondition($referenceDate = null): array
+    {
+        $coops = Coop::with('flock')->where('is_active', true)->get();
 
         if ($coops->isEmpty()) {
             return [
@@ -136,7 +159,13 @@ class ProductionStandardService
             ];
         }
 
-        $ages = $coops->pluck('chicken_age_weeks')->map(fn($a) => (int) $a);
+        // Hitung umur dinamis per coop berdasarkan flock.start_date + referenceDate
+        $dynamicAges = [];
+        foreach ($coops as $c) {
+            $dynamicAges[$c->id] = self::getDynamicAgeWeeks($c, $referenceDate);
+        }
+
+        $ages = collect($dynamicAges)->values();
         $minWeek = $ages->min();
         $maxWeek = $ages->max();
         $avgWeek = (int) round($ages->avg());
@@ -144,7 +173,7 @@ class ProductionStandardService
         // Cari minggu yang paling banyak populasinya
         $agePopulations = [];
         foreach ($coops as $c) {
-            $w = (int) $c->chicken_age_weeks;
+            $w = $dynamicAges[$c->id];
             $agePopulations[$w] = ($agePopulations[$w] ?? 0) + (int) $c->active_chickens;
         }
         arsort($agePopulations);
@@ -152,10 +181,10 @@ class ProductionStandardService
 
         $standard = self::getStandardForWeek($dominantWeek);
 
-        // Map standar per coop
+        // Map standar per coop (menggunakan umur dinamis)
         $coopStandards = [];
         foreach ($coops as $c) {
-            $coopStandards[$c->id] = self::getStandardForWeek((int) $c->chicken_age_weeks);
+            $coopStandards[$c->id] = self::getStandardForWeek($dynamicAges[$c->id]);
         }
 
         // Susun teks otomatis
@@ -169,6 +198,7 @@ class ProductionStandardService
             'standard' => $standard,
             'status_message' => $statusMessage,
             'coop_standards' => $coopStandards,
+            'dynamic_ages' => $dynamicAges,
         ];
     }
 }

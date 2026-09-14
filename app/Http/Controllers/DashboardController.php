@@ -181,10 +181,27 @@ class DashboardController extends Controller
         $totalCoopsCount = $coops->count();
 
         // 9. Pesan Motivasi & Informasi Kondisi Ayam Otomatis dari Master Standar Produksi
-        $farmCondition = \App\Services\ProductionStandardService::getActiveFarmCondition();
+        //    Umur minggu dihitung DINAMIS berdasarkan flock.start_date + tanggal yang dipilih user
+        $farmCondition = \App\Services\ProductionStandardService::getActiveFarmCondition($selectedDate);
         $dominantWeek = $farmCondition['dominant_week'];
         $farmStandard = $farmCondition['standard'];
         $coopStandards = $farmCondition['coop_standards'];
+        $dynamicAges = $farmCondition['dynamic_ages'] ?? [];
+
+        // Override chicken_age_weeks pada setiap coop agar view menampilkan umur dinamis
+        foreach ($coops as $c) {
+            if (isset($dynamicAges[$c->id])) {
+                $c->chicken_age_weeks = $dynamicAges[$c->id];
+            }
+        }
+        // Override juga pada flocks->coops (untuk konsistensi tampilan flock card)
+        foreach ($flocks as $f) {
+            foreach ($f->coops as $fc) {
+                if (isset($dynamicAges[$fc->id])) {
+                    $fc->chicken_age_weeks = $dynamicAges[$fc->id];
+                }
+            }
+        }
 
         $settingRows = \Illuminate\Support\Facades\DB::table('settings')->whereIn('key', [
             'dashboard_motivation_message',

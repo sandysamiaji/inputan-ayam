@@ -88,7 +88,8 @@
         @php
             $flockActiveChickens = (int) $flock->coops->sum('active_chickens');
             $flockCapacity = (int) $flock->coops->sum('capacity');
-            $flockAgeWeeks = $flock->start_date ? \Carbon\Carbon::parse($flock->start_date)->diffInWeeks(now()) : 21;
+            // Usia real = usia saat diinput + minggu berlalu sejak tanggal masuk
+            $flockAgeWeeks = $flock->current_age_weeks;
         @endphp
         <div class="farm-card p-5 sm:p-6 bg-gradient-to-r from-purple-50/40 via-white to-white border border-purple-100 shadow-sm relative">
             
@@ -109,9 +110,9 @@
                         </div>
                         <p class="text-xs text-slate-500 mt-1">
                             Ras: <span class="font-bold text-slate-700">{{ $flock->breed ?? 'Lohmann Brown' }}</span> • 
-                            Mulai: <span class="font-bold text-slate-700">{{ $flock->start_date ? \Carbon\Carbon::parse($flock->start_date)->translatedFormat('d M Y') : '-' }}</span>
+                            Masuk: <span class="font-bold text-slate-700">{{ $flock->start_date ? \Carbon\Carbon::parse($flock->start_date)->translatedFormat('d M Y') : '-' }}</span>
                             @if($flock->start_date)
-                                <span class="text-purple-700 font-semibold">({{ $flockAgeWeeks }} Minggu)</span>
+                                <span class="text-purple-700 font-semibold">(Usia: {{ $flockAgeWeeks }} Minggu)</span>
                             @endif
                         </p>
                         @if($flock->notes)
@@ -287,10 +288,19 @@
 
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Tanggal Mulai Masuk</label>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Tgl Masuk ke Kandang</label>
                     <input type="date" name="start_date" value="{{ date('Y-m-d') }}" 
                            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-semibold text-slate-700 focus:border-purple-600 outline-none">
                 </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Usia Saat Masuk (Minggu) *</label>
+                    <input type="number" name="initial_age_weeks" required min="0" value="0" placeholder="Contoh: 14" 
+                           class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-bold text-purple-700 focus:border-purple-600 outline-none">
+                    <p class="text-[10px] text-slate-400 mt-0.5">Usia nyata ayam saat pertama diinput</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-3">
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Populasi Awal (Ekor) *</label>
                     <input type="number" name="initial_population" required min="1" placeholder="Contoh: 2000" 
@@ -349,9 +359,17 @@
 
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Tanggal Mulai</label>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Tgl Masuk ke Kandang</label>
                     <input type="date" id="editFlockDate" name="start_date" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-semibold text-slate-700">
                 </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Usia Saat Masuk (Minggu)</label>
+                    <input type="number" id="editFlockInitialAge" name="initial_age_weeks" min="0" value="0" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-bold text-purple-700">
+                    <p class="text-[10px] text-slate-400 mt-0.5">Usia nyata ayam saat pertama diinput</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-3">
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Populasi Awal *</label>
                     <input type="number" id="editFlockInitial" name="initial_population" required min="1" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-bold text-slate-800">
@@ -649,6 +667,7 @@
         document.getElementById('editFlockName').value = flock.name;
         document.getElementById('editFlockCode').value = flock.code || '';
         document.getElementById('editFlockDate').value = flock.start_date ? flock.start_date.substring(0, 10) : '';
+        document.getElementById('editFlockInitialAge').value = flock.initial_age_weeks || 0;
         document.getElementById('editFlockInitial').value = flock.initial_population;
         document.getElementById('editFlockBreed').value = flock.breed || '';
         document.getElementById('editFlockNotes').value = flock.notes || '';

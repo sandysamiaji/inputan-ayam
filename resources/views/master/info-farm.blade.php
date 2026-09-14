@@ -63,9 +63,14 @@
                     <label class="block text-xs font-bold text-slate-700 mb-1">Tagline Peternakan</label>
                     <input type="text" name="farm_tagline" value="{{ $settings['farm_tagline'] }}" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm text-slate-700 focus:ring-2 focus:ring-maroon-800/20 focus:border-maroon-800">
                 </div>
+                </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Tgl Pullet Masuk *</label>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Tgl Pullet Masuk (Global) *</label>
                     <input type="date" name="pullet_in_date" value="{{ $settings['pullet_in_date'] }}" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm text-slate-700 focus:ring-2 focus:ring-maroon-800/20 focus:border-maroon-800">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Usia Saat Masuk (Minggu)</label>
+                    <input type="number" name="pullet_initial_age_weeks" value="{{ $settings['pullet_initial_age_weeks'] ?? 0 }}" required min="0" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm text-slate-700 focus:ring-2 focus:ring-maroon-800/20 focus:border-maroon-800">
                 </div>
             </div>
 

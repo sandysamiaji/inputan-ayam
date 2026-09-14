@@ -182,8 +182,22 @@ class RekapController extends Controller
         $healthTreatments = (clone $healthQuery)->with('coop')->latest('date')->take(10)->get();
 
         // 6. Rekap Mingguan M1, M2, dll. (Dinamis berdasarkan Tgl Pullet Masuk)
-        $pulletInDateStr = DB::table('settings')->where('key', 'pullet_in_date')->value('value') ?? '2026-04-20';
-        $pulletInDate = Carbon::parse($pulletInDateStr);
+        $initialAgeWeeks = 0;
+        if ($flockId) {
+            $flock = \App\Models\Flock::find($flockId);
+            if ($flock && $flock->start_date) {
+                $pulletInDate = Carbon::parse($flock->start_date);
+                $initialAgeWeeks = (int) $flock->initial_age_weeks;
+            } else {
+                $pulletInDateStr = DB::table('settings')->where('key', 'pullet_in_date')->value('value') ?? '2026-04-20';
+                $pulletInDate = Carbon::parse($pulletInDateStr);
+            }
+        } else {
+            $pulletInDateStr = DB::table('settings')->where('key', 'pullet_in_date')->value('value') ?? '2026-04-20';
+            $pulletInDate = Carbon::parse($pulletInDateStr);
+            $initialAgeWeeksStr = DB::table('settings')->where('key', 'pullet_initial_age_weeks')->value('value') ?? '0';
+            $initialAgeWeeks = (int) $initialAgeWeeksStr;
+        }
 
         $startRange = Carbon::parse($startDate);
         $endRange = Carbon::parse($endDate);
@@ -204,7 +218,7 @@ class RekapController extends Controller
 
         while ($currentWeekStart->lte($endRange)) {
             $currentWeekEnd = $currentWeekStart->copy()->addDays(6);
-            $ageWeeks = (int) $pulletInDate->diffInWeeks($currentWeekStart) + 1; 
+            $ageWeeks = (int) $pulletInDate->diffInWeeks($currentWeekStart) + 1 + $initialAgeWeeks; 
 
             $overlapStart = $currentWeekStart->max($startRange);
             $overlapEnd = $currentWeekEnd->min($endRange);

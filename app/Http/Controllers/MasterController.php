@@ -81,6 +81,7 @@ class MasterController extends Controller
             'farm_name' => $this->getSetting('farm_name', 'NOCHI FARM'),
             'farm_tagline' => $this->getSetting('farm_tagline', 'Peternak Telur Berkualitas'),
             'pullet_in_date' => $this->getSetting('pullet_in_date', '2026-04-20'),
+            'pullet_initial_age_weeks' => $this->getSetting('pullet_initial_age_weeks', '0'),
             'dashboard_motivation_message' => $this->getSetting('dashboard_motivation_message', 'Semangat bekerja dan tetap jaga kebersihan serta performa kandang hari ini!'),
             'dashboard_chicken_status_message' => $this->getSetting('dashboard_chicken_status_message', 'Kondisi ayam saat ini memasuki umur minggu ke-21 (Masa Awal Bertelur Produktif / Subur). Pastikan pencahayaan dan asupan kalsium optimal.'),
             'dashboard_info_schedule_start' => $this->getSetting('dashboard_info_schedule_start', '06:00'),
@@ -104,6 +105,7 @@ class MasterController extends Controller
             'farm_name' => 'required|string|max:255',
             'farm_tagline' => 'nullable|string|max:255',
             'pullet_in_date' => 'required|date',
+            'pullet_initial_age_weeks' => 'nullable|integer|min:0',
             'dashboard_motivation_message' => 'required|string|max:1000',
             'dashboard_chicken_status_message' => 'required|string|max:1000',
             'dashboard_info_schedule_start' => 'nullable|string',
@@ -114,6 +116,7 @@ class MasterController extends Controller
         $this->setSetting('farm_name', $validated['farm_name']);
         $this->setSetting('farm_tagline', $validated['farm_tagline'] ?? '');
         $this->setSetting('pullet_in_date', $validated['pullet_in_date']);
+        $this->setSetting('pullet_initial_age_weeks', $validated['pullet_initial_age_weeks'] ?? 0);
         $this->setSetting('dashboard_motivation_message', $validated['dashboard_motivation_message']);
         $this->setSetting('dashboard_chicken_status_message', $validated['dashboard_chicken_status_message']);
         $this->setSetting('dashboard_info_schedule_start', $validated['dashboard_info_schedule_start'] ?? '06:00');
@@ -143,6 +146,7 @@ class MasterController extends Controller
             'name' => 'required|string|max:255',
             'code' => 'nullable|string|max:50',
             'start_date' => 'nullable|date',
+            'initial_age_weeks' => 'nullable|integer|min:0',
             'initial_population' => 'required|integer|min:0',
             'breed' => 'nullable|string|max:100',
             'notes' => 'nullable|string|max:500',
@@ -172,6 +176,7 @@ class MasterController extends Controller
             'name' => 'required|string|max:255',
             'code' => 'nullable|string|max:50',
             'start_date' => 'nullable|date',
+            'initial_age_weeks' => 'nullable|integer|min:0',
             'initial_population' => 'required|integer|min:0',
             'breed' => 'nullable|string|max:100',
             'notes' => 'nullable|string|max:500',

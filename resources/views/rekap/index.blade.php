@@ -280,6 +280,22 @@
 }
 </style>
 
+<!-- Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<!-- Tambahan style khusus untuk tema warna maroon Nochi Farm -->
+<style>
+.flatpickr-calendar { font-family: Inter, system-ui, sans-serif; box-shadow: 0 10px 25px rgba(176, 0, 58, 0.1) !important; border: 1px solid #f2ccd8 !important; }
+.flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange, .flatpickr-day.selected.inRange, .flatpickr-day.startRange.inRange, .flatpickr-day.endRange.inRange, .flatpickr-day.selected:focus, .flatpickr-day.startRange:focus, .flatpickr-day.endRange:focus, .flatpickr-day.selected:hover, .flatpickr-day.startRange:hover, .flatpickr-day.endRange:hover, .flatpickr-day.selected.prevMonthDay, .flatpickr-day.startRange.prevMonthDay, .flatpickr-day.endRange.prevMonthDay, .flatpickr-day.selected.nextMonthDay, .flatpickr-day.startRange.nextMonthDay, .flatpickr-day.endRange.nextMonthDay {
+    background: #b0003a !important;
+    border-color: #b0003a !important;
+}
+.flatpickr-day.inRange {
+    background: #fff0f4 !important;
+    border-color: #fff0f4 !important;
+    box-shadow: -5px 0 0 #fff0f4, 5px 0 0 #fff0f4 !important;
+}
+</style>
+
 <div class="rekap-v6">
 
     <!-- 1. HERO CARD (SESUAI MOCKUP REKAP DATA) -->
@@ -302,31 +318,13 @@
         </div>
 
         <!-- Period Selector Row (Click to open date modal) -->
-        <div class="period-row" onclick="openModalPeriodPicker()" title="Klik untuk ganti rentang tanggal">
+        <div class="period-row" id="travelokaDatePicker" title="Klik untuk ganti rentang tanggal">
             <span>📅</span>
             <b>{{ $formattedRange }}</b>
             <span class="chev">⌄</span>
         </div>
 
-        <!-- Preset Chips -->
-        <div class="preset-row">
-            @php
-                $presetOptions = [
-                    'hari_ini' => 'Hari Ini',
-                    'kemarin' => 'Kemarin',
-                    '7_hari' => '7 Hari',
-                    '30_hari' => '30 Hari',
-                    'bulan_ini' => 'Bulan Ini',
-                    'custom' => 'Custom'
-                ];
-            @endphp
-            @foreach($presetOptions as $k => $lbl)
-                <a href="{{ route('rekap.index', array_merge(request()->query(), ['preset' => $k, 'tab' => $activeTab])) }}" 
-                   class="preset {{ $preset === $k ? 'active' : '' }}">
-                    {{ $lbl }}
-                </a>
-            @endforeach
-        </div>
+
 
         <!-- Filter Kloter Dropdown -->
         <div class="period-row" style="margin-top:9px; position:relative; background:#fff;">
@@ -700,49 +698,10 @@
 
 </div>
 
-<!-- ========================================================================= -->
-<!-- MODAL / DRAWER PILIH PERIODE & KALENDER -->
-<!-- ========================================================================= -->
-<div id="modalPeriodPicker" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm opacity-0 invisible pointer-events-none transition-all duration-300 flex items-end sm:items-center justify-center p-0 sm:p-4">
-    <div class="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl transform translate-y-full sm:translate-y-0 transition-transform duration-300 max-h-[92vh] overflow-y-auto">
-        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-            <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">Pilih Periode Laporan</h3>
-            <button onclick="closeModalPeriodPicker()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors">
-                ✕
-            </button>
-        </div>
+<!-- Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://npmcdn.com/flatpickr/dist/l10n/id.js"></script>
 
-        <form method="GET" action="{{ route('rekap.index') }}" class="mt-4 space-y-4">
-            <input type="hidden" name="tab" id="modalInputTab" value="{{ $activeTab }}">
-            @if($flockId)
-                <input type="hidden" name="flock_id" value="{{ $flockId }}">
-            @endif
-
-            <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Tanggal Mulai</label>
-                <input type="date" name="start_date" value="{{ $startDate }}" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-bold text-slate-800">
-            </div>
-
-            <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Tanggal Selesai</label>
-                <input type="date" name="end_date" value="{{ $endDate }}" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-bold text-slate-800">
-            </div>
-
-            <input type="hidden" name="preset" value="custom">
-
-            <div class="pt-2 flex gap-3">
-                <button type="button" onclick="closeModalPeriodPicker()" class="flex-1 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 text-xs font-bold">
-                    Batal
-                </button>
-                <button type="submit" class="flex-2 py-2.5 px-4 rounded-xl bg-maroon-800 hover:bg-maroon-900 text-white text-xs font-bold shadow-md">
-                    Terapkan Rentang Tanggal
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
-
-@push('scripts')
 <script>
 let currentTab = '{{ $activeTab }}';
 
@@ -776,22 +735,30 @@ function filterKloter(flockId) {
     window.location.href = url.toString();
 }
 
-// Modal Period Picker
-function openModalPeriodPicker() {
-    const modal = document.getElementById('modalPeriodPicker');
-    if (!modal) return;
-    modal.classList.remove('opacity-0', 'invisible', 'pointer-events-none');
-    const content = modal.querySelector('div');
-    if (content) content.classList.remove('translate-y-full');
-}
-
-function closeModalPeriodPicker() {
-    const modal = document.getElementById('modalPeriodPicker');
-    if (!modal) return;
-    modal.classList.add('opacity-0', 'invisible', 'pointer-events-none');
-    const content = modal.querySelector('div');
-    if (content) content.classList.add('translate-y-full');
-}
+// Inisialisasi Flatpickr ala Traveloka
+document.addEventListener('DOMContentLoaded', function() {
+    flatpickr("#travelokaDatePicker", {
+        mode: "range",
+        dateFormat: "Y-m-d",
+        defaultDate: ["{{ $startDate }}", "{{ $endDate }}"],
+        locale: "id",
+        showMonths: window.innerWidth > 768 ? 2 : 1,
+        onChange: function(selectedDates, dateStr, instance) {
+            // Hanya proses jika sudah pilih start dan end date
+            if (selectedDates.length === 2) {
+                const start = instance.formatDate(selectedDates[0], "Y-m-d");
+                const end = instance.formatDate(selectedDates[1], "Y-m-d");
+                
+                const url = new URL(window.location);
+                url.searchParams.set('start_date', start);
+                url.searchParams.set('end_date', end);
+                url.searchParams.set('preset', 'custom');
+                url.searchParams.set('tab', currentTab);
+                window.location.href = url.toString();
+            }
+        }
+    });
+});
 
 // Chart.js initialization
 let trendChartInstance = null;

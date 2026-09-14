@@ -206,29 +206,23 @@ class RekapController extends Controller
             $currentWeekStart = $firstWeekStart->copy();
             $mCounter = 1;
 
-            while ($currentWeekStart->lte($endRange)) {
+            // Selalu tampilkan 4 box (4 minggu) mulai dari minggu yang mencakup start_date
+            for ($i = 0; $i < 4; $i++) {
                 $currentWeekEnd = $currentWeekStart->copy()->addDays(6);
                 $ageWeeks = (int) $pulletInDate->diffInWeeks($currentWeekStart) + 1 + $initialAgeWeeks; 
 
-                $overlapStart = $currentWeekStart->max($startRange);
-                $overlapEnd = $currentWeekEnd->min($endRange);
+                $startFmt = $currentWeekStart->format('j M');
+                $endFmt = $currentWeekEnd->format('j M');
+                $label = "{$startFmt} – {$endFmt}";
 
-                if ($overlapStart->lte($overlapEnd)) {
-                    $startFmt = $overlapStart->format('j M');
-                    $endFmt = $overlapEnd->format('j M');
-                    $label = ($overlapStart->toDateString() === $overlapEnd->toDateString()) 
-                             ? $startFmt 
-                             : "{$startFmt} – {$endFmt}";
-
-                    $weeklyRanges[] = [
-                        'week' => 'M' . $mCounter,
-                        'age_week' => $ageWeeks,
-                        'label' => $label,
-                        'start' => $overlapStart->toDateString(),
-                        'end' => $overlapEnd->toDateString(),
-                    ];
-                    $mCounter++;
-                }
+                $weeklyRanges[] = [
+                    'week' => 'M' . $mCounter,
+                    'age_week' => $ageWeeks,
+                    'label' => $label,
+                    'start' => $currentWeekStart->toDateString(),
+                    'end' => $currentWeekEnd->toDateString(),
+                ];
+                $mCounter++;
                 $currentWeekStart->addDays(7);
             }
 

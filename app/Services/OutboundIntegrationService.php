@@ -138,8 +138,9 @@ class OutboundIntegrationService
         $kgSold = (float) $queryKg->sum('sale_items.quantity');
         $totalRevenue = (float) $queryRevenue->sum('sales.total_amount');
 
-        // Asumsi standar industri peternakan: 1 Karung = 50 Kg
-        $soldInKg = ($karungSold * 50.0) + $kgSold;
+        // Konversi Karung ke Kg sesuai setting database
+        $kgPerKarung = \App\Models\Setting::getKgPerKarung();
+        $soldInKg = ($karungSold * $kgPerKarung) + $kgSold;
 
         // 2. Konsumsi Pakan oleh Ayam di Kandang
         $consQuery = FeedConsumption::query();
@@ -147,7 +148,7 @@ class OutboundIntegrationService
             $consQuery->whereBetween('date', [$startDate, $endDate]);
         }
         $consumptionKg = (float) $consQuery->sum('quantity_kg');
-        $consumptionKarung = round($consumptionKg / 50.0, 1);
+        $consumptionKarung = round($consumptionKg / $kgPerKarung, 1);
 
         // 3. Pakan Masuk MURNI dari input riil FarmStock (tanpa hardcoded fake baseline)
         $stockMasukQuery = FarmStock::where('category', 'pakan')->where('type', 'masuk');
@@ -155,7 +156,7 @@ class OutboundIntegrationService
             $stockMasukQuery->whereBetween('date', [$startDate, $endDate]);
         }
         $purchasedKg = (float) $stockMasukQuery->sum('quantity');
-        $purchasedKarung = round($purchasedKg / 50.0, 1);
+        $purchasedKarung = round($purchasedKg / $kgPerKarung, 1);
 
         // 4. Mutasi manual keluar di FarmStock jika ada
         $stockKeluarQuery = FarmStock::where('category', 'pakan')->where('type', 'keluar');
@@ -171,11 +172,11 @@ class OutboundIntegrationService
             $totalKeluarKg = $manualKeluarKg > 0 ? $manualKeluarKg : 0.0;
         }
         
-        $totalKeluarKarung = round($totalKeluarKg / 50.0, 1);
+        $totalKeluarKarung = round($totalKeluarKg / $kgPerKarung, 1);
 
         // Sisa stok pakan (bisa minus / defisit jika belum ada input pakan masuk)
         $currentStockKg = round($purchasedKg - $totalKeluarKg, 1);
-        $currentStockKarung = round($currentStockKg / 50.0, 1);
+        $currentStockKarung = round($currentStockKg / $kgPerKarung, 1);
 
         return [
             'karung_sold' => $karungSold,

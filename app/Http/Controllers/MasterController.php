@@ -32,10 +32,12 @@ class MasterController extends Controller
     }
 
     /**
-     * 1. Halaman Menu Utama Master (Sesuai Gambar Mockup 1)
+     * 1. Halaman Menu Utama Master (Sesuai Mockup Nochi Farm Master Mobile v6)
      */
-    public function index()
+    public function index(Request $request)
     {
+        $section = $request->query('section', 'hub');
+
         $flocks = Flock::with('coops')->where('is_active', true)->get();
         $coops = Coop::where('is_active', true)->get();
         $totalChickens = (int) $coops->sum('active_chickens');
@@ -44,8 +46,29 @@ class MasterController extends Controller
         $farmName = $this->getSetting('farm_name', 'NOCHI FARM');
         $motivation = $this->getSetting('dashboard_motivation_message', 'Semangat bekerja dan tetap jaga kebersihan serta performa kandang hari ini!');
 
+        $systemSettings = [
+            'isi_tray' => $this->getSetting('isi_tray', '30 butir'),
+            'berat_telur' => $this->getSetting('berat_telur', '0,06 kg'),
+            'berat_per_karung' => $this->getSetting('berat_per_karung', '50 kg'),
+            'hd_target' => $this->getSetting('hd_target', '95%'),
+            'hd_warning' => $this->getSetting('hd_warning', '90%'),
+            'hd_minimum' => $this->getSetting('hd_minimum', '88%'),
+            'reject_maximum' => $this->getSetting('reject_maximum', '2%'),
+        ];
+
+        $medicines = $this->getMedicinesList();
+
+        $coopSummary = $coops->map(function ($c) {
+            return [
+                'id' => $c->id,
+                'name' => $c->name,
+                'shortName' => $c->code ?: str_replace('Blok ', '', $c->name),
+                'active_chickens' => (int) $c->active_chickens,
+            ];
+        });
+
         return view('master.index', compact(
-            'flocks', 'coops', 'totalChickens', 'avgAgeWeeks', 'farmName', 'motivation'
+            'flocks', 'coops', 'totalChickens', 'avgAgeWeeks', 'farmName', 'motivation', 'systemSettings', 'medicines', 'coopSummary', 'section'
         ));
     }
 
@@ -66,8 +89,9 @@ class MasterController extends Controller
 
         $coops = Coop::where('is_active', true)->get();
         $avgAgeWeeks = (int) ($coops->avg('chicken_age_weeks') ?: 21);
+        $farmCondition = \App\Services\ProductionStandardService::getActiveFarmCondition();
 
-        return view('master.info-farm', compact('settings', 'avgAgeWeeks'));
+        return view('master.info-farm', compact('settings', 'avgAgeWeeks', 'farmCondition'));
     }
 
     /**
@@ -297,11 +321,11 @@ class MasterController extends Controller
     }
 
     /**
-     * 6. Halaman Vaksin & Obat
+     * Helper daftar obat master
      */
-    public function medicines()
+    private function getMedicinesList(): array
     {
-        $medicines = [
+        return [
             [
                 'name' => 'ND IB Vaccine (Newcastle Disease & Infectious Bronchitis)',
                 'category' => 'Vaksin',
@@ -343,6 +367,14 @@ class MasterController extends Controller
                 'notes' => 'Sterilisasi bakteri dan virus pembawa penyakit unggas',
             ]
         ];
+    }
+
+    /**
+     * 6. Halaman Vaksin & Obat
+     */
+    public function medicines()
+    {
+        $medicines = $this->getMedicinesList();
 
         return view('master.medicines', compact('medicines'));
     }
@@ -357,6 +389,56 @@ class MasterController extends Controller
             'farm_tagline' => $this->getSetting('farm_tagline', 'Peternak Telur Berkualitas'),
         ];
 
-        return view('master.settings', compact('settings'));
+        $systemSettings = [
+            'isi_tray' => $this->getSetting('isi_tray', '30 butir'),
+            'berat_telur' => $this->getSetting('berat_telur', '0,06 kg'),
+            'berat_per_karung' => $this->getSetting('berat_per_karung', '50 kg'),
+            'hd_target' => $this->getSetting('hd_target', '95%'),
+            'hd_warning' => $this->getSetting('hd_warning', '90%'),
+            'hd_minimum' => $this->getSetting('hd_minimum', '88%'),
+            'reject_maximum' => $this->getSetting('reject_maximum', '2%'),
+        ];
+
+        return view('master.settings', compact('settings', 'systemSettings'));
+    }
+
+    /**
+     * Simpan pembaruan Pengaturan Sistem & Parameter Engine
+     */
+    public function updateSettings(Request $request)
+    {
+        $parseNum = function ($val, $default = 0) {
+            if ($val === null || $val === '') return $default;
+            if (is_numeric($val)) return (float) $val;
+            $clean = str_replace(',', '.', preg_replace('/[^0-9.,]/', '', (string)$val));
+            return is_numeric($clean) ? (float) $clean : $default;
+        };
+
+        $isiTray = (int) $parseNum($request->input('isi_tray'), 30);
+        $beratTelur = $parseNum($request->input('berat_telur'), 0.06);
+        $beratPerKarung = $parseNum($request->input('berat_per_karung'), 50);
+        $hdTarget = $parseNum($request->input('hd_target'), 95);
+        $hdWarning = $parseNum($request->input('hd_warning'), 90);
+        $hdMinimum = $parseNum($request->input('hd_minimum'), 88);
+        $rejectMax = $parseNum($request->input('reject_maximum'), 2);
+
+        // Validasi batas logis
+        if ($isiTray < 1) $isiTray = 30;
+        if ($beratTelur <= 0) $beratTelur = 0.06;
+        if ($beratPerKarung <= 0) $beratPerKarung = 50;
+
+        $this->setSetting('isi_tray', $isiTray . ' butir');
+        $this->setSetting('berat_telur', str_replace('.', ',', (string) $beratTelur) . ' kg');
+        $this->setSetting('berat_per_karung', str_replace('.', ',', (string) $beratPerKarung) . ' kg');
+        $this->setSetting('hd_target', $hdTarget . '%');
+        $this->setSetting('hd_warning', $hdWarning . '%');
+        $this->setSetting('hd_minimum', $hdMinimum . '%');
+        $this->setSetting('reject_maximum', $rejectMax . '%');
+
+        if ($request->input('from_section') === 'pengaturan') {
+            return redirect('/master?section=pengaturan#card-pengaturan')->with('success', 'Parameter Pengaturan Sistem berhasil diperbarui!');
+        }
+
+        return redirect()->back()->with('success', 'Parameter Pengaturan Sistem berhasil diperbarui!');
     }
 }

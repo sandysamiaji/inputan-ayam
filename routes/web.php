@@ -7,6 +7,7 @@ use App\Http\Controllers\WarehouseController;
 use App\Http\Controllers\RekapController;
 use App\Http\Controllers\MasterController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\InputController;
 
 /*
 |--------------------------------------------------------------------------
@@ -15,6 +16,9 @@ use App\Http\Controllers\ProfileController;
 */
 
 Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+
+// Halaman Input Mobile
+Route::get('/input', [InputController::class, 'index'])->name('input.index');
 
 // Endpoint Input Aksi Cepat Kandang
 Route::post('/production/store', [DashboardController::class, 'storeEggProduction'])->name('production.store');
@@ -58,6 +62,12 @@ Route::prefix('master')->name('master.')->group(function () {
     Route::post('/standards/update', [MasterController::class, 'updateStandards'])->name('standards.update');
     Route::get('/medicines', [MasterController::class, 'medicines'])->name('medicines');
     Route::get('/settings', [MasterController::class, 'settings'])->name('settings');
+    Route::post('/settings/update', [MasterController::class, 'updateSettings'])->name('settings.update');
+    Route::get('/standar-produksi', function() { return redirect('/master#card-standar-produksi'); })->name('standar-produksi');
+    Route::get('/standar-pakan', function() { return redirect('/master#card-standar-pakan'); })->name('standar-pakan');
+    Route::get('/standar-bb', function() { return redirect('/master#card-standar-bb'); })->name('standar-bb');
+    Route::get('/vaksin-obat', function() { return redirect('/master#card-vaksin-obat'); })->name('vaksin-obat');
+    Route::get('/pengaturan', function() { return redirect('/master#card-pengaturan'); })->name('pengaturan');
 });
 
 // Modul Profil Petugas

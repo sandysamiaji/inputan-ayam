@@ -115,6 +115,10 @@
                 <!-- Template Cepat Kondisi Ayam -->
                 <div class="mt-2 flex flex-wrap items-center gap-1.5">
                     <span class="text-[10px] font-bold text-slate-400 uppercase">Pilih Cepat:</span>
+                    <button type="button" onclick="setStatusTemplate('{{ addslashes($farmCondition['status_message']) }}')" class="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-[10px] font-bold text-emerald-800 border border-emerald-300 transition-all flex items-center gap-1 shadow-xs">
+                        <i data-lucide="sparkles" class="w-3.5 h-3.5 text-emerald-600"></i>
+                        <span>⚡ Otomatis Master (Minggu ke-{{ $farmCondition['dominant_week'] }}: {{ $farmCondition['standard']['fase'] }})</span>
+                    </button>
                     <button type="button" onclick="setStatusTemplate('Kondisi ayam saat ini memasuki umur minggu ke-21 (Masa Awal Bertelur Produktif / Subur). Pastikan pencahayaan dan asupan kalsium optimal.')" class="px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-amber-50 text-[10px] font-semibold text-slate-600 hover:text-amber-800 border border-slate-200 transition-all">
                         Minggu ke-21 (Masa Subur / Awal Bertelur)
                     </button>

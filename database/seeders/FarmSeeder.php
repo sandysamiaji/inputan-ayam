@@ -25,49 +25,97 @@ class FarmSeeder extends Seeder
         $userId = $petugas ? $petugas->id : null;
         $today = Carbon::today();
 
-        // 1. Klotter 1
-        $flock = Flock::firstOrCreate(
+        // 1. Klotter 1 (K1)
+        $flock = Flock::updateOrCreate(
             ['name' => 'Klotter 1'],
             [
                 'code' => 'K1',
                 'start_date' => $today->copy()->subWeeks(21),
-                'initial_population' => 2400,
-                'current_population' => 2270,
+                'initial_population' => 2250,
+                'current_population' => 2249,
                 'breed' => 'Lohmann Brown',
                 'notes' => 'Ayam petelur produktif flock 1',
                 'is_active' => true,
             ]
         );
 
-        // 2. Blok A, B, C (sesuai gambar: Blok A 762 ekor, Blok B 744 ekor, Blok C 764 ekor, umur 21 minggu)
-        $blokA = Coop::firstOrCreate(
+        // Blok A, B, C (K1)
+        $blokA = Coop::updateOrCreate(
             ['flock_id' => $flock->id, 'name' => 'Blok A'],
             [
                 'code' => 'A',
-                'capacity' => 800,
+                'capacity' => 762,
                 'active_chickens' => 762,
                 'chicken_age_weeks' => 21,
                 'is_active' => true,
             ]
         );
 
-        $blokB = Coop::firstOrCreate(
+        $blokB = Coop::updateOrCreate(
             ['flock_id' => $flock->id, 'name' => 'Blok B'],
             [
                 'code' => 'B',
-                'capacity' => 800,
+                'capacity' => 744,
+                'active_chickens' => 743,
+                'chicken_age_weeks' => 21,
+                'is_active' => true,
+            ]
+        );
+
+        $blokC = Coop::updateOrCreate(
+            ['flock_id' => $flock->id, 'name' => 'Blok C'],
+            [
+                'code' => 'C',
+                'capacity' => 744,
                 'active_chickens' => 744,
                 'chicken_age_weeks' => 21,
                 'is_active' => true,
             ]
         );
 
-        $blokC = Coop::firstOrCreate(
-            ['flock_id' => $flock->id, 'name' => 'Blok C'],
+        // 2. Klotter 2 (K2)
+        $flock2 = Flock::updateOrCreate(
+            ['name' => 'Klotter 2'],
             [
-                'code' => 'C',
-                'capacity' => 800,
-                'active_chickens' => 764,
+                'code' => 'K2',
+                'start_date' => $today->copy()->subWeeks(21),
+                'initial_population' => 1770,
+                'current_population' => 1768,
+                'breed' => 'Lohmann Brown',
+                'notes' => 'Ayam petelur produktif flock 2',
+                'is_active' => true,
+            ]
+        );
+
+        // Blok D, E, F (K2)
+        $blokD = Coop::updateOrCreate(
+            ['flock_id' => $flock2->id, 'name' => 'Blok D'],
+            [
+                'code' => 'D',
+                'capacity' => 750,
+                'active_chickens' => 748,
+                'chicken_age_weeks' => 21,
+                'is_active' => true,
+            ]
+        );
+
+        $blokE = Coop::updateOrCreate(
+            ['flock_id' => $flock2->id, 'name' => 'Blok E'],
+            [
+                'code' => 'E',
+                'capacity' => 492,
+                'active_chickens' => 492,
+                'chicken_age_weeks' => 21,
+                'is_active' => true,
+            ]
+        );
+
+        $blokF = Coop::updateOrCreate(
+            ['flock_id' => $flock2->id, 'name' => 'Blok F'],
+            [
+                'code' => 'F',
+                'capacity' => 528,
+                'active_chickens' => 528,
                 'chicken_age_weeks' => 21,
                 'is_active' => true,
             ]

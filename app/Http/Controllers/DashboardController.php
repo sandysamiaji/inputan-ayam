@@ -180,16 +180,69 @@ class DashboardController extends Controller
         $totalActiveChickens = (int) $coops->sum('active_chickens');
         $totalCoopsCount = $coops->count();
 
-        // 9. Pesan Motivasi & Informasi Kondisi Ayam dari Master Settings
+        // 9. Pesan Motivasi & Informasi Kondisi Ayam Otomatis dari Master Standar Produksi
+        $farmCondition = \App\Services\ProductionStandardService::getActiveFarmCondition();
+        $dominantWeek = $farmCondition['dominant_week'];
+        $farmStandard = $farmCondition['standard'];
+        $coopStandards = $farmCondition['coop_standards'];
+
         $settingRows = \Illuminate\Support\Facades\DB::table('settings')->whereIn('key', [
             'dashboard_motivation_message',
             'dashboard_chicken_status_message',
-            'dashboard_info_active'
+            'dashboard_info_active',
+            'dashboard_chicken_status_auto',
         ])->pluck('value', 'key');
 
         $motivationMsg = $settingRows['dashboard_motivation_message'] ?? 'Semangat bekerja dan tetap jaga kebersihan serta performa kandang hari ini!';
-        $chickenStatusMsg = $settingRows['dashboard_chicken_status_message'] ?? 'Kondisi ayam saat ini memasuki umur minggu ke-21 (Masa Awal Bertelur Produktif / Subur). Pastikan pencahayaan dan asupan kalsium optimal.';
+        $isAutoStatus = ($settingRows['dashboard_chicken_status_auto'] ?? '1') === '1';
+        $customStatusMsg = $settingRows['dashboard_chicken_status_message'] ?? null;
+
+        // Otomatis sinkron dari Master Standar Produksi jika mode auto atau tanpa custom message
+        if ($isAutoStatus || empty($customStatusMsg)) {
+            $chickenStatusMsg = $farmCondition['status_message'];
+        } else {
+            $chickenStatusMsg = $customStatusMsg;
+        }
+
         $isInfoActive = ($settingRows['dashboard_info_active'] ?? '1') === '1';
+
+        // Hitung total kebutuhan pakan seluruh blok aktif di farm (dinamis dari setting database)
+        $kgPerKarung = \App\Models\Setting::getKgPerKarung();
+        $totalFarmPakanKg = 0;
+        foreach ($coops as $c) {
+            $cStdRow = $coopStandards[$c->id] ?? \App\Services\ProductionStandardService::getStandardForWeek((int)$c->chicken_age_weeks);
+            $totalFarmPakanKg += (($c->active_chickens * ($cStdRow['gram_pakan'] ?? 105)) / 1000);
+        }
+        $totalFarmPakanKg = round($totalFarmPakanKg, 1);
+        $farmKarung = floor($totalFarmPakanKg / $kgPerKarung);
+        $farmSisaKg = round(fmod($totalFarmPakanKg, $kgPerKarung), 1);
+        $totalFarmKarungStr = ($farmKarung > 0 ? $farmKarung . ' karung ' : '') . ($farmSisaKg > 0 ? '+ ' . $farmSisaKg . ' kg' : ($farmKarung == 0 ? '0 kg' : ''));
+
+        // Hitung HD aktual hari ini per coop dan per flock (HANYA jika telur sudah diinput)
+        $coopHdData = [];
+        $coopEggTodayData = [];
+
+        foreach ($coops as $c) {
+            $todayEgg = (int) $eggProdRecords->where('coop_id', $c->id)->sum('total_eggs');
+            $coopEggTodayData[$c->id] = $todayEgg;
+            if ($todayEgg > 0 && $c->active_chickens > 0) {
+                $coopHdData[$c->id] = round(($todayEgg / $c->active_chickens) * 100, 1);
+            } else {
+                $coopHdData[$c->id] = null; // Belum diinput oleh user
+            }
+        }
+
+        $flockHdData = [];
+        foreach ($flocks as $f) {
+            $fCoopIds = $f->coops->pluck('id');
+            $fActiveChx = (int) $f->coops->sum('active_chickens');
+            $fTodayEggs = (int) $eggProdRecords->whereIn('coop_id', $fCoopIds)->sum('total_eggs');
+            if ($fTodayEggs > 0 && $fActiveChx > 0) {
+                $flockHdData[$f->id] = round(($fTodayEggs / $fActiveChx) * 100, 1);
+            } else {
+                $flockHdData[$f->id] = null; // Belum diinput oleh user
+            }
+        }
 
         return view('dashboard', compact(
             'selectedDate',
@@ -223,7 +276,17 @@ class DashboardController extends Controller
             'totalCoopsCount',
             'motivationMsg',
             'chickenStatusMsg',
-            'isInfoActive'
+            'isInfoActive',
+            'farmCondition',
+            'dominantWeek',
+            'farmStandard',
+            'coopStandards',
+            'totalFarmPakanKg',
+            'totalFarmKarungStr',
+            'kgPerKarung',
+            'coopHdData',
+            'flockHdData',
+            'coopEggTodayData'
         ));
     }
 

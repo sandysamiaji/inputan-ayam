@@ -156,6 +156,10 @@
                         <i data-lucide="warehouse" class="w-4 h-4"></i>
                         <span>Gudang</span>
                     </a>
+                    <a href="{{ route('input.index') }}" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold {{ request()->routeIs('input.*') ? 'bg-white text-maroon-900 shadow-sm' : 'text-rose-100 hover:text-white hover:bg-white/10' }} transition-all">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                        <span>Input</span>
+                    </a>
                     <a href="{{ route('rekap.index') }}" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold {{ request()->routeIs('rekap.*') ? 'bg-white text-maroon-900 shadow-sm' : 'text-rose-100 hover:text-white hover:bg-white/10' }} transition-all">
                         <i data-lucide="clipboard-list" class="w-4 h-4"></i>
                         <span>Rekap</span>
@@ -213,62 +217,59 @@
         @yield('content')
     </main>
 
-    <!-- Mobile Bottom Navigation Bar (ONLY visible on mobile, HIDDEN on desktop md:) -->
-    <nav class="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-slate-200 shadow-2xl">
-        <div class="flex items-center justify-around py-2 px-1">
+    <!-- Bottom Navigation Bar (Sesuai Mockup Nochi Farm: Dashboard, Gudang, Input, Rekap, Master) -->
+    <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[440px] z-40 bg-white border-t border-slate-200 shadow-2xl">
+        <div class="grid grid-cols-5 py-2 px-1 text-center items-center">
             <!-- 1. Dashboard -->
-            <a href="{{ route('dashboard') }}" class="flex flex-col items-center justify-center w-16 py-1 {{ request()->routeIs('dashboard') ? 'text-maroon-800 font-bold' : 'text-slate-500 hover:text-maroon-700 font-medium' }} transition-transform active:scale-90">
+            <a href="{{ route('dashboard') }}" class="flex flex-col items-center justify-center py-1 {{ request()->routeIs('dashboard') ? 'text-maroon-800 font-extrabold' : 'text-slate-500 hover:text-maroon-700 font-medium' }} transition-transform active:scale-90">
                 <div class="relative">
-                    <i data-lucide="home" class="w-6 h-6 stroke-[2.2]"></i>
+                    <i data-lucide="home" class="w-5 h-5 stroke-[2.2]"></i>
                     @if(request()->routeIs('dashboard'))
-                        <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-1 bg-maroon-800 rounded-full"></span>
+                        <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3.5 h-1 bg-maroon-800 rounded-full"></span>
                     @endif
                 </div>
-                <span class="text-[11px] mt-1">Dashboard</span>
+                <span class="text-[10px] mt-1 tracking-tight">Dashboard</span>
             </a>
 
             <!-- 2. Gudang -->
-            <a href="{{ route('warehouse.index') }}" class="flex flex-col items-center justify-center w-16 py-1 {{ request()->routeIs('warehouse.*') ? 'text-maroon-800 font-bold' : 'text-slate-500 hover:text-maroon-700 font-medium' }} transition-transform active:scale-90">
+            <a href="{{ route('warehouse.index') }}" class="flex flex-col items-center justify-center py-1 {{ request()->routeIs('warehouse.*') ? 'text-maroon-800 font-extrabold' : 'text-slate-500 hover:text-maroon-700 font-medium' }} transition-transform active:scale-90">
                 <div class="relative">
-                    <i data-lucide="warehouse" class="w-6 h-6 stroke-[2.2]"></i>
+                    <i data-lucide="warehouse" class="w-5 h-5 stroke-[2.2]"></i>
                     @if(request()->routeIs('warehouse.*'))
-                        <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-1 bg-maroon-800 rounded-full"></span>
+                        <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3.5 h-1 bg-maroon-800 rounded-full"></span>
                     @endif
                 </div>
-                <span class="text-[11px] mt-1">Gudang</span>
+                <span class="text-[10px] mt-1 tracking-tight">Gudang</span>
             </a>
 
-            <!-- 3. Rekap -->
-            <a href="{{ route('rekap.index') }}" class="flex flex-col items-center justify-center w-16 py-1 {{ request()->routeIs('rekap.*') ? 'text-maroon-800 font-bold' : 'text-slate-500 hover:text-maroon-700 font-medium' }} transition-transform active:scale-90">
+            <!-- 3. Input (Sesuai Mockup ＋ Input Kandang) -->
+            <a href="{{ route('input.index') }}" class="flex flex-col items-center justify-center py-1 {{ request()->routeIs('input.*') ? 'text-maroon-800 font-extrabold' : 'text-slate-500 hover:text-maroon-700 font-medium' }} transition-transform active:scale-90 group">
+                <div class="w-7 h-7 rounded-lg {{ request()->routeIs('input.*') ? 'bg-maroon-800 text-white shadow-md' : 'bg-rose-50 border border-rose-200 text-maroon-800' }} flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
+                    <span class="text-base font-black leading-none">＋</span>
+                </div>
+                <span class="text-[10px] mt-0.5 tracking-tight font-bold {{ request()->routeIs('input.*') ? 'text-maroon-800' : 'text-slate-600' }}">Input</span>
+            </a>
+
+            <!-- 4. Rekap -->
+            <a href="{{ route('rekap.index') }}" class="flex flex-col items-center justify-center py-1 {{ request()->routeIs('rekap.*') ? 'text-maroon-800 font-extrabold' : 'text-slate-500 hover:text-maroon-700 font-medium' }} transition-transform active:scale-90">
                 <div class="relative">
-                    <i data-lucide="clipboard-list" class="w-6 h-6 stroke-[2.2]"></i>
+                    <i data-lucide="clipboard-list" class="w-5 h-5 stroke-[2.2]"></i>
                     @if(request()->routeIs('rekap.*'))
-                        <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-1 bg-maroon-800 rounded-full"></span>
+                        <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3.5 h-1 bg-maroon-800 rounded-full"></span>
                     @endif
                 </div>
-                <span class="text-[11px] mt-1">Rekap</span>
+                <span class="text-[10px] mt-1 tracking-tight">Rekap</span>
             </a>
 
-            <!-- 4. Master -->
-            <a href="{{ route('master.index') }}" class="flex flex-col items-center justify-center w-16 py-1 {{ request()->routeIs('master.*') ? 'text-maroon-800 font-bold' : 'text-slate-500 hover:text-maroon-700 font-medium' }} transition-transform active:scale-90">
+            <!-- 5. Master -->
+            <a href="{{ route('master.index') }}" class="flex flex-col items-center justify-center py-1 {{ request()->routeIs('master.*') ? 'text-maroon-800 font-extrabold' : 'text-slate-500 hover:text-maroon-700 font-medium' }} transition-transform active:scale-90">
                 <div class="relative">
-                    <i data-lucide="layout-grid" class="w-6 h-6 stroke-[2.2]"></i>
+                    <i data-lucide="layout-grid" class="w-5 h-5 stroke-[2.2]"></i>
                     @if(request()->routeIs('master.*'))
-                        <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-1 bg-maroon-800 rounded-full"></span>
+                        <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3.5 h-1 bg-maroon-800 rounded-full"></span>
                     @endif
                 </div>
-                <span class="text-[11px] mt-1">Master</span>
-            </a>
-
-            <!-- 5. Profil -->
-            <a href="{{ route('profile.index') }}" class="flex flex-col items-center justify-center w-16 py-1 {{ request()->routeIs('profile.*') ? 'text-maroon-800 font-bold' : 'text-slate-500 hover:text-maroon-700 font-medium' }} transition-transform active:scale-90">
-                <div class="relative">
-                    <i data-lucide="user" class="w-6 h-6 stroke-[2.2]"></i>
-                    @if(request()->routeIs('profile.*'))
-                        <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-1 bg-maroon-800 rounded-full"></span>
-                    @endif
-                </div>
-                <span class="text-[11px] mt-1">Profil</span>
+                <span class="text-[10px] mt-1 tracking-tight">Master</span>
             </a>
         </div>
     </nav>

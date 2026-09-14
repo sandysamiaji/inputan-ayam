@@ -27,6 +27,13 @@ class MasterSettingSeeder extends Seeder
             'standard_feed_gram_per_chicken' => '115',
             'standard_avg_weight_kg' => '1.62',
             'standard_weight_tolerance' => '0.05',
+            'isi_tray' => '30 butir',
+            'berat_telur' => '0,06 kg',
+            'berat_per_karung' => '50 kg',
+            'hd_target' => '95%',
+            'hd_warning' => '90%',
+            'hd_minimum' => '88%',
+            'reject_maximum' => '2%',
         ];
 
         foreach ($defaultSettings as $key => $val) {

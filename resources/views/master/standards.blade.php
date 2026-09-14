@@ -6,7 +6,7 @@
     <!-- Top Navigation Header -->
     <div class="flex items-center justify-between gap-3">
         <div class="flex items-center gap-2.5">
-            <a href="{{ route('master.index') }}" class="w-9 h-9 rounded-xl bg-white border border-slate-200 text-slate-700 hover:text-maroon-800 hover:border-maroon-300 flex items-center justify-center shadow-sm transition-all active:scale-95">
+            <a href="{{ route('master.index') }}#card-standar-produksi" class="w-9 h-9 rounded-xl bg-white border border-slate-200 text-slate-700 hover:text-maroon-800 hover:border-maroon-300 flex items-center justify-center shadow-sm transition-all active:scale-95">
                 <i data-lucide="arrow-left" class="w-5 h-5"></i>
             </a>
             <div>

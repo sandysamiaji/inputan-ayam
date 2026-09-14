@@ -176,6 +176,7 @@ class WarehouseController extends Controller
         $totalMasuk = $feedSummary['purchased_kg'];
         $totalKeluar = $feedSummary['total_keluar_kg'];
         $stokSaatIni = $feedSummary['current_stock_kg'];
+        $currentStockKarung = $feedSummary['current_stock_karung'];
         $karungSold = $feedSummary['karung_sold'];
         $kgSold = $feedSummary['kg_sold'];
         $soldRevenue = $feedSummary['total_revenue'];
@@ -191,7 +192,7 @@ class WarehouseController extends Controller
 
         return view('warehouse.pakan', compact(
             'user', 'items', 'tab', 'search', 
-            'totalMasuk', 'totalKeluar', 'stokSaatIni', 
+            'totalMasuk', 'totalKeluar', 'stokSaatIni', 'currentStockKarung',
             'karungSold', 'kgSold', 'soldRevenue', 'consumptionKg', 'consumptionKarung', 'purchasedKarung',
             'salesList', 'tripList', 'coops'
         ));

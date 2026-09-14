@@ -19,17 +19,17 @@
         <div class="flex flex-wrap items-center gap-2 sm:gap-4 bg-white px-4 py-2.5 rounded-2xl border border-slate-100 shadow-sm">
             <div class="text-left sm:text-right">
                 <span class="text-[10px] uppercase font-bold text-slate-400 block">Sisa Stok</span>
-                <span class="text-sm sm:text-base font-extrabold {{ $stokSaatIni < 0 ? 'text-rose-600' : 'text-emerald-600' }}">{{ number_format($stokSaatIni, 0, ',', '.') }} Kg <span class="text-xs font-semibold {{ $stokSaatIni < 0 ? 'text-rose-600' : 'text-emerald-700' }}">({{ number_format(round($stokSaatIni / 50.0, 1), 0, ',', '.') }} Krg)</span></span>
+                <span class="text-sm sm:text-base font-extrabold {{ $stokSaatIni < 0 ? 'text-rose-600' : 'text-emerald-600' }}">{{ number_format($stokSaatIni, 0, ',', '.') }} Kg <span class="text-xs font-semibold {{ $stokSaatIni < 0 ? 'text-rose-600' : 'text-emerald-700' }}">({{ number_format($currentStockKarung, 1, ',', '.') }} Krg)</span></span>
             </div>
             <div class="hidden sm:block h-7 w-px bg-slate-200"></div>
             <div class="text-left sm:text-right">
                 <span class="text-[10px] uppercase font-bold text-slate-400 block">Total Masuk</span>
-                <span class="text-xs sm:text-sm font-bold text-slate-700">{{ number_format($totalMasuk, 0, ',', '.') }} Kg ({{ number_format($purchasedKarung, 0, ',', '.') }} Krg)</span>
+                <span class="text-xs sm:text-sm font-bold text-slate-700">{{ number_format($totalMasuk, 0, ',', '.') }} Kg ({{ number_format($purchasedKarung, 1, ',', '.') }} Krg)</span>
             </div>
             <div class="hidden sm:block h-7 w-px bg-slate-200"></div>
             <div class="text-left sm:text-right">
                 <span class="text-[10px] uppercase font-bold text-slate-500 block">Konsumsi Kandang</span>
-                <span class="text-xs sm:text-sm font-bold text-slate-700">{{ number_format($consumptionKg, 0, ',', '.') }} Kg ({{ number_format(round($consumptionKg / 50.0, 1), 0, ',', '.') }} Krg)</span>
+                <span class="text-xs sm:text-sm font-bold text-slate-700">{{ number_format($consumptionKg, 0, ',', '.') }} Kg ({{ number_format($consumptionKarung, 1, ',', '.') }} Krg)</span>
             </div>
             <div class="hidden md:block h-7 w-px bg-slate-200"></div>
             <div class="hidden md:block text-right">

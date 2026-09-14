@@ -136,6 +136,12 @@
                         <button onclick="openModalEditFlock({{ json_encode($flock) }})" class="p-2 rounded-xl bg-white border border-slate-200 hover:border-purple-600 hover:text-purple-700 text-slate-600 transition-colors shadow-xs" title="Edit Klotter">
                             <i data-lucide="edit" class="w-4 h-4"></i>
                         </button>
+                        <form action="{{ route('master.flocks.destroy', $flock->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus Klotter ini beserta seluruh blok kandang di dalamnya?');">
+                            @csrf @method('DELETE')
+                            <button type="submit" class="p-2 rounded-xl bg-white border border-slate-200 hover:border-rose-600 hover:text-rose-700 text-rose-500 transition-colors shadow-xs" title="Hapus Klotter">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </form>
                         <button onclick="openModalTambahCoopForFlock({{ $flock->id }}, '{{ addslashes($flock->name) }}')" class="px-2.5 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-bold transition-colors border border-purple-200 flex items-center gap-1" title="Tambah Blok ke Klotter ini">
                             <i data-lucide="plus" class="w-3.5 h-3.5"></i>
                             <span>Blok</span>
@@ -201,6 +207,14 @@
                                         <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
                                         <span>Edit</span>
                                     </button>
+                                    
+                                    <!-- Delete Coop Form -->
+                                    <form action="{{ route('master.coops.destroy', $coop->id) }}" method="POST" onsubmit="return confirm('Hapus Blok Kandang ini secara permanen?');" class="inline-block">
+                                        @csrf @method('DELETE')
+                                        <button type="submit" class="py-2 px-3 rounded-xl bg-slate-50 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-rose-500 font-bold text-xs flex items-center justify-center gap-1 shadow-xs transition-all active:scale-95" title="Hapus Blok">
+                                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                        </button>
+                                    </form>
                                 </div>
                             </div>
                         @endforeach

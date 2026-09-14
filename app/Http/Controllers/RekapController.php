@@ -792,9 +792,8 @@ class RekapController extends Controller
      
     private function requireAdmin()
     {
-        if (Auth::user()->role !== 'admin') {
-            abort(403, 'Hanya Superadmin yang diizinkan untuk mengubah atau menghapus data historis.');
-        }
+        // Fitur edit & hapus sekarang terbuka untuk semua user
+        // Validasi 'admin' telah dinonaktifkan atas permintaan.
     }
 
     // --- Produksi Telur ---

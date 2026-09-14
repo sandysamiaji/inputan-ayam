@@ -298,6 +298,19 @@
                                 {{ Str::after($item->notes, '(') ? '(' . Str::after($item->notes, '(') : '' }}
                             </div>
                         @endif
+                        
+                        <!-- Action Buttons -->
+                        <div class="mt-2 flex items-center justify-end gap-2">
+                            <a href="{{ route('warehouse.' . $cat) }}" class="px-2 py-1 bg-white border border-slate-200 text-slate-500 rounded-md hover:text-blue-600 hover:border-blue-300 transition-colors text-[10px] font-bold flex items-center gap-1" title="Lihat/Edit di Detail">
+                                <i data-lucide="edit" class="w-3 h-3"></i> Edit
+                            </a>
+                            <form action="{{ route('warehouse.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Hapus data transaksi ini?');">
+                                @csrf @method('DELETE')
+                                <button type="submit" class="px-2 py-1 bg-white border border-slate-200 text-rose-500 rounded-md hover:bg-rose-50 hover:border-rose-200 transition-colors text-[10px] font-bold flex items-center gap-1" title="Hapus">
+                                    <i data-lucide="trash-2" class="w-3 h-3"></i> Hapus
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             @empty

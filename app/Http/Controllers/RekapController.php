@@ -181,104 +181,102 @@ class RekapController extends Controller
         $totalVaksinKegiatan = $totalVaksin + $totalObat + $totalVitamin;
         $healthTreatments = (clone $healthQuery)->with('coop')->latest('date')->take(10)->get();
 
-        // 6. Rekap Mingguan M1, M2, dll. (Dinamis berdasarkan Tgl Pullet Masuk)
-        $initialAgeWeeks = 0;
-        if ($flockId) {
-            $flock = \App\Models\Flock::find($flockId);
-            if ($flock && $flock->start_date) {
-                $pulletInDate = Carbon::parse($flock->start_date);
-                $initialAgeWeeks = (int) $flock->initial_age_weeks;
-            } else {
-                $pulletInDateStr = DB::table('settings')->where('key', 'pullet_in_date')->value('value') ?? '2026-04-20';
-                $pulletInDate = Carbon::parse($pulletInDateStr);
-            }
-        } else {
-            $pulletInDateStr = DB::table('settings')->where('key', 'pullet_in_date')->value('value') ?? '2026-04-20';
-            $pulletInDate = Carbon::parse($pulletInDateStr);
-            $initialAgeWeeksStr = DB::table('settings')->where('key', 'pullet_initial_age_weeks')->value('value') ?? '0';
-            $initialAgeWeeks = (int) $initialAgeWeeksStr;
-        }
+        // 6. Rekap Mingguan M1, M2, dll. per Klotter
+        $weeklyRekapsByFlock = [];
+        $targetFlocks = $flockId && $selectedFlock ? collect([$selectedFlock]) : $allFlocks;
 
         $startRange = Carbon::parse($startDate);
         $endRange = Carbon::parse($endDate);
 
-        $diffDays = $pulletInDate->diffInDays($startRange, false); 
-        $firstWeekStart = $pulletInDate->copy();
-        if ($diffDays >= 0) {
-            $weeksPassed = floor($diffDays / 7);
-            $firstWeekStart->addDays($weeksPassed * 7);
-        } else {
-            $weeksBefore = ceil(abs($diffDays) / 7);
-            $firstWeekStart->subDays($weeksBefore * 7);
-        }
-
-        $weeklyRanges = [];
-        $currentWeekStart = $firstWeekStart->copy();
-        $mCounter = 1;
-
-        while ($currentWeekStart->lte($endRange)) {
-            $currentWeekEnd = $currentWeekStart->copy()->addDays(6);
-            $ageWeeks = (int) $pulletInDate->diffInWeeks($currentWeekStart) + 1 + $initialAgeWeeks; 
-
-            $overlapStart = $currentWeekStart->max($startRange);
-            $overlapEnd = $currentWeekEnd->min($endRange);
-
-            if ($overlapStart->lte($overlapEnd)) {
-                $startFmt = $overlapStart->format('j M');
-                $endFmt = $overlapEnd->format('j M');
-                $label = ($overlapStart->toDateString() === $overlapEnd->toDateString()) 
-                         ? $startFmt 
-                         : "{$startFmt} – {$endFmt}";
-
-                $weeklyRanges[] = [
-                    'week' => 'M' . $mCounter,
-                    'age_week' => $ageWeeks,
-                    'label' => $label,
-                    'start' => $overlapStart->toDateString(),
-                    'end' => $overlapEnd->toDateString(),
-                ];
-                $mCounter++;
+        foreach ($targetFlocks as $tf) {
+            $pulletInDate = $tf->start_date ? Carbon::parse($tf->start_date) : Carbon::parse(DB::table('settings')->where('key', 'pullet_in_date')->value('value') ?? '2026-04-20');
+            $initialAgeWeeks = (int) $tf->initial_age_weeks;
+            
+            $diffDays = $pulletInDate->diffInDays($startRange, false); 
+            $firstWeekStart = $pulletInDate->copy();
+            if ($diffDays >= 0) {
+                $weeksPassed = floor($diffDays / 7);
+                $firstWeekStart->addDays($weeksPassed * 7);
+            } else {
+                $weeksBefore = ceil(abs($diffDays) / 7);
+                $firstWeekStart->subDays($weeksBefore * 7);
             }
-            $currentWeekStart->addDays(7);
-        }
 
-        $weeklyRekap = [];
-        foreach ($weeklyRanges as $wr) {
-            $wEggQuery = EggProduction::whereBetween('date', [$wr['start'], $wr['end']]);
-            if ($flockId) $wEggQuery->where('flock_id', $flockId);
-            $wEggs = (int) $wEggQuery->sum('total_eggs');
-            $wPeti = (int) round($wEggs / $isiTray);
-            $wBroken = (int) $wEggQuery->sum('broken_eggs');
-            $wReject = $wEggs > 0 ? round(($wBroken / $wEggs) * 100, 1) : 1.2;
-            $wHdp = $activePopulation > 0 ? round(($wEggs / ($activePopulation * 4.0)) * 100, 1) : 92.0;
+            $weeklyRanges = [];
+            $currentWeekStart = $firstWeekStart->copy();
+            $mCounter = 1;
 
-            $wFeedQuery = FeedConsumption::whereBetween('date', [$wr['start'], $wr['end']]);
-            if ($flockId) $wFeedQuery->where('flock_id', $flockId);
-            $wFeedKg = (float) $wFeedQuery->sum('quantity_kg');
-            $wFeedKarung = (int) floor($wFeedKg / $kgPerKarung);
-            $wFeedSisaKg = round($wFeedKg - ($wFeedKarung * $kgPerKarung));
-            $wFeedKarungStr = $wFeedSisaKg > 0 ? "{$wFeedKarung} karung + {$wFeedSisaKg} kg" : "{$wFeedKarung} karung";
-            $wFeedFase = ($wr['week'] === 'M1') ? 'Grower' : 'Layer';
+            while ($currentWeekStart->lte($endRange)) {
+                $currentWeekEnd = $currentWeekStart->copy()->addDays(6);
+                $ageWeeks = (int) $pulletInDate->diffInWeeks($currentWeekStart) + 1 + $initialAgeWeeks; 
 
-            $wMortQuery = Mortality::whereBetween('date', [$wr['start'], $wr['end']]);
-            if ($flockId) $wMortQuery->where('flock_id', $flockId);
-            $wMortCount = (int) $wMortQuery->sum('count');
-            $wMortRate = $activePopulation > 0 ? round(($wMortCount / $activePopulation) * 100, 2) : 0.50;
+                $overlapStart = $currentWeekStart->max($startRange);
+                $overlapEnd = $currentWeekEnd->min($endRange);
 
-            $weeklyRekap[] = [
-                'week' => $wr['week'],
-                'age_week' => $wr['age_week'],
-                'date_range' => $wr['label'],
-                'eggs' => $wEggs,
-                'crates' => $wPeti,
-                'hdp' => $wHdp,
-                'reject' => $wReject,
-                'feed_kg' => round($wFeedKg),
-                'feed_karung_str' => $wFeedKarungStr,
-                'feed_fase' => $wFeedFase,
-                'mortality_count' => $wMortCount,
-                'mortality_rate' => $wMortRate,
-            ];
+                if ($overlapStart->lte($overlapEnd)) {
+                    $startFmt = $overlapStart->format('j M');
+                    $endFmt = $overlapEnd->format('j M');
+                    $label = ($overlapStart->toDateString() === $overlapEnd->toDateString()) 
+                             ? $startFmt 
+                             : "{$startFmt} – {$endFmt}";
+
+                    $weeklyRanges[] = [
+                        'week' => 'M' . $mCounter,
+                        'age_week' => $ageWeeks,
+                        'label' => $label,
+                        'start' => $overlapStart->toDateString(),
+                        'end' => $overlapEnd->toDateString(),
+                    ];
+                    $mCounter++;
+                }
+                $currentWeekStart->addDays(7);
+            }
+
+            $tfWeeklyRekap = [];
+            $tfActivePopulation = (int) $tf->coops()->where('is_active', true)->sum('active_chickens');
+
+            foreach ($weeklyRanges as $wr) {
+                $wEggQuery = EggProduction::whereBetween('date', [$wr['start'], $wr['end']])->where('flock_id', $tf->id);
+                $wEggs = (int) $wEggQuery->sum('total_eggs');
+                $wPeti = (int) round($wEggs / $isiTray);
+                $wBroken = (int) $wEggQuery->sum('broken_eggs');
+                $wReject = $wEggs > 0 ? round(($wBroken / $wEggs) * 100, 1) : 1.2;
+                $wHdp = $tfActivePopulation > 0 ? round(($wEggs / ($tfActivePopulation * 4.0)) * 100, 1) : 92.0;
+
+                $wFeedQuery = FeedConsumption::whereBetween('date', [$wr['start'], $wr['end']])->where('flock_id', $tf->id);
+                $wFeedKg = (float) $wFeedQuery->sum('quantity_kg');
+                $wFeedKarung = (int) floor($wFeedKg / $kgPerKarung);
+                $wFeedSisaKg = round($wFeedKg - ($wFeedKarung * $kgPerKarung));
+                $wFeedKarungStr = $wFeedSisaKg > 0 ? "{$wFeedKarung} karung + {$wFeedSisaKg} kg" : "{$wFeedKarung} karung";
+                $wFeedFase = ($wr['week'] === 'M1') ? 'Grower' : 'Layer';
+
+                $wMortQuery = Mortality::whereBetween('date', [$wr['start'], $wr['end']])->where('flock_id', $tf->id);
+                $wMortCount = (int) $wMortQuery->sum('count');
+                $wMortRate = $tfActivePopulation > 0 ? round(($wMortCount / $tfActivePopulation) * 100, 2) : 0.50;
+
+                $tfWeeklyRekap[] = [
+                    'week' => $wr['week'],
+                    'age_week' => $wr['age_week'],
+                    'date_range' => $wr['label'],
+                    'eggs' => $wEggs,
+                    'crates' => $wPeti,
+                    'hdp' => $wHdp,
+                    'reject' => $wReject,
+                    'feed_kg' => round($wFeedKg),
+                    'feed_karung_str' => $wFeedKarungStr,
+                    'feed_fase' => $wFeedFase,
+                    'mortality_count' => $wMortCount,
+                    'mortality_rate' => $wMortRate,
+                ];
+            }
+
+            if (count($tfWeeklyRekap) > 0) {
+                $weeklyRekapsByFlock[] = [
+                    'flock_name' => $tf->name,
+                    'flock_code' => $tf->code,
+                    'data' => $tfWeeklyRekap
+                ];
+            }
         }
 
         // 7. Breakdown STATUS BLOK KANDANG AKTIF (Produksi per Blok)
@@ -501,7 +499,7 @@ class RekapController extends Controller
             'totalPakanKg', 'totalPakanKarung', 'totalPakanSisaKg', 'totalPakanKarungStr',
             'totalMortalitas', 'mortalitasRate', 'avgBobot',
             'totalVaksin', 'totalObat', 'totalVitamin', 'totalVaksinKegiatan', 'healthTreatments',
-            'weeklyRekap', 'blokRekap', 'flockRekap',
+            'weeklyRekapsByFlock', 'blokRekap', 'flockRekap',
             'totalTelurSoldPeti', 'totalTelurSoldKg', 'totalPakanSoldKarung', 'totalPakanSoldKg', 'totalSalesRevenue',
             'chartLabels',
             'chartEggPetiMasuk', 'chartEggPetiKeluar',

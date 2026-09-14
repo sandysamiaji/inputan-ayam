@@ -466,10 +466,11 @@
         </div>
 
         <!-- Card: Rekap Mingguan -->
-        <div class="card">
-            <div class="card-title">REKAP MINGGUAN</div>
+        @foreach($weeklyRekapsByFlock as $flockRekapData)
+        <div class="card" style="margin-bottom: 12px;">
+            <div class="card-title">REKAP MINGGUAN - {{ strtoupper($flockRekapData['flock_name']) }}</div>
             <div class="weekly-grid">
-                @foreach($weeklyRekap as $w)
+                @foreach($flockRekapData['data'] as $w)
                     <div class="weekly-box">
                         <b>Umur M{{ $w['age_week'] }}</b>
                         <small>{{ $w['date_range'] }}</small>
@@ -480,6 +481,7 @@
                 @endforeach
             </div>
         </div>
+        @endforeach
 
         <!-- Card: Grafik Tren Masuk vs Keluar -->
         <div class="card">
@@ -516,10 +518,11 @@
         </div>
 
         <!-- Card: Rekap Mingguan Pakan -->
-        <div class="card">
-            <div class="card-title">REKAP MINGGUAN</div>
+        @foreach($weeklyRekapsByFlock as $flockRekapData)
+        <div class="card" style="margin-bottom: 12px;">
+            <div class="card-title">REKAP MINGGUAN - {{ strtoupper($flockRekapData['flock_name']) }}</div>
             <div class="weekly-grid">
-                @foreach($weeklyRekap as $w)
+                @foreach($flockRekapData['data'] as $w)
                     <div class="weekly-box">
                         <b>Umur M{{ $w['age_week'] }}</b>
                         <small>{{ $w['date_range'] }}</small>
@@ -530,6 +533,7 @@
                 @endforeach
             </div>
         </div>
+        @endforeach
 
         <!-- Card: Pemakaian per Blok -->
         <div class="card">
@@ -570,10 +574,11 @@
         </div>
 
         <!-- Card: Rekap Mingguan Mortalitas -->
-        <div class="card">
-            <div class="card-title">REKAP MINGGUAN</div>
+        @foreach($weeklyRekapsByFlock as $flockRekapData)
+        <div class="card" style="margin-bottom: 12px;">
+            <div class="card-title">REKAP MINGGUAN - {{ strtoupper($flockRekapData['flock_name']) }}</div>
             <div class="weekly-grid">
-                @foreach($weeklyRekap as $w)
+                @foreach($flockRekapData['data'] as $w)
                     <div class="weekly-box">
                         <b>Umur M{{ $w['age_week'] }}</b>
                         <small>{{ $w['date_range'] }}</small>
@@ -584,6 +589,7 @@
                 @endforeach
             </div>
         </div>
+        @endforeach
 
         <!-- Card: Detail per Blok -->
         <div class="card">

@@ -209,7 +209,10 @@ class RekapController extends Controller
             // Selalu tampilkan 4 box (4 minggu) mulai dari minggu yang mencakup start_date
             for ($i = 0; $i < 4; $i++) {
                 $currentWeekEnd = $currentWeekStart->copy()->addDays(6);
-                $ageWeeks = (int) $pulletInDate->diffInWeeks($currentWeekStart) + 1 + $initialAgeWeeks; 
+                
+                // Hitung umur secara sekuensial (bisa mundur ke belakang tanpa nilai mutlak)
+                $diffDaysForAge = $pulletInDate->diffInDays($currentWeekStart, false);
+                $ageWeeks = (int) floor($diffDaysForAge / 7) + $initialAgeWeeks; 
 
                 $startFmt = $currentWeekStart->format('j M');
                 $endFmt = $currentWeekEnd->format('j M');

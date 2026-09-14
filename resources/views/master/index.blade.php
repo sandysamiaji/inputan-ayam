@@ -1278,63 +1278,63 @@ document.addEventListener('DOMContentLoaded', function () {
     for (let w = 13; w <= 90; w++) {
         let gram, beratTelur, fase, pill, ket, bbMin, bbTarget, bbMax;
 
-        if (w >= 13 && w <= 17) {
-            const progress = (w - 13) / 4;
-            gram = Math.round(70 + progress * 15);
+        if (w >= 13 && w <= 15) {
+            const progress = (w - 13) / 2;
+            gram = Math.round(75 + progress * 5);
             beratTelur = '-';
-            fase = 'Pullet / Grower';
+            fase = 'Grower Akhir (Pra-Laying)';
             pill = 'GROWER';
-            ket = 'Pertumbuhan kerangka & organ tubuh';
+            ket = 'Fokus pada pembentukan kerangka tubuh dan keseragaman bobot badan ayam. Jangan menaikkan pakan terlalu ekstrem.';
             bbTarget = 1.10 + progress * 0.33;
             bbMin = bbTarget - 0.07;
             bbMax = bbTarget + 0.07;
-        } else if (w >= 18 && w <= 20) {
-            const progress = (w - 18) / 2;
-            gram = Math.round(90 + progress * 10);
-            beratTelur = Math.round(46 + progress * 9);
-            fase = 'Pra-Layer (Awal Telur)';
-            pill = 'AWAL BERTELUR';
-            ket = 'Awal produksi, adaptasi pakan layer';
+        } else if (w >= 16 && w <= 17) {
+            const progress = (w - 16) / 1;
+            gram = Math.round(85 + progress * 5);
+            beratTelur = '-';
+            fase = 'Persiapan Bertelur (Pre-Lay)';
+            pill = 'PRE-LAY';
+            ket = 'Fokus pada pembentukan kerangka tubuh dan keseragaman bobot badan ayam.';
             bbTarget = 1.48 + progress * 0.10;
             bbMin = bbTarget - 0.06;
             bbMax = bbTarget + 0.06;
-        } else if (w >= 21 && w <= 25) {
-            const progress = (w - 21) / 4;
-            gram = w === 21 ? 105 : Math.round(105 + progress * 9);
-            beratTelur = w === 21 ? 60 : +(59.5 + progress * 3).toFixed(1);
-            fase = 'Produksi Naik';
-            pill = 'PRODUKSI NAIK';
-            ket = 'Produksi meningkat pesat menuju puncak';
+        } else if (w >= 18 && w <= 20) {
+            const progress = (w - 18) / 2;
+            gram = Math.round(95 + progress * 5);
+            beratTelur = +(46 + progress * 9).toFixed(1);
+            fase = 'Awal Bertelur (Puncak Naik)';
+            pill = 'AWAL BERTELUR';
+            ket = 'Ayam membutuhkan energi dan nutrisi tertinggi untuk pembentukan telur pertama dan mencapai puncak.';
             bbTarget = 1.62 + progress * 0.10;
             bbMin = bbTarget - 0.07;
             bbMax = bbTarget + 0.07;
-        } else if (w >= 26 && w <= 45) {
-            const progress = (w - 26) / 19;
-            gram = 115;
-            beratTelur = +(63 + progress * 1.5).toFixed(1);
-            fase = 'Puncak Produksi (Peak)';
+        } else if (w >= 21 && w <= 40) {
+            const progress = (w - 21) / 19;
+            gram = Math.round(110 + progress * 5);
+            beratTelur = +(59.5 + progress * 4).toFixed(1);
+            fase = 'Puncak Produksi (Egg Peak)';
             pill = 'PUNCAK PRODUKSI';
-            ket = 'Performa telur puncak stabil (HD > 92%)';
+            ket = 'Konsumsi pakan stabil di kisaran 110-115 gram. Energi tertinggi dibutuhkan.';
             bbTarget = 1.74 + progress * 0.08;
             bbMin = bbTarget - 0.08;
             bbMax = bbTarget + 0.08;
-        } else if (w >= 46 && w <= 70) {
-            const progress = (w - 46) / 24;
-            gram = 115;
+        } else if (w >= 41 && w <= 60) {
+            const progress = (w - 41) / 19;
+            gram = Math.round(115 + progress * 5);
             beratTelur = +(64.5 + progress * 0.8).toFixed(1);
-            fase = 'Produksi Stabil';
-            pill = 'PRODUKSI STABIL';
-            ket = 'Produksi stabil, perhatikan asupan kalsium';
+            fase = 'Laying Phase 2 (Pasca Puncak)';
+            pill = 'PASCA PUNCAK';
+            ket = 'Persentase bertelur mulai menurun secara perlahan, namun ukuran telur bertambah besar.';
             bbTarget = 1.83 + progress * 0.10;
             bbMin = bbTarget - 0.09;
             bbMax = bbTarget + 0.09;
         } else {
-            const progress = (w - 71) / 19;
-            gram = Math.round(114 - progress * 2);
+            const progress = (w - 61) / 29;
+            gram = Math.round(115 + progress * 5);
             beratTelur = +(65.3 + progress * 0.7).toFixed(1);
-            fase = 'Post-Peak / Afkir';
-            pill = 'POST PEAK';
-            ket = 'Fase akhir produksi sebelum peremajaan';
+            fase = 'Laying Phase 3 (Fase Akhir) / Afkir';
+            pill = 'FASE AKHIR';
+            ket = 'Fase akhir produksi sebelum peremajaan. Persentase turun, ukuran besar.';
             bbTarget = 1.94 + progress * 0.08;
             bbMin = bbTarget - 0.09;
             bbMax = bbTarget + 0.09;

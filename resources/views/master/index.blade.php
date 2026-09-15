@@ -806,7 +806,9 @@
                     $coopCalculations[] = [
                         'coop' => $coop,
                         'kg' => $cKg,
-                        'pop' => $cPop
+                        'pop' => $cPop,
+                        'age' => $cAge,
+                        'gram' => $cGram
                     ];
                 }
                 
@@ -841,6 +843,7 @@
                         <div class="metric">
                             <small>{{ $calc['coop']->name }} ({{ number_format($calc['pop'], 0, ',', '.') }} ekor)</small>
                             <b id="feedCoop_{{ $calc['coop']->id }}">{{ number_format($calc['kg'], 1, ',', '.') }} kg</b>
+                            <div style="font-size: 9px; color: #64748b; line-height: 1.2; margin-top: 2px;">(Umur {{ $calc['age'] }} Mgg × {{ rtrim(rtrim(number_format($calc['gram'], 1, ',', '.'), '0'), ',') }} g)</div>
                         </div>
                     @endforeach
                     <div class="metric" style="background:#fef7ea; border-color:#fce0b0;">

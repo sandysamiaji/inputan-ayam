@@ -792,9 +792,26 @@
             @php
                 $initialFeedGram = (float) ($currentStd['gram_pakan'] ?? 110);
                 $initialFeedHalf = round($initialFeedGram / 2, 1);
-                $initialTotalFeedKg = round(($totalChickens * $initialFeedGram) / 1000, 1);
-                $initialKarung = floor($initialTotalFeedKg / 50);
-                $initialSisaKg = round(fmod($initialTotalFeedKg, 50), 1);
+                
+                $actualTotalFeedKg = 0;
+                $coopCalculations = [];
+                foreach($coops as $coop) {
+                    $cAge = (int) $coop->chicken_age_weeks;
+                    $cStd = \App\Services\ProductionStandardService::getStandardForWeek($cAge);
+                    $cGram = (float) ($cStd['gram_pakan'] ?? 110);
+                    $cPop = (int) $coop->active_chickens;
+                    $cKg = round(($cPop * $cGram) / 1000, 1);
+                    $actualTotalFeedKg += $cKg;
+                    
+                    $coopCalculations[] = [
+                        'coop' => $coop,
+                        'kg' => $cKg,
+                        'pop' => $cPop
+                    ];
+                }
+                
+                $initialKarung = floor($actualTotalFeedKg / 50);
+                $initialSisaKg = round(fmod($actualTotalFeedKg, 50), 1);
                 $initialKarungText = $initialKarung . ' krg' . ($initialSisaKg > 0 ? ' + ' . number_format($initialSisaKg, 1, ',', '.') . ' kg' : '');
             @endphp
             <div class="feed">
@@ -820,19 +837,15 @@
                         <small>Standar Sore</small>
                         <b id="feedSoreVal">{{ number_format($initialFeedHalf, 1, ',', '.') }} g</b>
                     </div>
-                    @foreach($coops as $coop)
-                        @php
-                            $coopPop = (int) $coop->active_chickens;
-                            $coopKg = round(($coopPop * $initialFeedGram) / 1000, 1);
-                        @endphp
+                    @foreach($coopCalculations as $calc)
                         <div class="metric">
-                            <small>{{ $coop->name }} ({{ number_format($coopPop, 0, ',', '.') }} ekor)</small>
-                            <b id="feedCoop_{{ $coop->id }}">{{ number_format($coopKg, 1, ',', '.') }} kg</b>
+                            <small>{{ $calc['coop']->name }} ({{ number_format($calc['pop'], 0, ',', '.') }} ekor)</small>
+                            <b id="feedCoop_{{ $calc['coop']->id }}">{{ number_format($calc['kg'], 1, ',', '.') }} kg</b>
                         </div>
                     @endforeach
                     <div class="metric" style="background:#fef7ea; border-color:#fce0b0;">
                         <small style="color:#b46900;">Total Pakan ({{ number_format($totalChickens, 0, ',', '.') }} ekor)</small>
-                        <b id="feedTotalVal" style="color:#92002f;">{{ number_format($initialTotalFeedKg, 1, ',', '.') }} kg ({{ $initialKarungText }})</b>
+                        <b id="feedTotalVal" style="color:#92002f;">{{ number_format($actualTotalFeedKg, 1, ',', '.') }} kg ({{ $initialKarungText }})</b>
                     </div>
                 </div>
 
@@ -1305,11 +1318,35 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 3. Lookup Dataset Standar Ayam Layer Umur 13 - 90 Minggu dari Database
     const dbStandards = {!! json_encode($weeklyStandards ?? []) !!};
-    const standards = {};
+    window.standards = {};
+
+    // Selalu generate fallback default dataset 13-90 minggu terlebih dahulu
+    for (let w = 13; w <= 90; w++) {
+        let gram = 110;
+        if (w <= 15) gram = 75 + (w - 13) * 2.5;
+        else if (w <= 17) gram = 85 + (w - 16) * 5;
+        else if (w <= 20) gram = 95 + (w - 18) * 2.5;
+        else if (w <= 40) gram = 110 + ((w - 21) / 19) * 5;
+        else gram = 115 + ((w - 41) / 49) * 5;
+
+        window.standards[w] = {
+            week: w,
+            gram: Math.round(gram),
+            beratTelur: w >= 18 ? (46 + (w - 18) * 0.5).toFixed(1) : '-',
+            hdTarget: w >= 21 ? 94 : (w >= 18 ? 50 : 0),
+            feedType: w <= 15 ? 'Grower / Pullet' : (w <= 17 ? 'Pre-Lay' : 'Layer Phase 1'),
+            fase: 'Layer',
+            pill: 'LAYER',
+            ket: 'Standar performa pakan harian',
+            bbMin: 1.66,
+            bbTarget: 1.74,
+            bbMax: 1.82
+        };
+    }
 
     if (Array.isArray(dbStandards) && dbStandards.length > 0) {
         dbStandards.forEach(std => {
-            standards[std.week] = {
+            window.standards[std.week] = {
                 week: std.week,
                 gram: parseFloat(std.feed_gram) || 0,
                 beratTelur: std.egg_weight && std.egg_weight !== '-' ? std.egg_weight : '-',
@@ -1323,30 +1360,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 bbMax: parseFloat(std.weight_max) || 0
             };
         });
-    } else {
-        // Fallback default dataset 13-90 minggu jika database belum sempat di-query
-        for (let w = 13; w <= 90; w++) {
-            let gram = 110;
-            if (w <= 15) gram = 75 + (w - 13) * 2.5;
-            else if (w <= 17) gram = 85 + (w - 16) * 5;
-            else if (w <= 20) gram = 95 + (w - 18) * 2.5;
-            else if (w <= 40) gram = 110 + ((w - 21) / 19) * 5;
-            else gram = 115 + ((w - 41) / 49) * 5;
-
-            standards[w] = {
-                week: w,
-                gram: Math.round(gram),
-                beratTelur: w >= 18 ? (46 + (w - 18) * 0.5).toFixed(1) : '-',
-                hdTarget: w >= 21 ? 94 : (w >= 18 ? 50 : 0),
-                feedType: w <= 15 ? 'Grower / Pullet' : (w <= 17 ? 'Pre-Lay' : 'Layer Phase 1'),
-                fase: 'Layer',
-                pill: 'LAYER',
-                ket: 'Standar performa pakan harian',
-                bbMin: 1.66,
-                bbTarget: 1.74,
-                bbMax: 1.82
-            };
-        }
     }
 
     // 4. Elemen-elemen DOM
@@ -1377,8 +1390,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const bbFaseVal = document.getElementById('bbFaseVal');
 
     // 5. Update Fungsi Render Standar
-    function updateStandardsView(week, source) {
-        const std = standards[week] || standards[21];
+    window.updateStandardsView = function(week, source) {
+        const std = window.standards[week] || window.standards[21];
 
         // Sinkronisasi dropdown lain jika dipicu dari salah satu
         if (source !== 'prod' && selectUmurProduksi) selectUmurProduksi.value = week;
@@ -1426,27 +1439,8 @@ document.addEventListener('DOMContentLoaded', function () {
         if (feedPagiVal) feedPagiVal.textContent = `${halfGram} g`;
         if (feedSoreVal) feedSoreVal.textContent = `${halfGram} g`;
 
-        // Hitung kg pakan per blok kandang
-        let totalKg = 0;
-        const coopsArray = Object.values(coops);
-        if (coopsArray.length > 0) {
-            coopsArray.forEach(coop => {
-                const pop = parseInt(coop.active_chickens) || 0;
-                const coopKg = (pop * std.gram) / 1000;
-                totalKg += coopKg;
-                const el = document.getElementById(`feedCoop_${coop.id}`);
-                if (el) {
-                    el.textContent = `${coopKg.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kg`;
-                }
-            });
-        }
-
-        if (feedTotalVal) {
-            const krg = Math.floor(totalKg / 50);
-            const sisa = (totalKg % 50).toFixed(1);
-            const sisaText = sisa > 0 ? ` + ${sisa} kg` : '';
-            feedTotalVal.textContent = `${totalKg.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kg (${krg} krg${sisaText})`;
-        }
+        // Catatan: feedCoop dan feedTotalVal tidak lagi di-update secara dinamis via dropdown 
+        // karena harus menampilkan total berdasarkan UMUR ASLI / REAL masing-masing blok (bukan umur yang dipilih).
         lblEditFeed.forEach(el => el.textContent = week);
 
         // Render Standar BB
@@ -1461,25 +1455,25 @@ document.addEventListener('DOMContentLoaded', function () {
     // 6. Event Listeners pada Dropdown
     if (selectUmurProduksi) {
         selectUmurProduksi.addEventListener('change', function () {
-            updateStandardsView(parseInt(this.value), 'prod');
+            window.updateStandardsView(parseInt(this.value), 'prod');
         });
     }
 
     if (selectUmurPakan) {
         selectUmurPakan.addEventListener('change', function () {
-            updateStandardsView(parseInt(this.value), 'pakan');
+            window.updateStandardsView(parseInt(this.value), 'pakan');
         });
     }
 
     if (selectUmurBB) {
         selectUmurBB.addEventListener('change', function () {
-            updateStandardsView(parseInt(this.value), 'bb');
+            window.updateStandardsView(parseInt(this.value), 'bb');
         });
     }
 
     // Inisialisasi awal saat load
     const initialWeek = parseInt(selectUmurProduksi ? selectUmurProduksi.value : 21) || 21;
-    updateStandardsView(initialWeek, 'init');
+    window.updateStandardsView(initialWeek, 'init');
 });
 
 // Helper Buka Modal Edit Minggu Terpilih dari Card Hub
@@ -1496,7 +1490,7 @@ function openModalEditSelectedWeek(type) {
         if (sel) week = parseInt(sel.value) || 21;
     }
 
-    const std = (typeof standards !== 'undefined' && standards[week]) ? standards[week] : {
+    const std = (typeof window.standards !== 'undefined' && window.standards[week]) ? window.standards[week] : {
         week: week,
         fase: 'Puncak Produksi (Egg Peak)',
         pill: 'PUNCAK PRODUKSI',
@@ -1522,6 +1516,13 @@ function openModalEditSelectedWeek(type) {
     document.getElementById('hubInputWeightTarget').value = std.bbTarget || 0;
     document.getElementById('hubInputWeightMax').value = std.bbMax || 0;
     document.getElementById('hubInputDescription').value = std.ket || '';
+
+    // Tampilkan hanya form yang sesuai
+    document.getElementById('hubGroupPhase').style.display = (type === 'prod' || type === 'all') ? 'grid' : 'none';
+    document.getElementById('hubGroupProduksi').style.display = (type === 'prod' || type === 'all') ? 'block' : 'none';
+    document.getElementById('hubGroupPakan').style.display = (type === 'pakan' || type === 'all') ? 'block' : 'none';
+    document.getElementById('hubGroupBB').style.display = (type === 'bb' || type === 'all') ? 'block' : 'none';
+    document.getElementById('hubGroupCatatan').style.display = (type === 'prod' || type === 'all') ? 'block' : 'none';
 
     const form = document.getElementById('formHubEditStandar');
     form.action = `/master/weekly-standards/${week}/update`;
@@ -1554,8 +1555,13 @@ function handleHubModalSubmit(e) {
         }
     })
     .then(res => {
-        if (!res.ok) throw new Error('Gagal menyimpan');
-        return res.json();
+        return res.json().then(data => {
+            if (!res.ok) {
+                const errors = data.errors ? Object.values(data.errors).flat().join('\\n') : data.message || 'Gagal menyimpan';
+                throw new Error(errors);
+            }
+            return data;
+        });
     })
     .then(data => {
         btn.disabled = false;
@@ -1564,8 +1570,8 @@ function handleHubModalSubmit(e) {
 
         // Update in-memory dataset
         const w = data.data.week;
-        if (typeof standards !== 'undefined') {
-            standards[w] = {
+        if (typeof window.standards !== 'undefined') {
+            window.standards[w] = {
                 week: w,
                 gram: parseFloat(data.data.feed_gram) || 0,
                 beratTelur: data.data.egg_weight && data.data.egg_weight !== '-' ? data.data.egg_weight : '-',
@@ -1578,7 +1584,7 @@ function handleHubModalSubmit(e) {
                 bbTarget: parseFloat(data.data.weight_target) || 0,
                 bbMax: parseFloat(data.data.weight_max) || 0
             };
-            updateStandardsView(w, 'modal_saved');
+            window.updateStandardsView(w, 'modal_saved');
         }
 
         alert(`Standar minggu ke-${w} berhasil diperbarui!`);
@@ -1586,7 +1592,7 @@ function handleHubModalSubmit(e) {
     .catch(err => {
         btn.disabled = false;
         btn.textContent = origText;
-        form.submit();
+        alert("Gagal Menyimpan:\\n" + err.message);
     });
 }
 </script>
@@ -1611,24 +1617,24 @@ function handleHubModalSubmit(e) {
 
         <form id="formHubEditStandar" method="POST" action="" style="margin-top:14px; display:flex; flex-direction:column; gap:12px;" onsubmit="handleHubModalSubmit(event)">
             @csrf
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div id="hubGroupPhase" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                 <div>
                     <label style="display:block; font-size:11px; font-weight:700; color:#334155; margin-bottom:4px;">Fase *</label>
-                    <input type="text" id="hubInputPhase" name="phase" required style="width:100%; padding:8px 10px; border-radius:10px; border:1px solid #cbd5e1; font-size:12px; font-weight:600; box-sizing:border-box;">
+                    <input type="text" id="hubInputPhase" name="phase" style="width:100%; padding:8px 10px; border-radius:10px; border:1px solid #cbd5e1; font-size:12px; font-weight:600; box-sizing:border-box;">
                 </div>
                 <div>
                     <label style="display:block; font-size:11px; font-weight:700; color:#334155; margin-bottom:4px;">Pill Label *</label>
-                    <input type="text" id="hubInputPill" name="pill" required style="width:100%; padding:8px 10px; border-radius:10px; border:1px solid #cbd5e1; font-size:12px; font-weight:600; box-sizing:border-box;">
+                    <input type="text" id="hubInputPill" name="pill" style="width:100%; padding:8px 10px; border-radius:10px; border:1px solid #cbd5e1; font-size:12px; font-weight:600; box-sizing:border-box;">
                 </div>
             </div>
 
             <!-- Produksi -->
-            <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px; padding:10px;">
+            <div id="hubGroupProduksi" style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px; padding:10px;">
                 <div style="font-size:11px; font-weight:800; color:#166534; margin-bottom:8px;">🥚 Standar Produksi Telur</div>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                     <div>
                         <label style="display:block; font-size:10px; font-weight:700; color:#334155; margin-bottom:3px;">Target HD (%) *</label>
-                        <input type="number" step="0.1" min="0" max="100" id="hubInputHdTarget" name="hd_target" required style="width:100%; padding:8px 10px; border-radius:10px; border:1px solid #cbd5e1; font-size:12px; font-weight:800; color:#15803d; box-sizing:border-box; background:#fff;">
+                        <input type="number" step="0.1" min="0" max="100" id="hubInputHdTarget" name="hd_target" style="width:100%; padding:8px 10px; border-radius:10px; border:1px solid #cbd5e1; font-size:12px; font-weight:800; color:#15803d; box-sizing:border-box; background:#fff;">
                     </div>
                     <div>
                         <label style="display:block; font-size:10px; font-weight:700; color:#334155; margin-bottom:3px;">Berat Telur (Gram)</label>
@@ -1638,12 +1644,12 @@ function handleHubModalSubmit(e) {
             </div>
 
             <!-- Pakan -->
-            <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:12px; padding:10px;">
+            <div id="hubGroupPakan" style="background:#fffbeb; border:1px solid #fde68a; border-radius:12px; padding:10px;">
                 <div style="font-size:11px; font-weight:800; color:#92400e; margin-bottom:8px;">🌾 Standar Kebutuhan Pakan</div>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                     <div>
                         <label style="display:block; font-size:10px; font-weight:700; color:#334155; margin-bottom:3px;">Gram / Ekor / Hari *</label>
-                        <input type="number" step="0.5" min="0" max="300" id="hubInputFeedGram" name="feed_gram" required style="width:100%; padding:8px 10px; border-radius:10px; border:1px solid #cbd5e1; font-size:12px; font-weight:800; color:#b45309; box-sizing:border-box; background:#fff;">
+                        <input type="number" step="0.5" min="0" max="300" id="hubInputFeedGram" name="feed_gram" style="width:100%; padding:8px 10px; border-radius:10px; border:1px solid #cbd5e1; font-size:12px; font-weight:800; color:#b45309; box-sizing:border-box; background:#fff;">
                     </div>
                     <div>
                         <label style="display:block; font-size:10px; font-weight:700; color:#334155; margin-bottom:3px;">Jenis Pakan (Umum)</label>
@@ -1653,25 +1659,25 @@ function handleHubModalSubmit(e) {
             </div>
 
             <!-- BB -->
-            <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; padding:10px;">
+            <div id="hubGroupBB" style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; padding:10px;">
                 <div style="font-size:11px; font-weight:800; color:#1e40af; margin-bottom:8px;">⚖ Standar Bobot Badan (BB Kg)</div>
                 <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;">
                     <div>
                         <label style="display:block; font-size:10px; font-weight:700; color:#334155; margin-bottom:3px;">Min</label>
-                        <input type="number" step="0.01" min="0" max="10" id="hubInputWeightMin" name="weight_min" required style="width:100%; padding:8px 6px; border-radius:8px; border:1px solid #cbd5e1; font-size:11px; font-weight:700; box-sizing:border-box; background:#fff;">
+                        <input type="number" step="0.01" min="0" max="10" id="hubInputWeightMin" name="weight_min" style="width:100%; padding:8px 6px; border-radius:8px; border:1px solid #cbd5e1; font-size:11px; font-weight:700; box-sizing:border-box; background:#fff;">
                     </div>
                     <div>
                         <label style="display:block; font-size:10px; font-weight:700; color:#334155; margin-bottom:3px;">Target *</label>
-                        <input type="number" step="0.01" min="0" max="10" id="hubInputWeightTarget" name="weight_target" required style="width:100%; padding:8px 6px; border-radius:8px; border:1px solid #cbd5e1; font-size:11px; font-weight:800; color:#1d4ed8; box-sizing:border-box; background:#fff;">
+                        <input type="number" step="0.01" min="0" max="10" id="hubInputWeightTarget" name="weight_target" style="width:100%; padding:8px 6px; border-radius:8px; border:1px solid #cbd5e1; font-size:11px; font-weight:800; color:#1d4ed8; box-sizing:border-box; background:#fff;">
                     </div>
                     <div>
                         <label style="display:block; font-size:10px; font-weight:700; color:#334155; margin-bottom:3px;">Max</label>
-                        <input type="number" step="0.01" min="0" max="10" id="hubInputWeightMax" name="weight_max" required style="width:100%; padding:8px 6px; border-radius:8px; border:1px solid #cbd5e1; font-size:11px; font-weight:700; box-sizing:border-box; background:#fff;">
+                        <input type="number" step="0.01" min="0" max="10" id="hubInputWeightMax" name="weight_max" style="width:100%; padding:8px 6px; border-radius:8px; border:1px solid #cbd5e1; font-size:11px; font-weight:700; box-sizing:border-box; background:#fff;">
                     </div>
                 </div>
             </div>
 
-            <div>
+            <div id="hubGroupCatatan">
                 <label style="display:block; font-size:11px; font-weight:700; color:#334155; margin-bottom:4px;">Catatan Manajemen</label>
                 <textarea id="hubInputDescription" name="description" rows="2" style="width:100%; padding:8px 10px; border-radius:10px; border:1px solid #cbd5e1; font-size:11px; box-sizing:border-box; font-family:inherit;"></textarea>
             </div>

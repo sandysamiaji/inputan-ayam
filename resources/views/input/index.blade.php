@@ -672,14 +672,14 @@
                         <select name="coop_id" id="pakanCoop" onchange="updateCoopPop('pakan')" required>
                             @foreach($coops as $coop)
                                 @php
-                                    $cStd = $coopStandards[$coop->id] ?? ['feed_gram' => 105, 'feed_type' => 'Layer'];
+                                    $cStd = $coopStandards[$coop->id] ?? ['feed_target_gram' => 105, 'tips' => 'Layer'];
                                 @endphp
                                 <option value="{{ $coop->id }}" 
                                         data-flock="{{ $coop->flock_id }}" 
                                         data-pop="{{ $coop->active_chickens }}"
                                         data-age="{{ $coop->chicken_age_weeks }}"
-                                        data-feed="{{ $cStd['feed_gram'] }}"
-                                        data-feedtype="{{ $cStd['feed_type'] }}">
+                                        data-feed="{{ $cStd['feed_target_gram'] }}"
+                                        data-feedtype="{{ $cStd['tips'] }}">
                                     {{ $coop->name }}
                                 </option>
                             @endforeach

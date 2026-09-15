@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
@@ -99,5 +99,9 @@ Route::get('/clear-cache', function() {
     \Illuminate\Support\Facades\Artisan::call('view:clear');
     \Illuminate\Support\Facades\Artisan::call('cache:clear');
     \Illuminate\Support\Facades\Artisan::call('config:clear');
-    return 'Cache server berhasil dibersihkan! Silakan kembali ke halaman sebelumnya dan refresh.';
+});
+
+Route::get('/seed-standards', function() { 
+    \Illuminate\Support\Facades\Artisan::call('db:seed', ['--class' => 'WeeklyStandardSeeder']); 
+    return 'Data standar berhasil dimasukkan ke database! Silakan kembali ke halaman sebelumnya dan refresh.'; 
 });

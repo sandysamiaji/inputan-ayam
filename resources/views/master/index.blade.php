@@ -637,7 +637,7 @@
             </a>
 
             <!-- 2. Master Flock -->
-            <a href="#card-master-flock" onclick="openSection('master-flock'); return false;" class="menu" id="menu-master-flock">
+            <a href="{{ route('master.flocks') }}" class="menu" id="menu-master-flock">
                 <div class="ico purple">🐔</div>
                 <b>Master Flock</b>
                 <p>Kloter, blok & populasi</p>

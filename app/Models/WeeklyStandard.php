@@ -43,19 +43,19 @@ class WeeklyStandard extends Model
     }
 
     /**
-     * Hitung porsi pakan pagi (50%)
+     * Hitung porsi pakan pagi (40%)
      */
     public function getFeedPagiAttribute(): float
     {
-        return round($this->feed_gram / 2, 1);
+        return round($this->feed_gram * 0.40, 1);
     }
 
     /**
-     * Hitung porsi pakan sore (50%)
+     * Hitung porsi pakan sore (60%)
      */
     public function getFeedSoreAttribute(): float
     {
-        return round($this->feed_gram / 2, 1);
+        return round($this->feed_gram * 0.60, 1);
     }
 
     /**

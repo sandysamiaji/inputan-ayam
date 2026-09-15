@@ -101,12 +101,30 @@ class InputController extends Controller
         ];
         $formattedDate = "{$carbonDate->day} " . ($bulanIndo[$carbonDate->month] ?? $carbonDate->format('F')) . " {$carbonDate->year}";
 
+        // Ambil standar pakan berdasarkan umur (dynamic)
+        $farmCondition = \App\Services\ProductionStandardService::getActiveFarmCondition($date);
+        $coopStandards = $farmCondition['coop_standards'];
+        $dynamicAges = $farmCondition['dynamic_ages'] ?? [];
+
+        foreach ($coops as $c) {
+            if (isset($dynamicAges[$c->id])) {
+                $c->chicken_age_weeks = $dynamicAges[$c->id];
+            }
+        }
+        foreach ($flocks as $f) {
+            foreach ($f->coops as $fc) {
+                if (isset($dynamicAges[$fc->id])) {
+                    $fc->chicken_age_weeks = $dynamicAges[$fc->id];
+                }
+            }
+        }
+
         return view('input.index', compact(
             'flocks', 'coops', 'totalChickens', 'type', 'date', 'formattedDate',
             'telurStokSaatIni', 'telurMasukHariIni', 'telurKeluarHariIni', 'telurTerjualKg',
             'pakanStokKg', 'pakanPemakaianHariIni',
             'kloter1Pop', 'kloter2Pop', 'mortalitasHariIni',
-            'medicines'
+            'medicines', 'farmCondition', 'coopStandards'
         ));
     }
 }

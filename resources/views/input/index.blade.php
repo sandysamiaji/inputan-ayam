@@ -671,7 +671,15 @@
                         <label>Blok</label>
                         <select name="coop_id" id="pakanCoop" onchange="updateCoopPop('pakan')" required>
                             @foreach($coops as $coop)
-                                <option value="{{ $coop->id }}" data-flock="{{ $coop->flock_id }}" data-pop="{{ $coop->active_chickens }}">
+                                @php
+                                    $cStd = $coopStandards[$coop->id] ?? ['feed_gram' => 105, 'feed_type' => 'Layer'];
+                                @endphp
+                                <option value="{{ $coop->id }}" 
+                                        data-flock="{{ $coop->flock_id }}" 
+                                        data-pop="{{ $coop->active_chickens }}"
+                                        data-age="{{ $coop->chicken_age_weeks }}"
+                                        data-feed="{{ $cStd['feed_gram'] }}"
+                                        data-feedtype="{{ $cStd['feed_type'] }}">
                                     {{ $coop->name }}
                                 </option>
                             @endforeach
@@ -705,10 +713,10 @@
                     <label>Standar Pakan Master</label>
                     <div class="standard">
                         <div class="stdtop">
-                            <b>Umur 21 minggu · Layer</b>
+                            <b id="pakanStdTitle">Umur 21 minggu · Layer</b>
                             <span>✓ Acuan Master</span>
                         </div>
-                        <div class="stdvalue">105 <small>gram / ekor / hari</small></div>
+                        <div class="stdvalue"><span id="pakanStdGram">105</span> <small>gram / ekor / hari</small></div>
                         <div class="calc">
                             <div>
                                 <small>Standar Blok</small>
@@ -745,26 +753,6 @@
                 <a href="{{ route('dashboard') }}" class="btn-cancel">Batal</a>
                 <div class="info-note">Standar gram/ekor berasal dari Master berdasarkan umur ayam. Petugas tetap memasukkan jumlah aktual yang benar-benar diberikan.</div>
             </form>
-        </section>
-
-        <!-- Stok Terkait Pakan -->
-        <section class="form-card">
-            <div class="cardhead">
-                <h2>Stok Pakan</h2>
-                <span class="tag">Real-time</span>
-            </div>
-            <div class="stock-row">
-                <span>Stok Gudang Pakan</span>
-                <b class="orange">{{ number_format($pakanStokKg, 0, ',', '.') }} Kg</b>
-            </div>
-            <div class="stock-row">
-                <span>Pemakaian Hari Ini</span>
-                <b class="green">{{ number_format($pakanPemakaianHariIni, 0, ',', '.') }} Kg</b>
-            </div>
-            <div class="stock-row">
-                <span>Setelah Transaksi</span>
-                <b id="pakanSetelahTx">{{ number_format(max(0, $pakanStokKg - 40), 0, ',', '.') }} Kg</b>
-            </div>
         </section>
     </div>
 
@@ -1106,25 +1094,38 @@ function calcProduksi() {
 
 // 5. Calculations for Pemakaian Pakan
 function calcPakan() {
+    const coopSelect = document.getElementById('pakanCoop');
+    const selectedOpt = coopSelect.options[coopSelect.selectedIndex];
+
     const popText = document.getElementById('pakanPopulasi').value;
     const pop = parseInt(popText) || 762;
 
-    // Standar 105 g/ekor/hari
-    const stdBlokKg = ((pop * 105) / 1000).toFixed(1);
-    const halfKg = (stdBlokKg / 2).toFixed(1);
+    const feedGram = selectedOpt ? parseFloat(selectedOpt.getAttribute('data-feed') || 105) : 105;
+    const age = selectedOpt ? selectedOpt.getAttribute('data-age') : 21;
+    const feedType = selectedOpt ? selectedOpt.getAttribute('data-feedtype') : 'Layer';
 
-    document.getElementById('pakanStdBlok').textContent = ('' + stdBlokKg).replace('.', ',') + ' Kg';
-    document.getElementById('pakanSudahPagi').textContent = ('' + halfKg).replace('.', ',') + ' Kg';
-    document.getElementById('pakanSisaHari').textContent = ('' + halfKg).replace('.', ',') + ' Kg';
+    document.getElementById('pakanStdTitle').textContent = `Umur ${age} minggu · ${feedType}`;
+    document.getElementById('pakanStdGram').textContent = feedGram.toString().replace('.', ',');
 
-    calcPakanSisa();
+    const stdBlokKg = (pop * feedGram) / 1000;
+    const pagiKg = (stdBlokKg * 0.40).toFixed(1);
+    const soreKg = (stdBlokKg * 0.60).toFixed(1);
+
+    const karung = Math.floor(stdBlokKg / 50);
+    const sisaKg = (stdBlokKg % 50).toFixed(1);
+    
+    let standarStr = stdBlokKg.toFixed(1).replace('.', ',') + ' Kg';
+    if (karung > 0) {
+        standarStr += ` (${karung} Karung${sisaKg > 0 ? ' + ' + sisaKg.replace('.', ',') + ' Kg' : ''})`;
+    }
+
+    document.getElementById('pakanStdBlok').textContent = standarStr;
+    document.getElementById('pakanSudahPagi').textContent = ('' + pagiKg).replace('.', ',') + ' Kg';
+    document.getElementById('pakanSisaHari').textContent = ('' + soreKg).replace('.', ',') + ' Kg';
 }
 
 function calcPakanSisa() {
-    const stokAwal = {{ $pakanStokKg }};
-    const aktual = parseFloat(document.getElementById('pakanAktual').value) || 0;
-    const sisa = Math.max(0, stokAwal - aktual);
-    document.getElementById('pakanSetelahTx').textContent = Math.round(sisa).toLocaleString('id-ID') + ' Kg';
+    // Fungsi tidak diperlukan lagi karena Stok Terkait dihapus
 }
 
 // 6. Calculations for Mortalitas

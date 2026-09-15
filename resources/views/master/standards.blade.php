@@ -144,8 +144,8 @@
                             @elseif($activeTab === 'pakan')
                                 <th class="py-3 px-3.5 whitespace-nowrap">Jenis Pakan</th>
                                 <th class="py-3 px-3.5 whitespace-nowrap">Pakan Harian (g/ekor)</th>
-                                <th class="py-3 px-3.5 whitespace-nowrap">Porsi Pagi (50%)</th>
-                                <th class="py-3 px-3.5 whitespace-nowrap">Porsi Sore (50%)</th>
+                                <th class="py-3 px-3.5 whitespace-nowrap">Porsi Pagi (40%)</th>
+                                <th class="py-3 px-3.5 whitespace-nowrap">Porsi Sore (60%)</th>
                                 <th class="py-3 px-3.5 whitespace-nowrap">Estimasi Farm (Kg)</th>
                             @elseif($activeTab === 'bb')
                                 <th class="py-3 px-3.5 whitespace-nowrap">BB Minimum</th>

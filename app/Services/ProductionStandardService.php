@@ -176,10 +176,11 @@ class ProductionStandardService
         if ($coop->flock && $coop->flock->start_date) {
             $startDate = \Carbon\Carbon::parse($coop->flock->start_date);
             $weeks = (int) $startDate->diffInWeeks($refDate);
-            return max(1, $weeks); // minimal 1 minggu
+            $initialAge = (int) $coop->flock->initial_age_weeks;
+            return max(1, $initialAge + $weeks);
         }
 
-        // Fallback: hitung dari chicken_age_weeks statis + selisih hari dari updated_at
+        // Fallback: hitung dari chicken_age_weeks statis
         return max(1, (int) $coop->chicken_age_weeks);
     }
 

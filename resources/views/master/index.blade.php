@@ -615,15 +615,7 @@
             </div>
         </div>
 
-        <!-- Hero Card -->
-        <section class="hero">
-            <span class="tag">✦ PUSAT MASTER FARM</span>
-            <h2>{{ $farmName }}</h2>
-            <p>Master menyimpan seluruh data acuan. Data ini dibaca oleh Input, Rekap dan Dashboard untuk perhitungan otomatis.</p>
-            <a href="{{ route('master.info-farm') }}" class="hero-btn">
-                <span>✎ Edit Info Farm</span>
-            </a>
-        </section>
+
 
         <!-- SECTION: Data Utama (7 Menus) -->
         <div class="label">Data Utama</div>

@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Flock;
 use App\Models\Coop;
+use App\Models\WeeklyStandard;
+use App\Services\ProductionStandardService;
 use Carbon\Carbon;
 
 class MasterController extends Controller
@@ -67,8 +69,11 @@ class MasterController extends Controller
             ];
         });
 
+        $weeklyStandards = WeeklyStandard::ordered()->get();
+        $currentStd = ProductionStandardService::getStandardForWeek($avgAgeWeeks);
+
         return view('master.index', compact(
-            'flocks', 'coops', 'totalChickens', 'avgAgeWeeks', 'farmName', 'motivation', 'systemSettings', 'medicines', 'coopSummary', 'section'
+            'flocks', 'coops', 'totalChickens', 'avgAgeWeeks', 'farmName', 'motivation', 'systemSettings', 'medicines', 'coopSummary', 'weeklyStandards', 'currentStd', 'section'
         ));
     }
 
@@ -282,10 +287,22 @@ class MasterController extends Controller
     }
 
     /**
-     * 4. Halaman Standar Produksi & Pakan
+     * 4. Halaman Master Standar Produksi, Pakan & Bobot Badan
      */
-    public function standards()
+    public function standards(Request $request, $defaultTab = 'produksi')
     {
+        $activeTab = $request->query('tab', $defaultTab);
+        if (!in_array($activeTab, ['produksi', 'pakan', 'bb', 'global'])) {
+            $activeTab = 'produksi';
+        }
+
+        $weeklyStandards = WeeklyStandard::ordered()->get();
+        $coops = Coop::where('is_active', true)->get();
+        $totalChickens = (int) $coops->sum('active_chickens');
+        $avgAgeWeeks = (int) ($coops->avg('chicken_age_weeks') ?: 21);
+
+        $currentStd = ProductionStandardService::getStandardForWeek($avgAgeWeeks);
+
         $standards = [
             'standard_production_egg_crates' => $this->getSetting('standard_production_egg_crates', '850'),
             'standard_feed_gram_per_chicken' => $this->getSetting('standard_feed_gram_per_chicken', '115'),
@@ -293,11 +310,92 @@ class MasterController extends Controller
             'standard_weight_tolerance' => $this->getSetting('standard_weight_tolerance', '0.05'),
         ];
 
-        return view('master.standards', compact('standards'));
+        $systemSettings = [
+            'isi_tray' => $this->getSetting('isi_tray', '30 butir'),
+            'berat_telur' => $this->getSetting('berat_telur', '0,06 kg'),
+            'berat_per_karung' => $this->getSetting('berat_per_karung', '50 kg'),
+            'hd_target' => $this->getSetting('hd_target', '95%'),
+            'hd_warning' => $this->getSetting('hd_warning', '90%'),
+            'hd_minimum' => $this->getSetting('hd_minimum', '88%'),
+            'reject_maximum' => $this->getSetting('reject_maximum', '2%'),
+        ];
+
+        return view('master.standards', compact(
+            'weeklyStandards',
+            'coops',
+            'totalChickens',
+            'avgAgeWeeks',
+            'currentStd',
+            'standards',
+            'systemSettings',
+            'activeTab'
+        ));
     }
 
     /**
-     * Simpan standar
+     * Standar Produksi (Tab: Produksi)
+     */
+    public function standarProduksi(Request $request)
+    {
+        return $this->standards($request, 'produksi');
+    }
+
+    /**
+     * Standar Pakan (Tab: Pakan)
+     */
+    public function standarPakan(Request $request)
+    {
+        return $this->standards($request, 'pakan');
+    }
+
+    /**
+     * Standar BB (Tab: BB)
+     */
+    public function standarBB(Request $request)
+    {
+        return $this->standards($request, 'bb');
+    }
+
+    /**
+     * Simpan pembaruan Standar Mingguan (Ajax / Form Submit)
+     */
+    public function updateWeeklyStandard(Request $request, $week)
+    {
+        $validated = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'hd_target' => 'required|numeric|min:0|max:100',
+            'egg_weight' => 'nullable|string|max:20',
+            'feed_gram' => 'required|numeric|min:0|max:300',
+            'feed_type' => 'nullable|string|max:100',
+            'weight_min' => 'required|numeric|min:0|max:10',
+            'weight_target' => 'required|numeric|min:0|max:10',
+            'weight_max' => 'required|numeric|min:0|max:10',
+            'phase' => 'nullable|string|max:255',
+            'pill' => 'nullable|string|max:50',
+            'description' => 'nullable|string|max:1000',
+        ])->validate();
+
+        $record = WeeklyStandard::updateOrCreate(
+            ['week' => (int) $week],
+            $validated
+        );
+
+        // Invalidate service cache
+        ProductionStandardService::getStandardForWeek((int) $week);
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Master standar minggu ke-{$week} berhasil diperbarui!",
+                'data' => $record,
+            ]);
+        }
+
+        $tab = $request->input('from_tab', 'produksi');
+        return redirect()->route('master.standards', ['tab' => $tab])->with('success', "Master standar minggu ke-{$week} berhasil disimpan!");
+    }
+
+    /**
+     * Simpan standar parameter global
      */
     public function updateStandards(Request $request)
     {
@@ -312,20 +410,7 @@ class MasterController extends Controller
             $this->setSetting($k, (string) $v);
         }
 
-        return back()->with('success', 'Standar operasional kandang berhasil disimpan!');
-    }
-
-    /**
-     * 5. Halaman Standar BB
-     */
-    public function standardBB()
-    {
-        $standards = [
-            'standard_avg_weight_kg' => $this->getSetting('standard_avg_weight_kg', '1.62'),
-            'standard_weight_tolerance' => $this->getSetting('standard_weight_tolerance', '0.05'),
-        ];
-
-        return view('master.standards', compact('standards'));
+        return back()->with('success', 'Parameter standar operasional kandang berhasil disimpan!');
     }
 
     /**
@@ -388,7 +473,7 @@ class MasterController extends Controller
     }
 
     /**
-     * 7. Halaman Pengaturan Aplikasi
+     * 7. Halaman Pengaturan Aplikasii
      */
     public function settings()
     {

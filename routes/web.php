@@ -79,9 +79,10 @@ Route::prefix('master')->name('master.')->group(function () {
     Route::get('/medicines', [MasterController::class, 'medicines'])->name('medicines');
     Route::get('/settings', [MasterController::class, 'settings'])->name('settings');
     Route::post('/settings/update', [MasterController::class, 'updateSettings'])->name('settings.update');
-    Route::get('/standar-produksi', function() { return redirect('/master#card-standar-produksi'); })->name('standar-produksi');
-    Route::get('/standar-pakan', function() { return redirect('/master#card-standar-pakan'); })->name('standar-pakan');
-    Route::get('/standar-bb', function() { return redirect('/master#card-standar-bb'); })->name('standar-bb');
+    Route::get('/standar-produksi', [MasterController::class, 'standarProduksi'])->name('standar-produksi');
+    Route::get('/standar-pakan', [MasterController::class, 'standarPakan'])->name('standar-pakan');
+    Route::get('/standar-bb', [MasterController::class, 'standarBB'])->name('standar-bb');
+    Route::post('/weekly-standards/{week}/update', [MasterController::class, 'updateWeeklyStandard'])->name('weekly-standards.update');
     Route::get('/vaksin-obat', function() { return redirect('/master#card-vaksin-obat'); })->name('vaksin-obat');
     Route::get('/pengaturan', function() { return redirect('/master#card-pengaturan'); })->name('pengaturan');
 });

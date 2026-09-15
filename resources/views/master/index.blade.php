@@ -706,11 +706,11 @@
                     <h3>Standar Produksi</h3>
                     <small>Master per umur · 13 sampai 90 minggu</small>
                 </div>
-                <a href="{{ route('master.standards') }}" class="chev" title="Kelola Standar">›</a>
+                <a href="{{ route('master.standar-produksi') }}" class="chev" title="Buka Master Tabel Standar Produksi">›</a>
             </div>
 
             <div class="selectbox">
-                <label>PILIH UMUR UNTUK DILIHAT / DIEDIT</label>
+                <label>PILIH UMUR UNTUK DILIHAT</label>
                 <select id="selectUmurProduksi">
                     @for($w = 13; $w <= 90; $w++)
                         <option value="{{ $w }}" {{ $w == $avgAgeWeeks ? 'selected' : '' }}>{{ $w }} minggu</option>
@@ -725,25 +725,34 @@
                 </div>
                 <div class="metrics">
                     <div class="metric">
+                        <small>Target Hen Day</small>
+                        <b id="prodHdTargetText">90.0%</b>
+                    </div>
+                    <div class="metric">
                         <small>Berat Telur</small>
                         <b id="prodBeratTelur">60 g</b>
                     </div>
                     <div class="metric">
                         <small>Fase</small>
-                        <b id="prodFaseText">Produksi Naik</b>
+                        <b id="prodFaseText">Puncak Produksi</b>
                     </div>
                     <div class="metric">
-                        <small>Keterangan</small>
-                        <b id="prodKetText">Produksi meningkat pesat menuju puncak</b>
-                    </div>
-                    <div class="metric">
-                        <small>Record Master</small>
-                        <b>Aktif</b>
+                        <small>Jenis Pakan</small>
+                        <b id="prodFeedTypeText">Layer Phase 1</b>
                     </div>
                 </div>
-                <a href="{{ route('master.standards') }}" class="edit" id="btnEditProduksi">
-                    ✎ Edit Standar Minggu <span class="lbl-edit-prod">{{ $avgAgeWeeks }}</span>
-                </a>
+                <div class="metric" style="margin-top:8px; width:100%;">
+                    <small>Catatan Manajemen</small>
+                    <span id="prodKetText" style="font-size:11px; font-weight:600; color:#475569; display:block; margin-top:3px;">Masa puncak bertelur. Konsumsi pakan stabil.</span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:8px; margin-top:12px;">
+                    <button type="button" onclick="openModalEditSelectedWeek('prod')" class="edit" id="btnEditProduksi" style="width:100%; text-align:center; background:#fff; color:#92002f; border:1.5px solid #92002f; font-weight:bold; cursor:pointer;">
+                        ✎ Edit Standar Minggu <span class="lbl-edit-prod">{{ $avgAgeWeeks }}</span>
+                    </button>
+                    <a href="{{ route('master.standar-produksi') }}" class="edit" style="width:100%; text-align:center; background:#92002f; color:#fff; font-weight:bold;">
+                        📊 Buka Master Tabel Seluruh Minggu (13–90)
+                    </a>
+                </div>
             </div>
         </section>
     </div>
@@ -768,7 +777,7 @@
                     <h3>Standar Pakan</h3>
                     <small>Master per umur · 13 sampai 90 minggu</small>
                 </div>
-                <a href="{{ route('master.standards') }}" class="chev" title="Kelola Standar Pakan">›</a>
+                <a href="{{ route('master.standar-pakan') }}" class="chev" title="Buka Master Tabel Standar Pakan">›</a>
             </div>
 
             <div class="selectbox">
@@ -780,6 +789,14 @@
                 </select>
             </div>
 
+            @php
+                $initialFeedGram = (float) ($currentStd['gram_pakan'] ?? 110);
+                $initialFeedHalf = round($initialFeedGram / 2, 1);
+                $initialTotalFeedKg = round(($totalChickens * $initialFeedGram) / 1000, 1);
+                $initialKarung = floor($initialTotalFeedKg / 50);
+                $initialSisaKg = round(fmod($initialTotalFeedKg, 50), 1);
+                $initialKarungText = $initialKarung . ' krg' . ($initialSisaKg > 0 ? ' + ' . number_format($initialSisaKg, 1, ',', '.') . ' kg' : '');
+            @endphp
             <div class="feed">
                 <div class="feedtop">
                     <div class="feedicon">🌾</div>
@@ -790,34 +807,43 @@
                 </div>
                 <div class="feedval">
                     <span>Gram / ekor / hari</span>
-                    <strong id="feedGramVal">105 g</strong>
+                    <strong id="feedGramVal">{{ number_format($initialFeedGram, 1, ',', '.') }} g</strong>
                 </div>
 
                 <!-- Dynamic Block Calculations Grid -->
                 <div class="metrics" id="feedMetricsGrid">
                     <div class="metric">
                         <small>Standar Pagi</small>
-                        <b id="feedPagiVal">52,5 g</b>
+                        <b id="feedPagiVal">{{ number_format($initialFeedHalf, 1, ',', '.') }} g</b>
                     </div>
                     <div class="metric">
                         <small>Standar Sore</small>
-                        <b id="feedSoreVal">52,5 g</b>
+                        <b id="feedSoreVal">{{ number_format($initialFeedHalf, 1, ',', '.') }} g</b>
                     </div>
                     @foreach($coops as $coop)
+                        @php
+                            $coopPop = (int) $coop->active_chickens;
+                            $coopKg = round(($coopPop * $initialFeedGram) / 1000, 1);
+                        @endphp
                         <div class="metric">
-                            <small>{{ $coop->name }}</small>
-                            <b id="feedCoop_{{ $coop->id }}">-</b>
+                            <small>{{ $coop->name }} ({{ number_format($coopPop, 0, ',', '.') }} ekor)</small>
+                            <b id="feedCoop_{{ $coop->id }}">{{ number_format($coopKg, 1, ',', '.') }} kg</b>
                         </div>
                     @endforeach
                     <div class="metric" style="background:#fef7ea; border-color:#fce0b0;">
-                        <small style="color:#b46900;">Total Pakan</small>
-                        <b id="feedTotalVal" style="color:#92002f;">-</b>
+                        <small style="color:#b46900;">Total Pakan ({{ number_format($totalChickens, 0, ',', '.') }} ekor)</small>
+                        <b id="feedTotalVal" style="color:#92002f;">{{ number_format($initialTotalFeedKg, 1, ',', '.') }} kg ({{ $initialKarungText }})</b>
                     </div>
                 </div>
 
-                <a href="{{ route('master.standards') }}" class="edit" id="btnEditPakan">
-                    ✎ Edit Standar Pakan Minggu <span class="lbl-edit-feed">{{ $avgAgeWeeks }}</span>
-                </a>
+                <div style="display:flex; flex-direction:column; gap:8px; margin-top:12px;">
+                    <button type="button" onclick="openModalEditSelectedWeek('pakan')" class="edit" id="btnEditPakan" style="width:100%; text-align:center; background:#fff; color:#b97400; border:1.5px solid #f59e0b; font-weight:bold; cursor:pointer;">
+                        ✎ Edit Standar Pakan Minggu <span class="lbl-edit-feed">{{ $avgAgeWeeks }}</span>
+                    </button>
+                    <a href="{{ route('master.standar-pakan') }}" class="edit" style="width:100%; text-align:center; background:#92002f; color:#fff; font-weight:bold;">
+                        📊 Buka Master Tabel Lengkap & Panduan Pakan
+                    </a>
+                </div>
             </div>
 
             <div class="note">
@@ -846,7 +872,7 @@
                     <h3>Standar BB</h3>
                     <small>Master minimum · target · maksimum per umur</small>
                 </div>
-                <a href="{{ route('master.standards') }}" class="chev" title="Kelola Standar BB">›</a>
+                <a href="{{ route('master.standar-bb') }}" class="chev" title="Buka Master Tabel Standar BB">›</a>
             </div>
 
             <div class="selectbox">
@@ -877,9 +903,14 @@
                 </div>
             </div>
 
-            <a href="{{ route('master.standards') }}" class="edit">
-                ✎ Edit Standar BB
-            </a>
+            <div style="display:flex; flex-direction:column; gap:8px; margin-top:12px;">
+                <button type="button" onclick="openModalEditSelectedWeek('bb')" class="edit" id="btnEditBB" style="width:100%; text-align:center; background:#fff; color:#2563eb; border:1.5px solid #3b82f6; font-weight:bold; cursor:pointer;">
+                    ✎ Edit Standar BB Minggu <span class="lbl-edit-bb">{{ $avgAgeWeeks }}</span>
+                </button>
+                <a href="{{ route('master.standar-bb') }}" class="edit" style="width:100%; text-align:center; background:#92002f; color:#fff; font-weight:bold;">
+                    📊 Buka Master Tabel Lengkap & Evaluasi BB
+                </a>
+            </div>
         </section>
     </div>
 
@@ -1272,85 +1303,50 @@ document.addEventListener('DOMContentLoaded', function () {
     // 2. Data Populasi Blok Kandang Riil dari Database
     const coops = {!! json_encode($coopSummary) !!};
 
-    // 3. Lookup Dataset Standar Ayam Layer Umur 13 - 90 Minggu
+    // 3. Lookup Dataset Standar Ayam Layer Umur 13 - 90 Minggu dari Database
+    const dbStandards = {!! json_encode($weeklyStandards ?? []) !!};
     const standards = {};
 
-    for (let w = 13; w <= 90; w++) {
-        let gram, beratTelur, fase, pill, ket, bbMin, bbTarget, bbMax;
+    if (Array.isArray(dbStandards) && dbStandards.length > 0) {
+        dbStandards.forEach(std => {
+            standards[std.week] = {
+                week: std.week,
+                gram: parseFloat(std.feed_gram) || 0,
+                beratTelur: std.egg_weight && std.egg_weight !== '-' ? std.egg_weight : '-',
+                hdTarget: parseFloat(std.hd_target) || 0,
+                feedType: std.feed_type || 'Layer Phase 1',
+                fase: std.phase,
+                pill: std.pill,
+                ket: std.description,
+                bbMin: parseFloat(std.weight_min) || 0,
+                bbTarget: parseFloat(std.weight_target) || 0,
+                bbMax: parseFloat(std.weight_max) || 0
+            };
+        });
+    } else {
+        // Fallback default dataset 13-90 minggu jika database belum sempat di-query
+        for (let w = 13; w <= 90; w++) {
+            let gram = 110;
+            if (w <= 15) gram = 75 + (w - 13) * 2.5;
+            else if (w <= 17) gram = 85 + (w - 16) * 5;
+            else if (w <= 20) gram = 95 + (w - 18) * 2.5;
+            else if (w <= 40) gram = 110 + ((w - 21) / 19) * 5;
+            else gram = 115 + ((w - 41) / 49) * 5;
 
-        if (w >= 13 && w <= 15) {
-            const progress = (w - 13) / 2;
-            gram = Math.round(75 + progress * 5);
-            beratTelur = '-';
-            fase = 'Grower Akhir (Pra-Laying)';
-            pill = 'GROWER';
-            ket = 'Fokus pada pembentukan kerangka tubuh dan keseragaman bobot badan ayam. Jangan menaikkan pakan terlalu ekstrem.';
-            bbTarget = 1.10 + progress * 0.33;
-            bbMin = bbTarget - 0.07;
-            bbMax = bbTarget + 0.07;
-        } else if (w >= 16 && w <= 17) {
-            const progress = (w - 16) / 1;
-            gram = Math.round(85 + progress * 5);
-            beratTelur = '-';
-            fase = 'Persiapan Bertelur (Pre-Lay)';
-            pill = 'PRE-LAY';
-            ket = 'Fokus pada pembentukan kerangka tubuh dan keseragaman bobot badan ayam.';
-            bbTarget = 1.48 + progress * 0.10;
-            bbMin = bbTarget - 0.06;
-            bbMax = bbTarget + 0.06;
-        } else if (w >= 18 && w <= 20) {
-            const progress = (w - 18) / 2;
-            gram = Math.round(95 + progress * 5);
-            beratTelur = +(46 + progress * 9).toFixed(1);
-            fase = 'Awal Bertelur (Puncak Naik)';
-            pill = 'AWAL BERTELUR';
-            ket = 'Ayam membutuhkan energi dan nutrisi tertinggi untuk pembentukan telur pertama dan mencapai puncak.';
-            bbTarget = 1.62 + progress * 0.10;
-            bbMin = bbTarget - 0.07;
-            bbMax = bbTarget + 0.07;
-        } else if (w >= 21 && w <= 40) {
-            const progress = (w - 21) / 19;
-            gram = Math.round(110 + progress * 5);
-            beratTelur = +(59.5 + progress * 4).toFixed(1);
-            fase = 'Puncak Produksi (Egg Peak)';
-            pill = 'PUNCAK PRODUKSI';
-            ket = 'Konsumsi pakan stabil di kisaran 110-115 gram. Energi tertinggi dibutuhkan.';
-            bbTarget = 1.74 + progress * 0.08;
-            bbMin = bbTarget - 0.08;
-            bbMax = bbTarget + 0.08;
-        } else if (w >= 41 && w <= 60) {
-            const progress = (w - 41) / 19;
-            gram = Math.round(115 + progress * 5);
-            beratTelur = +(64.5 + progress * 0.8).toFixed(1);
-            fase = 'Laying Phase 2 (Pasca Puncak)';
-            pill = 'PASCA PUNCAK';
-            ket = 'Persentase bertelur mulai menurun secara perlahan, namun ukuran telur bertambah besar.';
-            bbTarget = 1.83 + progress * 0.10;
-            bbMin = bbTarget - 0.09;
-            bbMax = bbTarget + 0.09;
-        } else {
-            const progress = (w - 61) / 29;
-            gram = Math.round(115 + progress * 5);
-            beratTelur = +(65.3 + progress * 0.7).toFixed(1);
-            fase = 'Laying Phase 3 (Fase Akhir) / Afkir';
-            pill = 'FASE AKHIR';
-            ket = 'Fase akhir produksi sebelum peremajaan. Persentase turun, ukuran besar.';
-            bbTarget = 1.94 + progress * 0.08;
-            bbMin = bbTarget - 0.09;
-            bbMax = bbTarget + 0.09;
+            standards[w] = {
+                week: w,
+                gram: Math.round(gram),
+                beratTelur: w >= 18 ? (46 + (w - 18) * 0.5).toFixed(1) : '-',
+                hdTarget: w >= 21 ? 94 : (w >= 18 ? 50 : 0),
+                feedType: w <= 15 ? 'Grower / Pullet' : (w <= 17 ? 'Pre-Lay' : 'Layer Phase 1'),
+                fase: 'Layer',
+                pill: 'LAYER',
+                ket: 'Standar performa pakan harian',
+                bbMin: 1.66,
+                bbTarget: 1.74,
+                bbMax: 1.82
+            };
         }
-
-        standards[w] = {
-            week: w,
-            gram: gram,
-            beratTelur: beratTelur,
-            fase: fase,
-            pill: pill,
-            ket: ket,
-            bbMin: bbMin,
-            bbTarget: bbTarget,
-            bbMax: bbMax
-        };
     }
 
     // 4. Elemen-elemen DOM
@@ -1410,6 +1406,14 @@ document.addEventListener('DOMContentLoaded', function () {
         if (prodBeratTelur) {
             prodBeratTelur.textContent = std.beratTelur !== '-' ? `${std.beratTelur} g` : '—';
         }
+        const prodHdTargetText = document.getElementById('prodHdTargetText');
+        const prodFeedTypeText = document.getElementById('prodFeedTypeText');
+        if (prodHdTargetText) {
+            prodHdTargetText.textContent = std.hdTarget !== undefined ? `${parseFloat(std.hdTarget).toFixed(1)}%` : '0.0%';
+        }
+        if (prodFeedTypeText) {
+            prodFeedTypeText.textContent = std.feedType || 'Layer Phase 1';
+        }
         if (prodFaseText) prodFaseText.textContent = std.fase;
         if (prodKetText) prodKetText.textContent = std.ket;
         lblEditProd.forEach(el => el.textContent = week);
@@ -1424,17 +1428,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Hitung kg pakan per blok kandang
         let totalKg = 0;
-        coops.forEach(coop => {
-            const coopKg = (coop.active_chickens * std.gram) / 1000;
-            totalKg += coopKg;
-            const el = document.getElementById(`feedCoop_${coop.id}`);
-            if (el) {
-                el.textContent = `${coopKg.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg`;
-            }
-        });
+        if (Array.isArray(coops) && coops.length > 0) {
+            coops.forEach(coop => {
+                const pop = parseInt(coop.active_chickens) || 0;
+                const coopKg = (pop * std.gram) / 1000;
+                totalKg += coopKg;
+                const el = document.getElementById(`feedCoop_${coop.id}`);
+                if (el) {
+                    el.textContent = `${coopKg.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kg`;
+                }
+            });
+        }
 
         if (feedTotalVal) {
-            feedTotalVal.textContent = `${totalKg.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg`;
+            const krg = Math.floor(totalKg / 50);
+            const sisa = (totalKg % 50).toFixed(1);
+            const sisaText = sisa > 0 ? ` + ${sisa} kg` : '';
+            feedTotalVal.textContent = `${totalKg.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kg (${krg} krg${sisaText})`;
         }
         lblEditFeed.forEach(el => el.textContent = week);
 
@@ -1443,6 +1453,8 @@ document.addEventListener('DOMContentLoaded', function () {
         if (bbTargetVal) bbTargetVal.textContent = `${std.bbTarget.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg`;
         if (bbMaxVal) bbMaxVal.textContent = `${std.bbMax.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg`;
         if (bbFaseVal) bbFaseVal.textContent = std.fase;
+        const lblEditBB = document.querySelectorAll('.lbl-edit-bb');
+        lblEditBB.forEach(el => el.textContent = week);
     }
 
     // 6. Event Listeners pada Dropdown
@@ -1468,5 +1480,206 @@ document.addEventListener('DOMContentLoaded', function () {
     const initialWeek = parseInt(selectUmurProduksi ? selectUmurProduksi.value : 21) || 21;
     updateStandardsView(initialWeek, 'init');
 });
+
+// Helper Buka Modal Edit Minggu Terpilih dari Card Hub
+function openModalEditSelectedWeek(type) {
+    let week = 21;
+    if (type === 'prod') {
+        const sel = document.getElementById('selectUmurProduksi');
+        if (sel) week = parseInt(sel.value) || 21;
+    } else if (type === 'pakan') {
+        const sel = document.getElementById('selectUmurPakan');
+        if (sel) week = parseInt(sel.value) || 21;
+    } else if (type === 'bb') {
+        const sel = document.getElementById('selectUmurBB');
+        if (sel) week = parseInt(sel.value) || 21;
+    }
+
+    const std = (typeof standards !== 'undefined' && standards[week]) ? standards[week] : {
+        week: week,
+        fase: 'Puncak Produksi (Egg Peak)',
+        pill: 'PUNCAK PRODUKSI',
+        hdTarget: 90,
+        beratTelur: '59.5',
+        gram: 110,
+        feedType: 'Layer Phase 1',
+        bbMin: 1.66,
+        bbTarget: 1.74,
+        bbMax: 1.82,
+        ket: ''
+    };
+
+    document.getElementById('hubModalWeekBadge').textContent = week;
+    document.getElementById('hubModalWeekTitle').textContent = week;
+    document.getElementById('hubInputPhase').value = std.fase || '';
+    document.getElementById('hubInputPill').value = std.pill || '';
+    document.getElementById('hubInputHdTarget').value = std.hdTarget !== undefined ? std.hdTarget : 0;
+    document.getElementById('hubInputEggWeight').value = std.beratTelur !== '-' ? std.beratTelur : '';
+    document.getElementById('hubInputFeedGram').value = std.gram || 0;
+    document.getElementById('hubInputFeedType').value = std.feedType || '';
+    document.getElementById('hubInputWeightMin').value = std.bbMin || 0;
+    document.getElementById('hubInputWeightTarget').value = std.bbTarget || 0;
+    document.getElementById('hubInputWeightMax').value = std.bbMax || 0;
+    document.getElementById('hubInputDescription').value = std.ket || '';
+
+    const form = document.getElementById('formHubEditStandar');
+    form.action = `/master/weekly-standards/${week}/update`;
+
+    const modal = document.getElementById('modalHubEditStandar');
+    modal.style.display = 'flex';
+}
+
+function closeModalHubEditStandar() {
+    const modal = document.getElementById('modalHubEditStandar');
+    if (modal) modal.style.display = 'none';
+}
+
+function handleHubModalSubmit(e) {
+    e.preventDefault();
+    const form = document.getElementById('formHubEditStandar');
+    const btn = document.getElementById('hubBtnSubmitModal');
+    const origText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Menyimpan...';
+
+    const formData = new FormData(form);
+
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        }
+    })
+    .then(res => {
+        if (!res.ok) throw new Error('Gagal menyimpan');
+        return res.json();
+    })
+    .then(data => {
+        btn.disabled = false;
+        btn.textContent = origText;
+        closeModalHubEditStandar();
+
+        // Update in-memory dataset
+        const w = data.data.week;
+        if (typeof standards !== 'undefined') {
+            standards[w] = {
+                week: w,
+                gram: parseFloat(data.data.feed_gram) || 0,
+                beratTelur: data.data.egg_weight && data.data.egg_weight !== '-' ? data.data.egg_weight : '-',
+                hdTarget: parseFloat(data.data.hd_target) || 0,
+                feedType: data.data.feed_type || 'Layer Phase 1',
+                fase: data.data.phase,
+                pill: data.data.pill,
+                ket: data.data.description,
+                bbMin: parseFloat(data.data.weight_min) || 0,
+                bbTarget: parseFloat(data.data.weight_target) || 0,
+                bbMax: parseFloat(data.data.weight_max) || 0
+            };
+            updateStandardsView(w, 'modal_saved');
+        }
+
+        alert(`Standar minggu ke-${w} berhasil diperbarui!`);
+    })
+    .catch(err => {
+        btn.disabled = false;
+        btn.textContent = origText;
+        form.submit();
+    });
+}
 </script>
+
+<!-- ======================================================== -->
+<!-- MODAL EDIT STANDAR UNTUK CARD MASTER HUB -->
+<!-- ======================================================== -->
+<div id="modalHubEditStandar" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(15,23,42,0.6); backdrop-filter:blur(3px); align-items:center; justify-content:center; padding:16px;">
+    <div style="background:#fff; border-radius:18px; max-width:480px; width:100%; padding:20px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.15); max-height:90vh; overflow-y:auto; font-family:Inter, sans-serif; box-sizing:border-box;">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding-bottom:12px; border-bottom:1px solid #e2e8f0;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div style="width:38px; height:38px; border-radius:10px; background:#fdf2f4; color:#92002f; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:16px; border:1px solid #fce7ec;">
+                    <span id="hubModalWeekBadge">21</span>
+                </div>
+                <div>
+                    <h3 style="margin:0; font-size:15px; font-weight:900; color:#0f172a;">Edit Standar Minggu <span id="hubModalWeekTitle">21</span></h3>
+                    <p style="margin:2px 0 0; font-size:11px; color:#64748b;">Perbarui parameter standar acuan mingguan</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeModalHubEditStandar()" style="border:none; background:#f1f5f9; color:#64748b; width:30px; height:30px; border-radius:8px; cursor:pointer; font-weight:bold; font-size:14px;">✕</button>
+        </div>
+
+        <form id="formHubEditStandar" method="POST" action="" style="margin-top:14px; display:flex; flex-direction:column; gap:12px;" onsubmit="handleHubModalSubmit(event)">
+            @csrf
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div>
+                    <label style="display:block; font-size:11px; font-weight:700; color:#334155; margin-bottom:4px;">Fase *</label>
+                    <input type="text" id="hubInputPhase" name="phase" required style="width:100%; padding:8px 10px; border-radius:10px; border:1px solid #cbd5e1; font-size:12px; font-weight:600; box-sizing:border-box;">
+                </div>
+                <div>
+                    <label style="display:block; font-size:11px; font-weight:700; color:#334155; margin-bottom:4px;">Pill Label *</label>
+                    <input type="text" id="hubInputPill" name="pill" required style="width:100%; padding:8px 10px; border-radius:10px; border:1px solid #cbd5e1; font-size:12px; font-weight:600; box-sizing:border-box;">
+                </div>
+            </div>
+
+            <!-- Produksi -->
+            <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px; padding:10px;">
+                <div style="font-size:11px; font-weight:800; color:#166534; margin-bottom:8px;">🥚 Standar Produksi Telur</div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div>
+                        <label style="display:block; font-size:10px; font-weight:700; color:#334155; margin-bottom:3px;">Target HD (%) *</label>
+                        <input type="number" step="0.1" min="0" max="100" id="hubInputHdTarget" name="hd_target" required style="width:100%; padding:8px 10px; border-radius:10px; border:1px solid #cbd5e1; font-size:12px; font-weight:800; color:#15803d; box-sizing:border-box; background:#fff;">
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:10px; font-weight:700; color:#334155; margin-bottom:3px;">Berat Telur (Gram)</label>
+                        <input type="text" id="hubInputEggWeight" name="egg_weight" style="width:100%; padding:8px 10px; border-radius:10px; border:1px solid #cbd5e1; font-size:12px; font-weight:700; box-sizing:border-box; background:#fff;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pakan -->
+            <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:12px; padding:10px;">
+                <div style="font-size:11px; font-weight:800; color:#92400e; margin-bottom:8px;">🌾 Standar Kebutuhan Pakan</div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div>
+                        <label style="display:block; font-size:10px; font-weight:700; color:#334155; margin-bottom:3px;">Gram / Ekor / Hari *</label>
+                        <input type="number" step="0.5" min="0" max="300" id="hubInputFeedGram" name="feed_gram" required style="width:100%; padding:8px 10px; border-radius:10px; border:1px solid #cbd5e1; font-size:12px; font-weight:800; color:#b45309; box-sizing:border-box; background:#fff;">
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:10px; font-weight:700; color:#334155; margin-bottom:3px;">Jenis Pakan (Umum)</label>
+                        <input type="text" id="hubInputFeedType" name="feed_type" style="width:100%; padding:8px 10px; border-radius:10px; border:1px solid #cbd5e1; font-size:12px; font-weight:700; box-sizing:border-box; background:#fff;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- BB -->
+            <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; padding:10px;">
+                <div style="font-size:11px; font-weight:800; color:#1e40af; margin-bottom:8px;">⚖ Standar Bobot Badan (BB Kg)</div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;">
+                    <div>
+                        <label style="display:block; font-size:10px; font-weight:700; color:#334155; margin-bottom:3px;">Min</label>
+                        <input type="number" step="0.01" min="0" max="10" id="hubInputWeightMin" name="weight_min" required style="width:100%; padding:8px 6px; border-radius:8px; border:1px solid #cbd5e1; font-size:11px; font-weight:700; box-sizing:border-box; background:#fff;">
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:10px; font-weight:700; color:#334155; margin-bottom:3px;">Target *</label>
+                        <input type="number" step="0.01" min="0" max="10" id="hubInputWeightTarget" name="weight_target" required style="width:100%; padding:8px 6px; border-radius:8px; border:1px solid #cbd5e1; font-size:11px; font-weight:800; color:#1d4ed8; box-sizing:border-box; background:#fff;">
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:10px; font-weight:700; color:#334155; margin-bottom:3px;">Max</label>
+                        <input type="number" step="0.01" min="0" max="10" id="hubInputWeightMax" name="weight_max" required style="width:100%; padding:8px 6px; border-radius:8px; border:1px solid #cbd5e1; font-size:11px; font-weight:700; box-sizing:border-box; background:#fff;">
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label style="display:block; font-size:11px; font-weight:700; color:#334155; margin-bottom:4px;">Catatan Manajemen</label>
+                <textarea id="hubInputDescription" name="description" rows="2" style="width:100%; padding:8px 10px; border-radius:10px; border:1px solid #cbd5e1; font-size:11px; box-sizing:border-box; font-family:inherit;"></textarea>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
+                <button type="button" onclick="closeModalHubEditStandar()" style="padding:8px 14px; border-radius:10px; border:1px solid #cbd5e1; background:#fff; font-size:12px; font-weight:700; cursor:pointer;">Batal</button>
+                <button type="submit" id="hubBtnSubmitModal" style="padding:8px 18px; border-radius:10px; border:none; background:#92002f; color:#fff; font-size:12px; font-weight:800; cursor:pointer; box-shadow:0 2px 4px rgba(146,0,47,0.2);">Simpan Standar</button>
+            </div>
+        </form>
+    </div>
+</div>
 @endsection

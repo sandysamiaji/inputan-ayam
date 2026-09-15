@@ -3,15 +3,60 @@
 namespace App\Services;
 
 use App\Models\Coop;
+use App\Models\WeeklyStandard;
 
 class ProductionStandardService
 {
+    /**
+     * Cache in-memory untuk standar minggu agar tidak query DB berulang dalam 1 request
+     */
+    private static array $cachedStandards = [];
+
     /**
      * Ambil data standar lengkap untuk minggu umur tertentu (13 - 90 minggu)
      */
     public static function getStandardForWeek(int $week): array
     {
         $w = max(13, min(90, $week));
+
+        if (isset(self::$cachedStandards[$w])) {
+            return self::$cachedStandards[$w];
+        }
+
+        // Coba ambil dari master data database
+        try {
+            $dbStd = WeeklyStandard::where('week', $w)->first();
+            if ($dbStd) {
+                $eggWeightStr = $dbStd->egg_weight && $dbStd->egg_weight !== '-' ? "{$dbStd->egg_weight} g" : '-';
+                $eggWeightVal = ($dbStd->egg_weight && is_numeric($dbStd->egg_weight)) ? (float) $dbStd->egg_weight : 0;
+                $feedGram = (float) $dbStd->feed_gram;
+
+                $data = [
+                    'week' => $w,
+                    'fase' => $dbStd->phase,
+                    'pill' => $dbStd->pill,
+                    'pill_class' => $dbStd->pill_badge_class,
+                    'feed_type' => $dbStd->feed_type ?: 'Layer Standard',
+                    'hd_target' => (float) $dbStd->hd_target,
+                    'keterangan' => $dbStd->description,
+                    'berat_telur' => $eggWeightStr,
+                    'berat_telur_val' => $eggWeightVal,
+                    'gram_pakan' => $feedGram,
+                    'pagi_gram' => round($feedGram / 2, 1),
+                    'sore_gram' => round($feedGram / 2, 1),
+                    'bb_min' => (float) $dbStd->weight_min,
+                    'bb_target' => (float) $dbStd->weight_target,
+                    'bb_max' => (float) $dbStd->weight_max,
+                    'tips' => $dbStd->feed_type ?: 'Standar Layer',
+                    'status_message' => "Kondisi ayam minggu ke-{$w}: Fase {$dbStd->phase}. {$dbStd->description}",
+                ];
+
+                self::$cachedStandards[$w] = $data;
+                return $data;
+            }
+        } catch (\Throwable $e) {
+            // Jika DB belum termigrasi, fallback ke formula matematis bawaan di bawah
+        }
 
         if ($w >= 13 && $w <= 15) {
             $progress = ($w - 13) / 2;

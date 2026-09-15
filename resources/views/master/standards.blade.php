@@ -223,6 +223,7 @@
             </div>
         </div>
 
+    @endif
 
     <!-- TABEL MASTER MINGGUAN (UNTUK TAB PRODUKSI, PAKAN, & BB) -->
     <div class="farm-card p-4 sm:p-5 bg-white border border-slate-200 shadow-xs space-y-4">

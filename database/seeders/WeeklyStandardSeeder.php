@@ -98,88 +98,79 @@ EOD;
 
         $lines = explode("\n", trim($data));
         
-        DB::beginTransaction();
-        try {
-            // Kita tidak perlu menghapus semua jika hanya mau update
-            // Namun untuk amannya kita kosongkan dulu
-            WeeklyStandard::truncate();
+        WeeklyStandard::query()->delete();
 
-            foreach ($lines as $line) {
-                $cols = explode("\t", trim($line));
-                if (count($cols) < 7) continue;
+        foreach ($lines as $line) {
+            $cols = explode("\t", trim($line));
+            if (count($cols) < 7) continue;
 
-                $week = (int) $cols[0];
-                
-                // Parser angka (koma jadi titik)
-                $parseNum = function($val) {
-                    $val = str_replace(',', '.', $val);
-                    return is_numeric($val) ? (float) $val : 0;
-                };
+            $week = (int) $cols[0];
+            
+            // Parser angka (koma jadi titik)
+            $parseNum = function($val) {
+                $val = str_replace(',', '.', $val);
+                return is_numeric($val) ? (float) $val : 0;
+            };
 
-                $hd = $parseNum($cols[1]);
-                $eggWt = str_replace(',', '.', $cols[2]);
-                $eggWt = $eggWt === '-' ? null : $eggWt;
-                $feed = $parseNum($cols[3]);
-                $bbMin = $parseNum($cols[4]);
-                $bbTarget = $parseNum($cols[5]);
-                $bbMax = $parseNum($cols[6]);
+            $hd = $parseNum($cols[1]);
+            $eggWt = str_replace(',', '.', $cols[2]);
+            $eggWt = $eggWt === '-' ? null : $eggWt;
+            $feed = $parseNum($cols[3]);
+            $bbMin = $parseNum($cols[4]);
+            $bbTarget = $parseNum($cols[5]);
+            $bbMax = $parseNum($cols[6]);
 
-                // Default fase dari fallback logic ProductionStandardService (kira-kira)
-                $fase = '';
-                $pill = '';
-                $feedType = '';
-                $desc = '';
+            // Default fase dari fallback logic ProductionStandardService (kira-kira)
+            $fase = '';
+            $pill = '';
+            $feedType = '';
+            $desc = '';
 
-                if ($week >= 13 && $week <= 15) {
-                    $fase = 'Grower Akhir (Pra-Laying)';
-                    $pill = 'GROWER';
-                    $feedType = 'Grower / Pullet';
-                    $desc = 'Fokus pada pembentukan kerangka tubuh dan keseragaman bobot badan ayam.';
-                } elseif ($week >= 16 && $week <= 17) {
-                    $fase = 'Persiapan Bertelur (Pre-Lay)';
-                    $pill = 'PRE-LAY';
-                    $feedType = 'Pre-Lay / Layer Awal';
-                    $desc = 'Fokus pada pembentukan kerangka tubuh dan keseragaman bobot badan ayam.';
-                } elseif ($week >= 18 && $week <= 20) {
-                    $fase = 'Awal Bertelur (Puncak Naik)';
-                    $pill = 'AWAL BERTELUR';
-                    $feedType = 'Layer Phase 1';
-                    $desc = 'Ayam membutuhkan energi dan nutrisi tertinggi untuk pembentukan telur pertama.';
-                } elseif ($week >= 21 && $week <= 40) {
-                    $fase = 'Puncak Produksi (Egg Peak)';
-                    $pill = 'PUNCAK PRODUKSI';
-                    $feedType = 'Layer Phase 1';
-                    $desc = 'Konsumsi pakan stabil. Energi tertinggi dibutuhkan untuk produksi telur maskimal.';
-                } elseif ($week >= 41 && $week <= 60) {
-                    $fase = 'Laying Phase 2 (Pasca Puncak)';
-                    $pill = 'PASCA PUNCAK';
-                    $feedType = 'Layer Phase 2';
-                    $desc = 'Persentase bertelur mulai menurun, namun ukuran telur bertambah besar.';
-                } else {
-                    $fase = 'Laying Phase 3 (Fase Akhir) / Afkir';
-                    $pill = 'FASE AKHIR';
-                    $feedType = 'Layer Phase 3';
-                    $desc = 'Fase akhir produksi sebelum peremajaan.';
-                }
-
-                WeeklyStandard::create([
-                    'week' => $week,
-                    'phase' => $fase,
-                    'pill' => $pill,
-                    'feed_type' => $feedType,
-                    'hd_target' => $hd,
-                    'egg_weight' => $eggWt,
-                    'feed_gram' => $feed,
-                    'weight_min' => $bbMin,
-                    'weight_target' => $bbTarget,
-                    'weight_max' => $bbMax,
-                    'description' => $desc,
-                ]);
+            if ($week >= 13 && $week <= 15) {
+                $fase = 'Grower Akhir (Pra-Laying)';
+                $pill = 'GROWER';
+                $feedType = 'Grower / Pullet';
+                $desc = 'Fokus pada pembentukan kerangka tubuh dan keseragaman bobot badan ayam.';
+            } elseif ($week >= 16 && $week <= 17) {
+                $fase = 'Persiapan Bertelur (Pre-Lay)';
+                $pill = 'PRE-LAY';
+                $feedType = 'Pre-Lay / Layer Awal';
+                $desc = 'Fokus pada pembentukan kerangka tubuh dan keseragaman bobot badan ayam.';
+            } elseif ($week >= 18 && $week <= 20) {
+                $fase = 'Awal Bertelur (Puncak Naik)';
+                $pill = 'AWAL BERTELUR';
+                $feedType = 'Layer Phase 1';
+                $desc = 'Ayam membutuhkan energi dan nutrisi tertinggi untuk pembentukan telur pertama.';
+            } elseif ($week >= 21 && $week <= 40) {
+                $fase = 'Puncak Produksi (Egg Peak)';
+                $pill = 'PUNCAK PRODUKSI';
+                $feedType = 'Layer Phase 1';
+                $desc = 'Konsumsi pakan stabil. Energi tertinggi dibutuhkan untuk produksi telur maskimal.';
+            } elseif ($week >= 41 && $week <= 60) {
+                $fase = 'Laying Phase 2 (Pasca Puncak)';
+                $pill = 'PASCA PUNCAK';
+                $feedType = 'Layer Phase 2';
+                $desc = 'Persentase bertelur mulai menurun, namun ukuran telur bertambah besar.';
+            } else {
+                $fase = 'Laying Phase 3 (Fase Akhir) / Afkir';
+                $pill = 'FASE AKHIR';
+                $feedType = 'Layer Phase 3';
+                $desc = 'Fase akhir produksi sebelum peremajaan.';
             }
-            DB::commit();
-        } catch (\Exception $e) {
-            DB::rollBack();
-            echo "Error: " . $e->getMessage() . "\n";
+
+            WeeklyStandard::create([
+                'week' => $week,
+                'phase' => $fase,
+                'pill' => $pill,
+                'feed_type' => $feedType,
+                'hd_target' => $hd,
+                'egg_weight' => $eggWt,
+                'feed_gram' => $feed,
+                'weight_min' => $bbMin,
+                'weight_target' => $bbTarget,
+                'weight_max' => $bbMax,
+                'description' => $desc,
+            ]);
         }
     }
 }

@@ -57,12 +57,6 @@
                 <span class="text-[10px] px-1.5 py-0.2 rounded-full {{ $activeTab === 'bb' ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-600' }}">Kg Sampling</span>
             </a>
 
-            <!-- Tab Parameter Global -->
-            <a href="{{ route('master.standards', ['tab' => 'global']) }}"
-               class="whitespace-nowrap pb-3.5 pt-2 px-3 border-b-2 font-bold text-xs sm:text-sm transition-all flex items-center gap-2 {{ $activeTab === 'global' ? 'border-maroon-800 text-maroon-800 font-black' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300' }}">
-                <span class="w-7 h-7 rounded-lg flex items-center justify-center {{ $activeTab === 'global' ? 'bg-slate-200 text-slate-800' : 'bg-slate-100 text-slate-500' }}">⚙</span>
-                <span>Parameter Global</span>
-            </a>
         </nav>
     </div>
 
@@ -229,85 +223,10 @@
             </div>
         </div>
 
-    <!-- TAB 4: PARAMETER GLOBAL -->
-    @elseif($activeTab === 'global')
-        <div class="farm-card p-5 sm:p-6 bg-white border border-slate-200 shadow-sm">
-            <h3 class="text-sm font-black text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2">
-                <i data-lucide="settings" class="w-4 h-4 text-slate-600"></i>
-                Parameter Standar Global Operasional Kandang
-            </h3>
-            <form method="POST" action="{{ route('master.standards.update') }}" class="space-y-4">
-                @csrf
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Target Produksi Telur Harian (Peti)</label>
-                        <input type="number" step="1" name="standard_production_egg_crates" value="{{ $standards['standard_production_egg_crates'] }}" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-bold text-slate-800 focus:ring-2 focus:ring-maroon-800/20 focus:border-maroon-800">
-                        <span class="text-[11px] text-slate-400 mt-1 block">Baseline peti per hari untuk alert dashboard</span>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Standar Default Pakan per Ekor (Gram / Hari)</label>
-                        <input type="number" step="0.5" name="standard_feed_gram_per_chicken" value="{{ $standards['standard_feed_gram_per_chicken'] }}" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-bold text-slate-800 focus:ring-2 focus:ring-maroon-800/20 focus:border-maroon-800">
-                        <span class="text-[11px] text-slate-400 mt-1 block">Acuan fallback jika umur mingguan belum disetel</span>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Target Bobot Rata-rata Normal (Kg)</label>
-                        <input type="number" step="0.01" name="standard_avg_weight_kg" value="{{ $standards['standard_avg_weight_kg'] }}" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-bold text-slate-800 focus:ring-2 focus:ring-maroon-800/20 focus:border-maroon-800">
-                        <span class="text-[11px] text-slate-400 mt-1 block">Target berat ayam layer dewasa</span>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Batas Toleransi Deviasi Bobot (&plusmn; Kg)</label>
-                        <input type="number" step="0.01" name="standard_weight_tolerance" value="{{ $standards['standard_weight_tolerance'] }}" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-bold text-slate-800 focus:ring-2 focus:ring-maroon-800/20 focus:border-maroon-800">
-                        <span class="text-[11px] text-slate-400 mt-1 block">Deviasi sampling bobot badan ayam</span>
-                    </div>
-                </div>
-
-                <div class="pt-4 border-t border-slate-100 flex justify-end">
-                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-maroon-800 hover:bg-maroon-900 text-white font-bold text-xs sm:text-sm shadow-md transition-all active:scale-95 flex items-center gap-2">
-                        <i data-lucide="save" class="w-4 h-4"></i>
-                        <span>Simpan Parameter Global</span>
-                    </button>
-                </div>
-            </form>
-        </div>
-    @endif
 
     <!-- TABEL MASTER MINGGUAN (UNTUK TAB PRODUKSI, PAKAN, & BB) -->
-    @if($activeTab !== 'global')
-        <div class="farm-card p-4 sm:p-5 bg-white border border-slate-200 shadow-xs space-y-4">
+    <div class="farm-card p-4 sm:p-5 bg-white border border-slate-200 shadow-xs space-y-4">
             
-            <!-- Toolbar: Search & Phase Filter -->
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-slate-100">
-                <!-- Search Box -->
-                <div class="relative w-full sm:w-64">
-                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-                    <input type="text" id="filterWeekInput" onkeyup="filterStandardsTable()" placeholder="Cari umur minggu..." class="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-maroon-800/20 focus:border-maroon-800">
-                </div>
-
-                <!-- Phase Filter Pills -->
-                <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
-                    <button type="button" onclick="filterByPhase('ALL')" class="filter-phase-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-maroon-800 text-white shadow-2xs" data-phase="ALL">
-                        Semua Umur (13–90)
-                    </button>
-                    <button type="button" onclick="filterByPhase('GROWER')" class="filter-phase-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200" data-phase="GROWER">
-                        Grower (13–15)
-                    </button>
-                    <button type="button" onclick="filterByPhase('PRE-LAY')" class="filter-phase-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200" data-phase="PRE-LAY">
-                        Pre-Lay (16–17)
-                    </button>
-                    <button type="button" onclick="filterByPhase('AWAL BERTELUR')" class="filter-phase-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200" data-phase="AWAL BERTELUR">
-                        Awal Telur (18–20)
-                    </button>
-                    <button type="button" onclick="filterByPhase('PUNCAK PRODUKSI')" class="filter-phase-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200" data-phase="PUNCAK PRODUKSI">
-                        Puncak (21–40)
-                    </button>
-                    <button type="button" onclick="filterByPhase('PASCA PUNCAK')" class="filter-phase-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200" data-phase="PASCA PUNCAK">
-                        Pasca Puncak (41–60)
-                    </button>
-                    <button type="button" onclick="filterByPhase('FASE AKHIR')" class="filter-phase-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200" data-phase="FASE AKHIR">
-                        Fase Akhir (61–90)
-                    </button>
-                </div>
-            </div>
 
             <!-- Responsive Master Table -->
             <div class="overflow-x-auto rounded-xl border border-slate-200 shadow-2xs">
@@ -454,7 +373,6 @@
                 <span>Nilai dapat disesuaikan sewaktu-waktu oleh farm manager.</span>
             </div>
         </div>
-    @endif
 
 </div>
 
@@ -679,43 +597,6 @@
         }
     }
 
-    // Filter tabel berdasarkan input search
-    function filterStandardsTable() {
-        const input = document.getElementById('filterWeekInput').value.toLowerCase().trim();
-        const rows = document.querySelectorAll('#standardsTable tbody tr[data-week]');
 
-        rows.forEach(row => {
-            const week = row.getAttribute('data-week');
-            const phase = (row.getAttribute('data-phase') || '').toLowerCase();
-            const json = (row.getAttribute('data-json') || '').toLowerCase();
-
-            if (!input || week.includes(input) || phase.includes(input) || json.includes(input)) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
-        });
-    }
-
-    // Filter tabel berdasarkan tombol fase
-    function filterByPhase(phase) {
-        document.querySelectorAll('.filter-phase-btn').forEach(btn => {
-            if (btn.getAttribute('data-phase') === phase) {
-                btn.className = 'filter-phase-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-maroon-800 text-white shadow-2xs';
-            } else {
-                btn.className = 'filter-phase-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200';
-            }
-        });
-
-        const rows = document.querySelectorAll('#standardsTable tbody tr[data-week]');
-        rows.forEach(row => {
-            const rowPhase = row.getAttribute('data-phase');
-            if (phase === 'ALL' || rowPhase === phase) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
-        });
-    }
 </script>
 @endsection

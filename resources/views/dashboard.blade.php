@@ -7,7 +7,7 @@
     <div class="farm-card p-4 sm:p-6 bg-gradient-to-r from-white via-white to-rose-50/60 border border-rose-100/70 shadow-sm relative overflow-hidden">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             
-            <!-- Ucapan & Status Ringkas -->
+            <!-- Status Ringkas -->
             <div class="space-y-1.5">
                 <div class="flex flex-wrap items-center gap-2">
                     <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-maroon-50 text-maroon-800 text-xs font-bold border border-maroon-100 shadow-xs">
@@ -23,21 +23,13 @@
                         {{ number_format($totalActiveChickens, 0, ',', '.') }} Ekor Ayam
                     </span>
                 </div>
-
-                <h2 class="text-lg sm:text-xl md:text-2xl font-black text-slate-900 flex items-center gap-2">
-                    {{ $greeting }}, {{ $user ? $user->name : 'Petugas' }} 👋
-                </h2>
-                <p class="text-xs sm:text-sm text-slate-600 font-medium">
-                    {{ $motivationMsg }}
-                </p>
             </div>
 
             <!-- Kartu Penanggalan Kalender & Filter Cepat -->
             <div class="flex items-center gap-3 self-start md:self-center">
-                <div class="text-center bg-white border border-slate-200 rounded-2xl px-4 py-2.5 shadow-sm min-w-[85px]">
-                    <span class="block text-[11px] font-bold text-slate-500 uppercase tracking-tight">{{ $namaHari }}</span>
-                    <span class="block text-2xl sm:text-3xl font-black text-maroon-800 leading-none my-0.5">{{ $carbonDate->day }}</span>
-                    <span class="block text-[11px] font-semibold text-slate-400">{{ $namaBulan }} {{ $carbonDate->year }}</span>
+                <div class="text-center bg-white border border-slate-200 rounded-2xl px-4 py-2.5 shadow-sm min-w-[85px] flex items-center justify-center">
+                    <i data-lucide="user" class="w-5 h-5 text-maroon-800 mr-2"></i>
+                    <span class="block text-lg font-black text-maroon-800">{{ $user ? $user->name : 'Petugas' }}</span>
                 </div>
 
                 <div class="flex flex-col gap-1">

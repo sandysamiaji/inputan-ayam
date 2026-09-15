@@ -620,13 +620,7 @@
         <!-- SECTION: Data Utama (7 Menus) -->
         <div class="label">Data Utama</div>
         <div class="menus">
-            <!-- 1. Info Farm -->
-            <a href="{{ route('master.info-farm') }}" class="menu" id="menu-info-farm">
-                <div class="ico blue">ⓘ</div>
-                <b>Info Farm</b>
-                <p>Identitas & tampilan dashboard</p>
-                <span class="arr">›</span>
-            </a>
+
 
             <!-- 2. Master Flock -->
             <a href="{{ route('master.flocks') }}" class="menu" id="menu-master-flock">

@@ -317,9 +317,22 @@
                             <th class="py-3 px-3.5 whitespace-nowrap">Umur (Minggu)</th>
                             <th class="py-3 px-3.5 whitespace-nowrap">Fase Pertumbuhan</th>
 
-                            <th class="py-3 px-3.5 whitespace-nowrap">Target Hen Day (HDP)</th>
-                            <th class="py-3 px-3.5 whitespace-nowrap">Target Berat Telur</th>
-                            <th class="py-3 px-3.5 whitespace-nowrap">Manajemen & Keterangan</th>
+                            @if($activeTab === 'produksi')
+                                <th class="py-3 px-3.5 whitespace-nowrap">Target Hen Day (HDP)</th>
+                                <th class="py-3 px-3.5 whitespace-nowrap">Target Berat Telur</th>
+                                <th class="py-3 px-3.5 whitespace-nowrap">Manajemen & Keterangan</th>
+                            @elseif($activeTab === 'pakan')
+                                <th class="py-3 px-3.5 whitespace-nowrap">Jenis Pakan</th>
+                                <th class="py-3 px-3.5 whitespace-nowrap">Pakan Harian (g/ekor)</th>
+                                <th class="py-3 px-3.5 whitespace-nowrap">Porsi Pagi (50%)</th>
+                                <th class="py-3 px-3.5 whitespace-nowrap">Porsi Sore (50%)</th>
+                                <th class="py-3 px-3.5 whitespace-nowrap">Estimasi Farm (Kg)</th>
+                            @elseif($activeTab === 'bb')
+                                <th class="py-3 px-3.5 whitespace-nowrap">BB Minimum</th>
+                                <th class="py-3 px-3.5 whitespace-nowrap">BB Target (Ideal)</th>
+                                <th class="py-3 px-3.5 whitespace-nowrap">BB Maksimum</th>
+                                <th class="py-3 px-3.5 whitespace-nowrap">Batas Toleransi</th>
+                            @endif
 
                             <th class="py-3 px-3.5 text-center whitespace-nowrap">Aksi</th>
                         </tr>
@@ -359,22 +372,61 @@
                                     <span class="block text-[10px] text-slate-400 font-medium mt-0.5">{{ $std->phase }}</span>
                                 </td>
 
-                                <td class="py-3 px-3.5 whitespace-nowrap">
-                                    <div class="flex items-center gap-2">
-                                        <div class="w-16 h-2 rounded-full bg-slate-100 overflow-hidden shrink-0">
-                                            <div class="h-full bg-emerald-500 rounded-full" style="width: {{ min(100, $std->hd_target) }}%;"></div>
+                                <!-- Kolom Khusus Tab Standar Produksi -->
+                                @if($activeTab === 'produksi')
+                                    <td class="py-3 px-3.5 whitespace-nowrap">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-16 h-2 rounded-full bg-slate-100 overflow-hidden shrink-0">
+                                                <div class="h-full bg-emerald-500 rounded-full" style="width: {{ min(100, $std->hd_target) }}%;"></div>
+                                            </div>
+                                            <b class="text-xs font-black {{ $std->hd_target >= 90 ? 'text-emerald-700' : ($std->hd_target > 0 ? 'text-amber-700' : 'text-slate-400') }}">
+                                                {{ number_format($std->hd_target, 1, ',', '.') }}%
+                                            </b>
                                         </div>
-                                        <b class="text-xs font-black {{ $std->hd_target >= 90 ? 'text-emerald-700' : ($std->hd_target > 0 ? 'text-amber-700' : 'text-slate-400') }}">
-                                            {{ number_format($std->hd_target, 1, ',', '.') }}%
-                                        </b>
-                                    </div>
-                                </td>
-                                <td class="py-3 px-3.5 whitespace-nowrap font-bold text-slate-700">
-                                    {{ $std->egg_weight && $std->egg_weight !== '-' ? $std->egg_weight . ' g' : '—' }}
-                                </td>
-                                <td class="py-3 px-3.5 text-slate-500 max-w-xs truncate" title="{{ $std->description }}">
-                                    {{ $std->description }}
-                                </td>
+                                    </td>
+                                    <td class="py-3 px-3.5 whitespace-nowrap font-bold text-slate-700">
+                                        {{ $std->egg_weight && $std->egg_weight !== '-' ? $std->egg_weight . ' g' : '—' }}
+                                    </td>
+                                    <td class="py-3 px-3.5 text-slate-500 max-w-xs truncate" title="{{ $std->description }}">
+                                        {{ $std->description }}
+                                    </td>
+
+                                <!-- Kolom Khusus Tab Standar Pakan -->
+                                @elseif($activeTab === 'pakan')
+                                    <td class="py-3 px-3.5 whitespace-nowrap font-semibold text-slate-700">
+                                        <span class="px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-[11px] font-bold">
+                                            {{ $std->feed_type ?: 'Layer Phase' }}
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-3.5 whitespace-nowrap">
+                                        <b class="text-xs font-black text-amber-600">{{ number_format($std->feed_gram, 1, ',', '.') }}</b>
+                                        <span class="text-[11px] text-slate-400">g/ekor</span>
+                                    </td>
+                                    <td class="py-3 px-3.5 whitespace-nowrap font-semibold text-slate-700">
+                                        {{ number_format($std->feed_pagi, 1, ',', '.') }} g
+                                    </td>
+                                    <td class="py-3 px-3.5 whitespace-nowrap font-semibold text-slate-700">
+                                        {{ number_format($std->feed_sore, 1, ',', '.') }} g
+                                    </td>
+                                    <td class="py-3 px-3.5 whitespace-nowrap font-bold text-maroon-800">
+                                        {{ number_format($rowFeedKg, 1, ',', '.') }} kg
+                                    </td>
+
+                                <!-- Kolom Khusus Tab Standar BB -->
+                                @elseif($activeTab === 'bb')
+                                    <td class="py-3 px-3.5 whitespace-nowrap font-semibold text-slate-600">
+                                        {{ number_format($std->weight_min, 2, ',', '.') }} kg
+                                    </td>
+                                    <td class="py-3 px-3.5 whitespace-nowrap">
+                                        <b class="text-xs font-black text-blue-700">{{ number_format($std->weight_target, 2, ',', '.') }} kg</b>
+                                    </td>
+                                    <td class="py-3 px-3.5 whitespace-nowrap font-semibold text-slate-600">
+                                        {{ number_format($std->weight_max, 2, ',', '.') }} kg
+                                    </td>
+                                    <td class="py-3 px-3.5 whitespace-nowrap text-slate-500 font-medium">
+                                        &plusmn; {{ round(($std->weight_max - $std->weight_min) / 2, 3) * 1000 }} g
+                                    </td>
+                                @endif
 
                                 <!-- Tombol Aksi Edit Standar -->
                                 <td class="py-3 px-3.5 text-center whitespace-nowrap">

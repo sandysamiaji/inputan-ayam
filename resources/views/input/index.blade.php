@@ -1109,6 +1109,16 @@ function calcPakan() {
     document.getElementById('pakanStdTitle').textContent = `Umur ${age} minggu · ${feedType}`;
     document.getElementById('pakanStdGram').textContent = feedGram.toString().replace('.', ',');
 
+    // Auto-select Jenis Pakan dropdown based on feedType
+    const pakanJenisSelect = document.getElementById('pakanJenis');
+    if (pakanJenisSelect) {
+        if (feedType.toLowerCase().includes('grower') || feedType.toLowerCase().includes('pullet')) {
+            pakanJenisSelect.value = 'Pakan Grower';
+        } else {
+            pakanJenisSelect.value = 'Pakan Layer';
+        }
+    }
+
     const stdBlokKg = (pop * feedGram) / 1000;
     const pagiKg = (stdBlokKg * 0.40).toFixed(1);
     const soreKg = (stdBlokKg * 0.60).toFixed(1);
@@ -1117,9 +1127,7 @@ function calcPakan() {
     const sisaKg = (stdBlokKg % 50).toFixed(1);
     
     let standarStr = stdBlokKg.toFixed(1).replace('.', ',') + ' Kg';
-    if (karung > 0) {
-        standarStr += ` (${karung} Karung${sisaKg > 0 ? ' + ' + sisaKg.replace('.', ',') + ' Kg' : ''})`;
-    }
+    standarStr += ` (${karung} Karung + ${sisaKg.replace('.', ',')} Kg)`;
 
     document.getElementById('pakanStdBlok').textContent = standarStr;
     document.getElementById('pakanSudahPagi').textContent = ('' + pagiKg).replace('.', ',') + ' Kg';

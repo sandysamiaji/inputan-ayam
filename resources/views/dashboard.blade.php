@@ -55,7 +55,7 @@
         <div class="flex items-center justify-between mb-3 px-1">
             <div class="flex items-center gap-2">
                 <div class="w-2.5 h-2.5 rounded-full bg-maroon-800"></div>
-                <h3 class="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-800">RINGKASAN HARI INI</h3>
+                <h3 class="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-800">RINGKASAN HARI INI test</h3>
                 <span class="text-xs text-slate-400 font-medium hidden sm:inline">(Data per {{ $carbonDate->day }} {{ $namaBulan }} {{ $carbonDate->year }})</span>
             </div>
             <span class="text-xs text-maroon-800 font-semibold flex items-center gap-1">

@@ -1428,8 +1428,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Hitung kg pakan per blok kandang
         let totalKg = 0;
-        if (Array.isArray(coops) && coops.length > 0) {
-            coops.forEach(coop => {
+        const coopsArray = Object.values(coops);
+        if (coopsArray.length > 0) {
+            coopsArray.forEach(coop => {
                 const pop = parseInt(coop.active_chickens) || 0;
                 const coopKg = (pop * std.gram) / 1000;
                 totalKg += coopKg;

@@ -67,7 +67,7 @@ class MasterController extends Controller
                 'shortName' => $c->code ?: str_replace('Blok ', '', $c->name),
                 'active_chickens' => (int) $c->active_chickens,
             ];
-        });
+        })->values()->toArray();
 
         $weeklyStandards = WeeklyStandard::ordered()->get();
         $currentStd = ProductionStandardService::getStandardForWeek($avgAgeWeeks);

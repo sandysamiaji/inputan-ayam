@@ -94,5 +94,10 @@ Route::prefix('profil')->name('profile.')->group(function () {
     Route::post('/logout', [ProfileController::class, 'logout'])->name('logout');
 });
 
-
-
+// Route bantuan untuk membersihkan cache (berguna jika tidak punya akses SSH)
+Route::get('/clear-cache', function() {
+    \Illuminate\Support\Facades\Artisan::call('view:clear');
+    \Illuminate\Support\Facades\Artisan::call('cache:clear');
+    \Illuminate\Support\Facades\Artisan::call('config:clear');
+    return 'Cache server berhasil dibersihkan! Silakan kembali ke halaman sebelumnya dan refresh.';
+});

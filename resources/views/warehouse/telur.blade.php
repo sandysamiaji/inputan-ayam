@@ -35,11 +35,6 @@
                 </span>
                 <span class="text-xs sm:text-sm font-extrabold text-maroon-800">{{ number_format($petiSold, 0, ',', '.') }} Peti & {{ number_format($kgSold, 0, ',', '.') }} Kg</span>
             </div>
-            <div class="hidden md:block h-7 w-px bg-slate-200"></div>
-            <div class="hidden md:block text-right">
-                <span class="text-[10px] uppercase font-bold text-slate-400 block">Omzet Penjualan</span>
-                <span class="text-xs font-black text-slate-800">Rp {{ number_format($totalRevenue, 0, ',', '.') }}</span>
-            </div>
         </div>
     </div>
 
@@ -146,8 +141,6 @@
                             </h2>
                             <div class="text-[11px] text-slate-500 flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
                                 <span>Pembeli: <b>{{ $sale->customer_name }}</b></span>
-                                <span>•</span>
-                                <span>Total: <b class="text-slate-800">Rp {{ number_format($sale->total_price, 0, ',', '.') }}</b></span>
                                 <span>•</span>
                                 <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">{{ $sale->payment_status }} ({{ $sale->payment_method }})</span>
                                 <span>•</span>

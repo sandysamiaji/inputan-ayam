@@ -370,7 +370,6 @@
                             <span class="text-[10px] text-slate-400">{{ \Carbon\Carbon::parse($sale->date)->translatedFormat('d M Y') }}</span>
                         </div>
                         <div class="text-right">
-                            <span class="font-bold text-slate-800 block">Rp {{ number_format($sale->total_price, 0, ',', '.') }}</span>
                             <span class="text-[9px] font-bold text-emerald-600 uppercase">{{ $sale->payment_status }}</span>
                         </div>
                     </div>

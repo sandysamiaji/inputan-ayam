@@ -11,7 +11,7 @@
             </a>
             <div>
                 <div class="flex items-center gap-2 flex-wrap">
-                    <h1 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Master Standar Ayam Layer</h1>
+                    <h1 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Master Standar Ayam Petelur</h1>
                     <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-maroon-50 text-maroon-800 border border-maroon-200 shadow-2xs">
                         <span class="w-1.5 h-1.5 rounded-full bg-maroon-800 animate-pulse"></span>
                         Umur Farm: {{ $avgAgeWeeks }} Minggu
@@ -70,78 +70,9 @@
 
     <!-- TAB 1: STANDAR PRODUKSI -->
     @if($activeTab === 'produksi')
-        <!-- Metric Highlight Produksi -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <div class="farm-card p-4 bg-white border border-slate-200">
-                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Target Hen Day Puncak</span>
-                <div class="flex items-baseline gap-1.5 mt-1">
-                    <span class="text-xl sm:text-2xl font-black text-emerald-600">96.0%</span>
-                    <span class="text-xs text-slate-500 font-semibold">Umur 23–28 Mgg</span>
-                </div>
-            </div>
-            <div class="farm-card p-4 bg-white border border-slate-200">
-                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Target Berat Telur Puncak</span>
-                <div class="flex items-baseline gap-1.5 mt-1">
-                    <span class="text-xl sm:text-2xl font-black text-amber-600">60.0 - 64.0</span>
-                    <span class="text-xs text-slate-500 font-semibold">gram / butir</span>
-                </div>
-            </div>
-            <div class="farm-card p-4 bg-white border border-slate-200">
-                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Acuan Farm (Minggu {{ $avgAgeWeeks }})</span>
-                <div class="flex items-baseline gap-1.5 mt-1">
-                    <span class="text-xl sm:text-2xl font-black text-maroon-800">{{ $currentStd['hd_target'] ?? 90 }}%</span>
-                    <span class="text-xs text-slate-500 font-semibold">{{ $currentStd['berat_telur'] ?? '59.5 g' }}</span>
-                </div>
-            </div>
-            <div class="farm-card p-4 bg-white border border-slate-200">
-                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Total Master Terdata</span>
-                <div class="flex items-baseline gap-1.5 mt-1">
-                    <span class="text-xl sm:text-2xl font-black text-slate-900">{{ $weeklyStandards->count() }}</span>
-                    <span class="text-xs text-slate-500 font-semibold">Minggu (13 s/d 90)</span>
-                </div>
-            </div>
-        </div>
 
     <!-- TAB 2: STANDAR PAKAN -->
     @elseif($activeTab === 'pakan')
-        <!-- Metric Highlight Pakan -->
-        @php
-            $stdGram = (float) ($currentStd['gram_pakan'] ?? 110);
-            $totalPakanTodayKg = round(($totalChickens * $stdGram) / 1000, 1);
-            $totalKarungToday = floor($totalPakanTodayKg / 50);
-            $sisaKgToday = round(fmod($totalPakanTodayKg, 50), 1);
-        @endphp
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <div class="farm-card p-4 bg-white border border-slate-200">
-                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Pakan Minggu {{ $avgAgeWeeks }}</span>
-                <div class="flex items-baseline gap-1 mt-1">
-                    <span class="text-xl sm:text-2xl font-black text-amber-600">{{ $stdGram }}</span>
-                    <span class="text-xs text-slate-500 font-semibold">g / ekor / hari</span>
-                </div>
-            </div>
-            <div class="farm-card p-4 bg-white border border-slate-200">
-                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Pembagian Pagi : Sore</span>
-                <div class="flex items-baseline gap-1 mt-1">
-                    <span class="text-xl sm:text-2xl font-black text-slate-800">{{ round($stdGram / 2, 1) }} : {{ round($stdGram / 2, 1) }}</span>
-                    <span class="text-xs text-slate-500 font-semibold">gram (50:50)</span>
-                </div>
-            </div>
-            <div class="farm-card p-4 bg-white border border-slate-200">
-                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Estimasi Pakan Farm/Hari</span>
-                <div class="flex items-baseline gap-1 mt-1">
-                    <span class="text-xl sm:text-2xl font-black text-maroon-800">{{ number_format($totalPakanTodayKg, 1, ',', '.') }}</span>
-                    <span class="text-xs text-slate-500 font-semibold">kg ({{ $totalChickens }} ekor)</span>
-                </div>
-            </div>
-            <div class="farm-card p-4 bg-white border border-slate-200">
-                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Kebutuhan Karung (50kg)</span>
-                <div class="flex items-baseline gap-1 mt-1">
-                    <span class="text-xl sm:text-2xl font-black text-emerald-600">{{ $totalKarungToday }}</span>
-                    <span class="text-xs text-slate-500 font-semibold">krg {{ $sisaKgToday > 0 ? '+ ' . $sisaKgToday . ' kg' : '' }}</span>
-                </div>
-            </div>
-        </div>
-
         <!-- Panduan Manajemen Pakan Sesuai Dokumen Acuan -->
         <div class="farm-card p-5 bg-gradient-to-br from-amber-50/60 via-white to-orange-50/40 border border-amber-200/80 shadow-xs">
             <div class="flex items-center gap-2 mb-3">
@@ -191,37 +122,6 @@
 
     <!-- TAB 3: STANDAR BOBOT BADAN -->
     @elseif($activeTab === 'bb')
-        <!-- Metric Highlight BB -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <div class="farm-card p-4 bg-white border border-slate-200">
-                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Target Bobot (Minggu {{ $avgAgeWeeks }})</span>
-                <div class="flex items-baseline gap-1 mt-1">
-                    <span class="text-xl sm:text-2xl font-black text-blue-600">{{ number_format($currentStd['bb_target'] ?? 1.74, 2, ',', '.') }}</span>
-                    <span class="text-xs text-slate-500 font-semibold">kg / ekor</span>
-                </div>
-            </div>
-            <div class="farm-card p-4 bg-white border border-slate-200">
-                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Rentang Wajar (Min - Max)</span>
-                <div class="flex items-baseline gap-1 mt-1">
-                    <span class="text-xl sm:text-2xl font-black text-slate-800">{{ number_format($currentStd['bb_min'] ?? 1.66, 2, ',', '.') }} - {{ number_format($currentStd['bb_max'] ?? 1.82, 2, ',', '.') }}</span>
-                    <span class="text-xs text-slate-500 font-semibold">kg</span>
-                </div>
-            </div>
-            <div class="farm-card p-4 bg-white border border-slate-200">
-                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Batas Toleransi Deviasi</span>
-                <div class="flex items-baseline gap-1 mt-1">
-                    <span class="text-xl sm:text-2xl font-black text-amber-600">&plusmn; 0.08</span>
-                    <span class="text-xs text-slate-500 font-semibold">kg (80 gram)</span>
-                </div>
-            </div>
-            <div class="farm-card p-4 bg-white border border-slate-200">
-                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Target Keseragaman</span>
-                <div class="flex items-baseline gap-1 mt-1">
-                    <span class="text-xl sm:text-2xl font-black text-emerald-600">&ge; 85%</span>
-                    <span class="text-xs text-slate-500 font-semibold">flock seragam</span>
-                </div>
-            </div>
-        </div>
 
     @endif
 

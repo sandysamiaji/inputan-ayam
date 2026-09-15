@@ -606,45 +606,28 @@
                 <div class="row-fields">
                     <div class="field">
                         <label>Telur Baik (Butir)</label>
-                        <input type="number" name="good_eggs" id="prodTelurBaik" value="1488" min="0" oninput="calcProduksi()" required>
+                        <input type="number" name="good_eggs" id="prodTelurBaik" value="" min="0" oninput="calcProduksi()" required placeholder="0">
                     </div>
                     <div class="field">
-                        <label>Retak (Butir)</label>
-                        <input type="number" name="retak" id="prodRetak" value="32" min="0" oninput="calcProduksi()">
+                        <label>Retak/Pecah (Butir)</label>
+                        <input type="number" name="broken_eggs" id="prodRetakPecah" value="0" min="0" oninput="calcProduksi()">
                     </div>
                 </div>
 
                 <div class="row-fields">
                     <div class="field">
-                        <label>Pecah (Butir)</label>
-                        <input type="number" name="broken_eggs" id="prodPecah" value="16" min="0" oninput="calcProduksi()">
+                        <label>Telur Rusak (Butir)</label>
+                        <input type="number" name="abnormal_eggs" id="prodRusak" value="0" min="0" oninput="calcProduksi()">
                     </div>
                     <div class="field">
-                        <label>Total Telur</label>
-                        <input class="readonly" id="prodTotalTelur" value="1536 butir" readonly>
-                        <input type="hidden" name="total_eggs" id="prodTotalHidden" value="1536">
+                        <label>Jumlah Peti (Opsional)</label>
+                        <input type="number" step="0.01" name="crates_count" id="prodPeti" value="0" min="0">
                     </div>
                 </div>
 
-                <!-- Live Metrics -->
-                <div class="metrics">
-                    <div class="metric">
-                        <small>HD%</small>
-                        <b id="metricHD">195,3%</b>
-                    </div>
-                    <div class="metric">
-                        <small>Reject</small>
-                        <b id="metricReject">3,1%</b>
-                    </div>
-                    <div class="metric">
-                        <small>Berat Estimasi</small>
-                        <b id="metricBerat">92,2 Kg</b>
-                    </div>
-                    <div class="metric">
-                        <small>Stok Masuk</small>
-                        <b id="metricPeti">49 Peti*</b>
-                        <input type="hidden" name="crates_count" id="prodCratesHidden" value="49">
-                    </div>
+                <div class="field">
+                    <label>Total Telur (Otomatis)</label>
+                    <input class="readonly" id="prodTotalTelur" value="0 butir" readonly>
                 </div>
 
                 <div class="field" style="margin-top:11px">
@@ -659,32 +642,7 @@
 
                 <button type="submit" class="btn-submit">Simpan Produksi</button>
                 <a href="{{ route('dashboard') }}" class="btn-cancel">Batal</a>
-                <div class="info-note">Konversi peti mengikuti pengaturan Master. Sistem tidak mengunci jumlah telur per peti di halaman Input.</div>
             </form>
-        </section>
-
-        <!-- Stok Terkait Telur -->
-        <section class="form-card">
-            <div class="cardhead">
-                <h2>Stok Terkait</h2>
-                <span class="tag">Real-time</span>
-            </div>
-            <div class="stock-row">
-                <span>Stok Telur Saat Ini</span>
-                <b class="orange">{{ number_format($telurStokSaatIni, 0, ',', '.') }} Peti</b>
-            </div>
-            <div class="stock-row">
-                <span>Masuk Hari Ini</span>
-                <b class="green">{{ number_format($telurMasukHariIni, 0, ',', '.') }} Peti</b>
-            </div>
-            <div class="stock-row">
-                <span>Keluar Hari Ini</span>
-                <b>{{ number_format($telurKeluarHariIni, 0, ',', '.') }} Peti</b>
-            </div>
-            <div class="stock-row">
-                <span>Terjual</span>
-                <b>{{ number_format($telurTerjualKg, 0, ',', '.') }} Kg</b>
-            </div>
         </section>
     </div>
 
@@ -1139,32 +1097,11 @@ function updateCoopPop(prefix) {
 // 4. Calculations for Produksi Telur
 function calcProduksi() {
     const baik = parseInt(document.getElementById('prodTelurBaik').value) || 0;
-    const retak = parseInt(document.getElementById('prodRetak').value) || 0;
-    const pecah = parseInt(document.getElementById('prodPecah').value) || 0;
-    const total = baik + retak + pecah;
+    const retakPecah = parseInt(document.getElementById('prodRetakPecah').value) || 0;
+    const rusak = parseInt(document.getElementById('prodRusak').value) || 0;
+    const total = baik + retakPecah + rusak;
 
     document.getElementById('prodTotalTelur').value = total + ' butir';
-    document.getElementById('prodTotalHidden').value = total;
-
-    const popText = document.getElementById('prodPopulasi').value;
-    const pop = parseInt(popText) || 762;
-
-    // HD%
-    const hd = pop > 0 ? ((total / pop) * 100).toFixed(1) : 0;
-    document.getElementById('metricHD').textContent = ('' + hd).replace('.', ',') + '%';
-
-    // Reject%
-    const reject = total > 0 ? (((retak + pecah) / total) * 100).toFixed(1) : 0;
-    document.getElementById('metricReject').textContent = ('' + reject).replace('.', ',') + '%';
-
-    // Berat Estimasi (60g per butir = 0.06 kg)
-    const berat = (total * 0.06).toFixed(1);
-    document.getElementById('metricBerat').textContent = ('' + berat).replace('.', ',') + ' Kg';
-
-    // Stok Masuk Peti (estimasi 1 peti ~ 30-31 butir konversi)
-    const peti = Math.round(baik / 30);
-    document.getElementById('metricPeti').textContent = peti + ' Peti*';
-    document.getElementById('prodCratesHidden').value = peti;
 }
 
 // 5. Calculations for Pemakaian Pakan

@@ -314,8 +314,9 @@ class DashboardController extends Controller
     {
         $validated = $request->validate([
             'coop_id' => 'required|exists:coops,id',
-            'total_eggs' => 'required|numeric|min:1',
+            'good_eggs' => 'required|numeric|min:0',
             'broken_eggs' => 'nullable|numeric|min:0',
+            'abnormal_eggs' => 'nullable|numeric|min:0',
             'crates_count' => 'nullable|numeric|min:0',
             'date' => 'nullable|date',
             'time' => 'nullable',
@@ -323,11 +324,12 @@ class DashboardController extends Controller
         ]);
 
         $coop = Coop::findOrFail($validated['coop_id']);
-        $totalEggs = (int) $validated['total_eggs'];
+        $goodEggs = (int) $validated['good_eggs'];
         $brokenEggs = (int) ($validated['broken_eggs'] ?? 0);
-        $goodEggs = max(0, $totalEggs - $brokenEggs);
+        $abnormalEggs = (int) ($validated['abnormal_eggs'] ?? 0);
+        $totalEggs = $goodEggs + $brokenEggs + $abnormalEggs;
 
-        // Jika peti tidak diisi, estimasikan 25 butir per kg atau 1 peti ~ 25 butir / disesuaikan
+        // Jika peti tidak diisi, estimasikan
         $cratesCount = isset($validated['crates_count']) && $validated['crates_count'] > 0
             ? (float) $validated['crates_count']
             : round($totalEggs / 25, 2);
@@ -340,6 +342,7 @@ class DashboardController extends Controller
             'time' => $validated['time'] ?? Carbon::now()->format('H:i:s'),
             'total_eggs' => $totalEggs,
             'broken_eggs' => $brokenEggs,
+            'abnormal_eggs' => $abnormalEggs,
             'good_eggs' => $goodEggs,
             'crates_count' => $cratesCount,
             'notes' => $validated['notes'] ?? null,

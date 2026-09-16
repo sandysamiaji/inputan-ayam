@@ -662,13 +662,6 @@
                 <span class="arr">›</span>
             </a>
 
-            <!-- 7. Pengaturan Sistem -->
-            <a href="#card-pengaturan" onclick="openSection('pengaturan'); return false;" class="menu" id="menu-pengaturan">
-                <div class="ico gray">⚙</div>
-                <b>Pengaturan</b>
-                <p>Parameter sistem</p>
-                <span class="arr">›</span>
-            </a>
         </div>
     </div>
 
@@ -1033,187 +1026,6 @@
         </section>
     </div>
 
-    <!-- ========================================== -->
-    <!-- 7. VIEW: PENGATURAN SISTEM (DEDICATED PAGE) -->
-    <!-- ========================================== -->
-    <div id="view-pengaturan" style="{{ $section === 'pengaturan' ? '' : 'display:none;' }}">
-        <div class="head">
-            <a href="{{ route('master.index') }}" onclick="openSection('hub'); return false;" class="back" title="Kembali ke Master Hub">‹</a>
-            <div>
-                <h1>Pengaturan Sistem</h1>
-                <p>Parameter yang dipakai engine</p>
-            </div>
-        </div>
-
-        <div class="label">Data Pendukung</div>
-        <section class="card">
-            <div class="ctop" style="margin-bottom: 8px;">
-                <div class="round" style="background:#edf1f5;color:#526077">⚙</div>
-                <div>
-                    <h3>Pengaturan Sistem</h3>
-                    <small>Parameter yang dipakai engine</small>
-                </div>
-                <button type="button" onclick="togglePengaturanEdit()" id="btn-toggle-pengaturan" style="margin-left:auto; background:#f0f4f9; border:1px solid #dce2eb; color:#41506b; border-radius:8px; padding:5px 11px; font-size:10px; font-weight:800; cursor:pointer; display:flex; align-items:center; gap:5px; transition:all .15s;">
-                    <span id="btn-toggle-icon">✎</span> <span id="btn-toggle-text">Edit Nilai</span>
-                </button>
-            </div>
-
-            <!-- 1. VIEW MODE -->
-            <div id="pengaturan-view-mode">
-                <div class="setting">
-                    <div>
-                        <b>Isi Tray</b>
-                        <small>Konversi butir → tray</small>
-                    </div>
-                    <span class="val">{{ $systemSettings['isi_tray'] ?? '30 butir' }}</span>
-                </div>
-                <div class="setting">
-                    <div>
-                        <b>Berat Telur</b>
-                        <small>Acuan berat per butir</small>
-                    </div>
-                    <span class="val">{{ $systemSettings['berat_telur'] ?? '0,06 kg' }}</span>
-                </div>
-                <div class="setting">
-                    <div>
-                        <b>Berat Karung Pakan</b>
-                        <small>Konversi kg → karung</small>
-                    </div>
-                    <span class="val">{{ $systemSettings['berat_per_karung'] ?? '50 kg' }}</span>
-                </div>
-                <div class="setting">
-                    <div>
-                        <b>HD Target</b>
-                        <small>Target performa</small>
-                    </div>
-                    <span class="val">{{ $systemSettings['hd_target'] ?? '95%' }}</span>
-                </div>
-                <div class="setting">
-                    <div>
-                        <b>HD Warning</b>
-                        <small>Batas peringatan</small>
-                    </div>
-                    <span class="val">{{ $systemSettings['hd_warning'] ?? '90%' }}</span>
-                </div>
-                <div class="setting">
-                    <div>
-                        <b>HD Minimum</b>
-                        <small>Batas minimum</small>
-                    </div>
-                    <span class="val">{{ $systemSettings['hd_minimum'] ?? '88%' }}</span>
-                </div>
-                <div class="setting">
-                    <div>
-                        <b>Reject Maksimum</b>
-                        <small>Batas reject</small>
-                    </div>
-                    <span class="val">{{ $systemSettings['reject_maximum'] ?? '2%' }}</span>
-                </div>
-
-                <div style="display:flex; flex-direction:column; gap:6px; margin-top:12px;">
-                    <button type="button" onclick="togglePengaturanEdit(true)" class="edit" style="margin-top:0;">
-                        ✎ Edit Data Pengaturan Ini
-                    </button>
-                    <a href="{{ route('master.settings') }}" style="text-align:center; font-size:9.5px; font-weight:700; color:#64748b; padding:8px; border:1px solid #e2e8f0; border-radius:8px; text-decoration:none; background:#f8fafc; transition:all .15s;">
-                        ⚙ Buka Halaman Preferensi Aplikasi Lengkap
-                    </a>
-                </div>
-            </div>
-
-            <!-- 2. EDIT FORM MODE -->
-            <form id="pengaturan-edit-mode" method="POST" action="{{ route('master.settings.update') }}" style="display:none; margin-top:4px;">
-                @csrf
-                <input type="hidden" name="from_section" value="pengaturan">
-
-                <div class="setting" style="padding:7px 0;">
-                    <div>
-                        <b>Isi Tray</b>
-                        <small>Konversi butir → tray</small>
-                    </div>
-                    <div style="display:flex; align-items:center; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden; width:130px;">
-                        <input type="number" step="1" min="1" name="isi_tray" value="{{ preg_replace('/[^0-9.]/', '', str_replace(',', '.', $systemSettings['isi_tray'] ?? '30')) }}" required style="width:100%; border:none; padding:6px 8px; font-size:11px; font-weight:800; color:#1e293b; text-align:right; background:transparent; outline:none;">
-                        <span style="font-size:9px; font-weight:800; color:#64748b; padding:0 8px 0 2px; white-space:nowrap; background:#f1f5f9; height:100%; display:flex; align-items:center;">butir</span>
-                    </div>
-                </div>
-
-                <div class="setting" style="padding:7px 0;">
-                    <div>
-                        <b>Berat Telur</b>
-                        <small>Acuan berat per butir</small>
-                    </div>
-                    <div style="display:flex; align-items:center; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden; width:130px;">
-                        <input type="number" step="0.001" min="0.001" name="berat_telur" value="{{ preg_replace('/[^0-9.]/', '', str_replace(',', '.', $systemSettings['berat_telur'] ?? '0.06')) }}" required style="width:100%; border:none; padding:6px 8px; font-size:11px; font-weight:800; color:#1e293b; text-align:right; background:transparent; outline:none;">
-                        <span style="font-size:9px; font-weight:800; color:#64748b; padding:0 8px 0 2px; white-space:nowrap; background:#f1f5f9; height:100%; display:flex; align-items:center;">kg</span>
-                    </div>
-                </div>
-
-                <div class="setting" style="padding:7px 0;">
-                    <div>
-                        <b>Berat Karung Pakan</b>
-                        <small>Konversi kg → karung</small>
-                    </div>
-                    <div style="display:flex; align-items:center; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden; width:130px;">
-                        <input type="number" step="0.5" min="1" name="berat_per_karung" value="{{ preg_replace('/[^0-9.]/', '', str_replace(',', '.', $systemSettings['berat_per_karung'] ?? '50')) }}" required style="width:100%; border:none; padding:6px 8px; font-size:11px; font-weight:800; color:#1e293b; text-align:right; background:transparent; outline:none;">
-                        <span style="font-size:9px; font-weight:800; color:#64748b; padding:0 8px 0 2px; white-space:nowrap; background:#f1f5f9; height:100%; display:flex; align-items:center;">kg</span>
-                    </div>
-                </div>
-
-                <div class="setting" style="padding:7px 0;">
-                    <div>
-                        <b>HD Target</b>
-                        <small>Target performa</small>
-                    </div>
-                    <div style="display:flex; align-items:center; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden; width:130px;">
-                        <input type="number" step="0.1" min="0" max="100" name="hd_target" value="{{ preg_replace('/[^0-9.]/', '', str_replace(',', '.', $systemSettings['hd_target'] ?? '95')) }}" required style="width:100%; border:none; padding:6px 8px; font-size:11px; font-weight:800; color:#1e293b; text-align:right; background:transparent; outline:none;">
-                        <span style="font-size:9px; font-weight:800; color:#64748b; padding:0 8px 0 2px; white-space:nowrap; background:#f1f5f9; height:100%; display:flex; align-items:center;">%</span>
-                    </div>
-                </div>
-
-                <div class="setting" style="padding:7px 0;">
-                    <div>
-                        <b>HD Warning</b>
-                        <small>Batas peringatan</small>
-                    </div>
-                    <div style="display:flex; align-items:center; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden; width:130px;">
-                        <input type="number" step="0.1" min="0" max="100" name="hd_warning" value="{{ preg_replace('/[^0-9.]/', '', str_replace(',', '.', $systemSettings['hd_warning'] ?? '90')) }}" required style="width:100%; border:none; padding:6px 8px; font-size:11px; font-weight:800; color:#1e293b; text-align:right; background:transparent; outline:none;">
-                        <span style="font-size:9px; font-weight:800; color:#64748b; padding:0 8px 0 2px; white-space:nowrap; background:#f1f5f9; height:100%; display:flex; align-items:center;">%</span>
-                    </div>
-                </div>
-
-                <div class="setting" style="padding:7px 0;">
-                    <div>
-                        <b>HD Minimum</b>
-                        <small>Batas minimum</small>
-                    </div>
-                    <div style="display:flex; align-items:center; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden; width:130px;">
-                        <input type="number" step="0.1" min="0" max="100" name="hd_minimum" value="{{ preg_replace('/[^0-9.]/', '', str_replace(',', '.', $systemSettings['hd_minimum'] ?? '88')) }}" required style="width:100%; border:none; padding:6px 8px; font-size:11px; font-weight:800; color:#1e293b; text-align:right; background:transparent; outline:none;">
-                        <span style="font-size:9px; font-weight:800; color:#64748b; padding:0 8px 0 2px; white-space:nowrap; background:#f1f5f9; height:100%; display:flex; align-items:center;">%</span>
-                    </div>
-                </div>
-
-                <div class="setting" style="padding:7px 0;">
-                    <div>
-                        <b>Reject Maksimum</b>
-                        <small>Batas reject</small>
-                    </div>
-                    <div style="display:flex; align-items:center; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden; width:130px;">
-                        <input type="number" step="0.1" min="0" max="100" name="reject_maximum" value="{{ preg_replace('/[^0-9.]/', '', str_replace(',', '.', $systemSettings['reject_maximum'] ?? '2')) }}" required style="width:100%; border:none; padding:6px 8px; font-size:11px; font-weight:800; color:#1e293b; text-align:right; background:transparent; outline:none;">
-                        <span style="font-size:9px; font-weight:800; color:#64748b; padding:0 8px 0 2px; white-space:nowrap; background:#f1f5f9; height:100%; display:flex; align-items:center;">%</span>
-                    </div>
-                </div>
-
-                <div style="display:flex; gap:8px; margin-top:14px;">
-                    <button type="submit" class="edit" style="flex:2; margin-top:0; background:#078f68; display:flex; align-items:center; justify-content:center; gap:6px;">
-                        <span>💾</span> Simpan Parameter
-                    </button>
-                    <button type="button" onclick="togglePengaturanEdit(false)" style="flex:1; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:8px; font-size:9.5px; font-weight:800; color:#475569; cursor:pointer; padding:9px;">
-                        Batal
-                    </button>
-                </div>
-            </form>
-        </section>
-    </div>
-
 </div>
 
 <!-- Interactive Engine for Age-based Standards (13 - 90 Weeks) & Section Switching -->
@@ -1232,7 +1044,7 @@ function getSectionFromUrl() {
     // Clean up #card- prefix if present (e.g. card-standar-produksi -> standar-produksi)
     const cleaned = raw.replace(/^card-/, '');
     
-    const valid = ['hub', 'standar-produksi', 'standar-pakan', 'standar-bb', 'master-flock', 'vaksin-obat', 'pengaturan'];
+    const valid = ['hub', 'standar-produksi', 'standar-pakan', 'standar-bb', 'master-flock', 'vaksin-obat'];
     if (valid.includes(cleaned)) {
         return cleaned;
     }
@@ -1241,7 +1053,7 @@ function getSectionFromUrl() {
 
 function openSection(sec, push = true) {
     currentSection = sec;
-    const allSections = ['hub', 'standar-produksi', 'standar-pakan', 'standar-bb', 'master-flock', 'vaksin-obat', 'pengaturan'];
+    const allSections = ['hub', 'standar-produksi', 'standar-pakan', 'standar-bb', 'master-flock', 'vaksin-obat'];
     
     allSections.forEach(s => {
         const el = document.getElementById('view-' + s);
@@ -1266,38 +1078,11 @@ window.addEventListener('hashchange', function () {
     openSection(getSectionFromUrl(), false);
 });
 
-// Toggle edit mode untuk Pengaturan Sistem
-function togglePengaturanEdit(forceState) {
-    const viewEl = document.getElementById('pengaturan-view-mode');
-    const editEl = document.getElementById('pengaturan-edit-mode');
-    const textEl = document.getElementById('btn-toggle-text');
-    const iconEl = document.getElementById('btn-toggle-icon');
-
-    if (!viewEl || !editEl) return;
-    const isCurrentlyEditing = (editEl.style.display !== 'none');
-    const targetState = (typeof forceState === 'boolean') ? forceState : !isCurrentlyEditing;
-
-    if (targetState) {
-        viewEl.style.display = 'none';
-        editEl.style.display = 'block';
-        if (textEl) textEl.textContent = 'Batal';
-        if (iconEl) iconEl.textContent = '✕';
-    } else {
-        viewEl.style.display = 'block';
-        editEl.style.display = 'none';
-        if (textEl) textEl.textContent = 'Edit Nilai';
-        if (iconEl) iconEl.textContent = '✎';
-    }
-}
-
 // Run immediately to activate requested section on page load
 (function() {
     const initSec = getSectionFromUrl();
     if (initSec && initSec !== 'hub') {
         openSection(initSec, false);
-    }
-    if (window.location.hash.includes('edit-pengaturan') || (new URLSearchParams(window.location.search)).get('edit') === 'pengaturan') {
-        togglePengaturanEdit(true);
     }
 })();
 

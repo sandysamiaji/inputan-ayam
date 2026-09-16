@@ -6,7 +6,7 @@
     <!-- Top Navigation Header -->
     <div class="flex items-center justify-between gap-3">
         <div class="flex items-center gap-2.5">
-            <a href="{{ route('master.index') }}#card-pengaturan" class="w-9 h-9 rounded-xl bg-white border border-slate-200 text-slate-700 hover:text-maroon-800 hover:border-maroon-300 flex items-center justify-center shadow-sm transition-all active:scale-95">
+            <a href="{{ route('master.index') }}" class="w-9 h-9 rounded-xl bg-white border border-slate-200 text-slate-700 hover:text-maroon-800 hover:border-maroon-300 flex items-center justify-center shadow-sm transition-all active:scale-95">
                 <i data-lucide="arrow-left" class="w-5 h-5"></i>
             </a>
             <div>
@@ -132,7 +132,7 @@
             </div>
 
             <div class="pt-4 border-t border-slate-100 flex justify-end gap-3">
-                <a href="{{ route('master.index') }}#card-pengaturan" class="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5">
+                <a href="{{ route('master.index') }}" class="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5">
                     Kembali
                 </a>
                 <button type="submit" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md transition-all active:scale-95 flex items-center gap-2">

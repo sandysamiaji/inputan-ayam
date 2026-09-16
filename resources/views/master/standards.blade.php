@@ -146,12 +146,11 @@
                                 <th class="py-3 px-3.5 whitespace-nowrap">Pakan Harian (g/ekor)</th>
                                 <th class="py-3 px-3.5 whitespace-nowrap">Porsi Pagi (40%)</th>
                                 <th class="py-3 px-3.5 whitespace-nowrap">Porsi Sore (60%)</th>
-                                <th class="py-3 px-3.5 whitespace-nowrap">Estimasi Farm (Kg)</th>
                             @elseif($activeTab === 'bb')
                                 <th class="py-3 px-3.5 whitespace-nowrap">BB Minimum</th>
                                 <th class="py-3 px-3.5 whitespace-nowrap">BB Target (Ideal)</th>
                                 <th class="py-3 px-3.5 whitespace-nowrap">BB Maksimum</th>
-                                <th class="py-3 px-3.5 whitespace-nowrap">Batas Toleransi</th>
+                                <th class="py-3 px-3.5 whitespace-nowrap">Batas Toleransi telur</th>
                             @endif
 
                             <th class="py-3 px-3.5 text-center whitespace-nowrap">Aksi</th>
@@ -227,9 +226,6 @@
                                     </td>
                                     <td class="py-3 px-3.5 whitespace-nowrap font-semibold text-slate-700">
                                         {{ number_format($std->feed_sore, 1, ',', '.') }} g
-                                    </td>
-                                    <td class="py-3 px-3.5 whitespace-nowrap font-bold text-maroon-800">
-                                        {{ number_format($rowFeedKg, 1, ',', '.') }} kg
                                     </td>
 
                                 <!-- Kolom Khusus Tab Standar BB -->

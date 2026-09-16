@@ -14,10 +14,23 @@
                         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                         Kandang Aktif
                     </span>
-                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">
-                        <i data-lucide="layers" class="w-3.5 h-3.5 text-slate-400"></i>
-                        Klotter 1 (3 Blok)
-                    </span>
+                    @forelse($flocks as $flock)
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">
+                            <i data-lucide="layers" class="w-3.5 h-3.5 text-slate-400"></i>
+                            {{ $flock->name }} ({{ $flock->coops->count() }} Blok)
+                        </span>
+                    @empty
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">
+                            <i data-lucide="layers" class="w-3.5 h-3.5 text-slate-400"></i>
+                            {{ $totalCoopsCount }} Blok Kandang
+                        </span>
+                    @endforelse
+                    @if($coops->whereNull('flock_id')->count() > 0)
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">
+                            <i data-lucide="layers" class="w-3.5 h-3.5 text-slate-400"></i>
+                            Non-Kloter ({{ $coops->whereNull('flock_id')->count() }} Blok)
+                        </span>
+                    @endif
                     <span class="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">
                         <i data-lucide="users" class="w-3.5 h-3.5 text-slate-400"></i>
                         {{ number_format($totalActiveChickens, 0, ',', '.') }} Ekor Ayam
@@ -47,7 +60,7 @@
         <div class="flex items-center justify-between mb-3 px-1">
             <div class="flex items-center gap-2">
                 <div class="w-2.5 h-2.5 rounded-full bg-maroon-800"></div>
-                <h3 class="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-800">RINGKASAN HARI INI test</h3>
+                <h3 class="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-800">RINGKASAN HARI INI</h3>
                 <span class="text-xs text-slate-400 font-medium hidden sm:inline">(Data per {{ $carbonDate->day }} {{ $namaBulan }} {{ $carbonDate->year }})</span>
             </div>
             <span class="text-xs text-maroon-800 font-semibold flex items-center gap-1">

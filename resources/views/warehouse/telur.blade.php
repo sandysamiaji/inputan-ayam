@@ -91,11 +91,6 @@
                 </a>
             @endif
         </form>
-
-        <button onclick="openModalInputTelur()" class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-maroon-800 hover:bg-maroon-900 text-white text-xs sm:text-sm font-bold shadow-md shadow-maroon-900/20 transition-all active:scale-95 shrink-0">
-            <i data-lucide="plus" class="w-4 h-4 stroke-[2.5]"></i>
-            <span>Input Telur</span>
-        </button>
     </div>
 
     <!-- Filter Tabs: Semua | Masuk | Keluar | Penjualan nochifram -->

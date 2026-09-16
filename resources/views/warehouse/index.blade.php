@@ -671,7 +671,11 @@
                 @php
                     $isTelur = strtolower($sale->category) === 'telur';
                     $petugasUsername = !empty($sale->user_username) ? '@' . $sale->user_username : ($sale->user_name ?? null);
-                    $tripUsername = $sale->trip_code ?? ($sale->driver_name ?? null);
+                    
+                    $rawTripUser = !empty($sale->trip_user_username) ? '@' . $sale->trip_user_username : ($sale->trip_user_name ?? null);
+                    $tripCodeStr = $sale->trip_code ?? ($sale->driver_name ?? null);
+                    $tripUsername = $rawTripUser ? $rawTripUser . ($tripCodeStr ? " ({$tripCodeStr})" : '') : $tripCodeStr;
+
                     $tooltipText = "Petugas Input: " . ($petugasUsername ?: 'Kasir System') . ($tripUsername ? " | Perjalanan: {$tripUsername}" : '');
                 @endphp
                 <div class="p-3.5 rounded-2xl bg-slate-50/70 border border-slate-200/70 hover:border-maroon-300 transition-all flex flex-col justify-between group relative" title="{{ $tooltipText }}">
@@ -697,7 +701,7 @@
                             @endif
 
                             @if($tripUsername)
-                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200/80 text-[10px] font-semibold" title="Perjalanan / Kode Trip: {{ $tripUsername }}">
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200/80 text-[10px] font-semibold" title="Username / Kode Perjalanan: {{ $tripUsername }}">
                                     <i data-lucide="truck" class="w-3 h-3 text-purple-600"></i>
                                     <span>Perjalanan: <b>{{ $tripUsername }}</b></span>
                                 </span>

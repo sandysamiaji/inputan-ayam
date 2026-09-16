@@ -233,6 +233,15 @@ class OutboundIntegrationService
 
         if (\Illuminate\Support\Facades\Schema::hasTable('trips')) {
             $query->leftJoin('trips', 'sales.trip_id', '=', 'trips.id');
+            if (\Illuminate\Support\Facades\Schema::hasTable('users') && \Illuminate\Support\Facades\Schema::hasColumn('trips', 'user_id')) {
+                $query->leftJoin('users as trip_users', 'trips.user_id', '=', 'trip_users.id');
+                if (\Illuminate\Support\Facades\Schema::hasColumn('users', 'username')) {
+                    $query->addSelect('trip_users.username as trip_user_username');
+                }
+                if (\Illuminate\Support\Facades\Schema::hasColumn('users', 'name')) {
+                    $query->addSelect('trip_users.name as trip_user_name');
+                }
+            }
             if (\Illuminate\Support\Facades\Schema::hasColumn('trips', 'trip_code')) {
                 $query->addSelect('trips.trip_code');
             }

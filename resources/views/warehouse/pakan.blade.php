@@ -140,7 +140,11 @@
             @forelse($salesList as $sale)
                 @php
                     $petugasUsername = !empty($sale->user_username) ? '@' . $sale->user_username : ($sale->user_name ?? null);
-                    $tripUsername = $sale->trip_code ?? ($sale->driver_name ?? null);
+                    
+                    $rawTripUser = !empty($sale->trip_user_username) ? '@' . $sale->trip_user_username : ($sale->trip_user_name ?? null);
+                    $tripCodeStr = $sale->trip_code ?? ($sale->driver_name ?? null);
+                    $tripUsername = $rawTripUser ? $rawTripUser . ($tripCodeStr ? " ({$tripCodeStr})" : '') : $tripCodeStr;
+
                     $tooltipText = "Petugas Input: " . ($petugasUsername ?: 'Kasir System') . ($tripUsername ? " | Perjalanan: {$tripUsername}" : '');
                 @endphp
                 <div class="farm-card p-3.5 sm:p-4 hover:border-maroon-200 transition-all flex items-center justify-between gap-3" title="{{ $tooltipText }}">
@@ -173,7 +177,7 @@
                                 @endif
                                 @if($tripUsername)
                                     <span>•</span>
-                                    <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-200" title="Perjalanan / Kode Trip: {{ $tripUsername }}">
+                                    <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-200" title="Username / Kode Perjalanan: {{ $tripUsername }}">
                                         <i data-lucide="truck" class="w-3 h-3"></i>
                                         <span>Perjalanan: <b>{{ $tripUsername }}</b></span>
                                     </span>

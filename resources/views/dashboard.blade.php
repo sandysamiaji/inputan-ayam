@@ -193,34 +193,7 @@
                             <span class="hidden sm:inline">Kenapa "PRODUKSI NAIK"?</span>
                             <span class="sm:hidden">Alasan Fase</span>
                         </button>
-                        <a href="{{ route('master.flocks') }}" class="text-xs text-maroon-800 hover:text-maroon-900 font-bold flex items-center gap-1 bg-maroon-50 hover:bg-maroon-100 px-2.5 py-1 rounded-lg border border-maroon-200 transition-colors">
-                            <i data-lucide="layers" class="w-3.5 h-3.5"></i>
-                            <span>Kelola Blok & Klotter</span>
-                        </a>
                     </div>
-                </div>
-
-                <!-- Ringkasan Total Pakan Seluruh Blok Aktif & Panduan Standar -->
-                <div class="mb-3 p-3 bg-gradient-to-r from-amber-50/80 via-white to-rose-50/70 rounded-xl border border-amber-200/80 flex flex-wrap items-center justify-between gap-3 text-xs shadow-xs">
-                    <div class="flex items-center gap-2.5">
-                        <div class="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center font-black text-sm shrink-0 shadow-xs">
-                            🌾
-                        </div>
-                        <div>
-                            <div class="flex items-center gap-1.5 font-bold text-slate-900">
-                                <span>Total Kebutuhan Pakan Seluruh Blok:</span>
-                                <span class="text-maroon-800 font-black text-sm">{{ number_format($totalFarmPakanKg, 1, ',', '.') }} kg / hari</span>
-                                <span class="text-[11px] font-semibold text-slate-500">({{ $totalFarmKarungStr }})</span>
-                            </div>
-                            <div class="text-[11px] text-slate-500 mt-0.5">
-                                Terhitung otomatis dari umur ayam tiap blok • Pagi (40%): {{ number_format($totalFarmPakanKg * 0.4, 1, ',', '.') }} kg • Sore (60%): {{ number_format($totalFarmPakanKg * 0.6, 1, ',', '.') }} kg
-                            </div>
-                        </div>
-                    </div>
-                    <button type="button" onclick="openModal('modalFasePenjelasan')" class="text-[11px] font-bold text-emerald-800 hover:text-emerald-900 bg-emerald-100/70 hover:bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-300/80 flex items-center gap-1 transition-all">
-                        <i data-lucide="info" class="w-3.5 h-3.5 text-emerald-700"></i>
-                        <span>Penjelasan Fase Umur Ayam</span>
-                    </button>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -354,11 +327,11 @@
                                     </div>
                                 </div>
 
-                                <!-- TOTAL KEBUTUHAN PAKAN BLOK INI (JAWABAN UTAMA USER) -->
+                                <!-- TOTAL KEBUTUHAN PAKAN BLOK INI (ACUAN HITUNGAN STANDAR) -->
                                 <div class="mt-2 p-2.5 rounded-lg bg-amber-50/70 border border-amber-200/80 text-slate-800">
                                     <div class="flex items-center justify-between">
                                         <span class="text-[10px] font-bold text-amber-900 uppercase tracking-wide flex items-center gap-1">
-                                            <span>🌾</span> Total Pakan Blok Ini:
+                                            <span>🌾</span> Standar Pakan Blok Ini:
                                         </span>
                                         <span class="text-[10px] text-amber-800 font-semibold">({{ number_format($coop->active_chickens, 0, ',', '.') }} ekor × {{ $cStd['gram_pakan'] }}g)</span>
                                     </div>
@@ -375,6 +348,68 @@
                                         <span>Jadwal Pagi (40%): <b class="text-slate-800">{{ number_format($pagiKg, 1, ',', '.') }} kg</b></span>
                                         <span>Sore (60%): <b class="text-slate-800">{{ number_format($soreKg, 1, ',', '.') }} kg</b></span>
                                     </div>
+                                </div>
+
+                                <!-- ADU DATA: REALISASI INPUT PAKAN VS HITUNGAN STANDAR -->
+                                @php
+                                    $actualFeedKg = $coopFeedTodayData[$coop->id] ?? 0;
+                                    $feedDiffKg = round($actualFeedKg - $totalPakanCoopKg, 1);
+                                @endphp
+                                <div class="mt-2 p-2.5 rounded-lg text-xs {{ $actualFeedKg == 0 ? 'bg-slate-50 border border-slate-200' : (abs($feedDiffKg) <= 1.0 ? 'bg-emerald-50/80 border border-emerald-200' : ($feedDiffKg > 1.0 ? 'bg-amber-50/80 border border-amber-200' : 'bg-rose-50/80 border border-rose-200')) }}">
+                                    <div class="flex items-center justify-between font-bold text-[11px]">
+                                        <span class="flex items-center gap-1.5 {{ $actualFeedKg == 0 ? 'text-slate-700' : (abs($feedDiffKg) <= 1.0 ? 'text-emerald-900' : ($feedDiffKg > 1.0 ? 'text-amber-900' : 'text-rose-900')) }}">
+                                            <i data-lucide="scale" class="w-3.5 h-3.5"></i>
+                                            <span>Realisasi Input Pakan:</span>
+                                        </span>
+                                        @if($actualFeedKg == 0)
+                                            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-200/80 text-slate-600 border border-slate-300/60">
+                                                Belum Input
+                                            </span>
+                                        @elseif(abs($feedDiffKg) <= 1.0)
+                                            <span class="text-[10px] font-black px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 shadow-2xs">
+                                                <i data-lucide="check-circle-2" class="w-3 h-3 text-emerald-600"></i>
+                                                Sesuai Standar
+                                            </span>
+                                        @elseif($feedDiffKg > 1.0)
+                                            <span class="text-[10px] font-black px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1 shadow-2xs">
+                                                <i data-lucide="alert-triangle" class="w-3 h-3 text-amber-600"></i>
+                                                Lebih {{ number_format(abs($feedDiffKg), 1, ',', '.') }} kg
+                                            </span>
+                                        @else
+                                            <span class="text-[10px] font-black px-2 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-300 flex items-center gap-1 shadow-2xs">
+                                                <i data-lucide="alert-circle" class="w-3 h-3 text-rose-600"></i>
+                                                Kurang {{ number_format(abs($feedDiffKg), 1, ',', '.') }} kg
+                                            </span>
+                                        @endif
+                                    </div>
+
+                                    <div class="mt-1 flex items-baseline justify-between text-[11px]">
+                                        <div>
+                                            <span class="text-sm font-black {{ $actualFeedKg == 0 ? 'text-slate-500' : (abs($feedDiffKg) <= 1.0 ? 'text-emerald-800' : ($feedDiffKg > 1.0 ? 'text-amber-800' : 'text-rose-800')) }}">
+                                                {{ number_format($actualFeedKg, 1, ',', '.') }} kg
+                                            </span>
+                                            <span class="text-[10px] text-slate-500 font-medium ml-1">diinput hari ini</span>
+                                        </div>
+                                        <span class="text-[10.5px] text-slate-500 font-medium">
+                                            Standar Hitungan: <b>{{ number_format($totalPakanCoopKg, 1, ',', '.') }} kg</b>
+                                        </span>
+                                    </div>
+
+                                    @if($actualFeedKg > 0)
+                                        <div class="mt-1.5 pt-1.5 border-t {{ abs($feedDiffKg) <= 1.0 ? 'border-emerald-200/60 text-emerald-800' : ($feedDiffKg > 1.0 ? 'border-amber-200/60 text-amber-900' : 'border-rose-200/60 text-rose-900') }} text-[10.5px] leading-snug font-medium">
+                                            @if(abs($feedDiffKg) <= 1.0)
+                                                ✔ <b>Pemberian pakan tepat & sesuai hitungan standar</b> (selisih {{ number_format(abs($feedDiffKg), 1, ',', '.') }} kg dari {{ number_format($totalPakanCoopKg, 1, ',', '.') }} kg).
+                                            @elseif($feedDiffKg > 1.0)
+                                                ⚠️ <b>Pemberian pakan MELEBIHI standar</b> sebesar {{ number_format(abs($feedDiffKg), 1, ',', '.') }} kg dari acuan {{ number_format($totalPakanCoopKg, 1, ',', '.') }} kg.
+                                            @else
+                                                ⚠️ <b>Pemberian pakan KURANG dari standar</b> sebesar {{ number_format(abs($feedDiffKg), 1, ',', '.') }} kg dari acuan {{ number_format($totalPakanCoopKg, 1, ',', '.') }} kg.
+                                            @endif
+                                        </div>
+                                    @else
+                                        <div class="mt-1 text-[10px] text-slate-400">
+                                            Belum ada pencatatan pakan untuk {{ $coop->name }} hari ini.
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
 
@@ -482,8 +517,22 @@
                                 @endif
 
                                 <div class="min-w-0">
-                                    <p class="text-xs sm:text-sm font-bold text-slate-900 truncate">{{ $act['title'] }}</p>
-                                    <p class="text-[11px] text-slate-400 truncate">{{ $act['datetime'] }} • {{ $act['subtitle'] }}</p>
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <p class="text-xs sm:text-sm font-bold text-slate-900 truncate">{{ $act['title'] }}</p>
+                                        @if(!empty($act['user_username']))
+                                            <span class="inline-flex items-center gap-1 text-[10px] sm:text-[10.5px] font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded-md border border-slate-200/80 shrink-0" title="Input oleh {{ $act['user_username'] }}">
+                                                <i data-lucide="user" class="w-2.5 h-2.5 text-slate-400"></i>
+                                                <span>Input: <b>{{ $act['user_username'] }}</b></span>
+                                            </span>
+                                        @endif
+                                        @if(!empty($act['trip_username']))
+                                            <span class="inline-flex items-center gap-1 text-[10px] sm:text-[10.5px] font-semibold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded-md border border-indigo-100/80 shrink-0" title="Pembuat Perjalanan: {{ $act['trip_username'] }}">
+                                                <i data-lucide="truck" class="w-2.5 h-2.5 text-indigo-500"></i>
+                                                <span>Perjalanan: <b>{{ $act['trip_username'] }}</b></span>
+                                            </span>
+                                        @endif
+                                    </div>
+                                    <p class="text-[11px] text-slate-400 truncate mt-0.5">{{ $act['datetime'] }} • {{ $act['subtitle'] }}</p>
                                 </div>
                             </div>
 

@@ -64,18 +64,18 @@ class DashboardController extends Controller
         $formattedDate = "{$carbonDate->day} {$namaBulanFull} {$carbonDate->year}";
 
         // 1. Ringkasan Produksi Telur Hari Ini
-        $eggProdRecords = EggProduction::whereDate('date', $selectedDate)->get();
+        $eggProdRecords = EggProduction::with(['coop', 'user'])->whereDate('date', $selectedDate)->get();
         $totalEggCrates = (float) $eggProdRecords->sum('crates_count');
         $totalEggCount = (int) $eggProdRecords->sum('total_eggs');
         $brokenEggCount = (int) $eggProdRecords->sum('broken_eggs');
         $goodEggCount = (int) $eggProdRecords->sum('good_eggs');
 
         // 2. Ringkasan Pemakaian Pakan Hari Ini
-        $feedConsRecords = FeedConsumption::whereDate('date', $selectedDate)->get();
+        $feedConsRecords = FeedConsumption::with(['coop', 'user'])->whereDate('date', $selectedDate)->get();
         $totalFeedKg = (float) $feedConsRecords->sum('quantity_kg');
 
         // 3. Ringkasan Mortalitas Hari Ini
-        $mortalityRecords = Mortality::whereDate('date', $selectedDate)->get();
+        $mortalityRecords = Mortality::with(['coop', 'user'])->whereDate('date', $selectedDate)->get();
         $totalMortalityCount = (int) $mortalityRecords->sum('count');
 
         // 4. Ringkasan Berat Badan Terkini
@@ -85,12 +85,39 @@ class DashboardController extends Controller
         $averageWeightKg = $latestWeight ? (float) $latestWeight->average_weight_kg : 1.620;
 
         // 5. Ringkasan Vaksin & Obat Hari Ini
-        $healthTreatments = HealthTreatment::whereDate('date', $selectedDate)->get();
+        $healthTreatments = HealthTreatment::with(['coop', 'user'])->whereDate('date', $selectedDate)->get();
         $totalHealthActivities = $healthTreatments->count();
 
         // 6. Aktivitas Terakhir (Timeline Gabungan: Produksi, Pakan, Mortalitas, Obat, Gudang, & Penjualan)
-        $farmStockRecords = FarmStock::whereDate('date', $selectedDate)->get();
-        $saleRecords = \App\Models\Sale::with('items')->whereDate('date', $selectedDate)->get();
+        $farmStockRecords = FarmStock::with('user')->whereDate('date', $selectedDate)->get();
+        $saleRecords = \App\Models\Sale::with(['items', 'user'])->whereDate('date', $selectedDate)->get();
+
+        // Map trip user IDs to usernames for sales transactions
+        $allSaleTripIds = $saleRecords->pluck('trip_id')->filter()->unique();
+        $tripUsersMap = collect();
+        if ($allSaleTripIds->isNotEmpty() && \Illuminate\Support\Facades\Schema::hasTable('trips')) {
+            if (\Illuminate\Support\Facades\Schema::hasTable('users')) {
+                $tripUsersMap = DB::table('trips')
+                    ->leftJoin('users', 'trips.user_id', '=', 'users.id')
+                    ->whereIn('trips.id', $allSaleTripIds)
+                    ->select('trips.id as trip_id', DB::raw("COALESCE(users.username, users.name) as uname"))
+                    ->pluck('uname', 'trip_id');
+            }
+        }
+
+        $getUserName = function($userObj) {
+            if (!$userObj) return null;
+            $uname = $userObj->username ?: $userObj->name;
+            if (!$uname) return null;
+            return str_starts_with($uname, '@') ? $uname : '@' . $uname;
+        };
+
+        $getTripUserName = function($tripId) use ($tripUsersMap) {
+            if (!$tripId || !isset($tripUsersMap[$tripId])) return null;
+            $uname = $tripUsersMap[$tripId];
+            if (!$uname) return null;
+            return str_starts_with($uname, '@') ? $uname : '@' . $uname;
+        };
 
         $activities = collect();
 
@@ -106,6 +133,8 @@ class DashboardController extends Controller
                 'time' => $timeStr,
                 'value' => '+' . number_format($item->crates_count, 0, ',', '.') . ' Peti',
                 'subvalue' => number_format($item->total_eggs, 0, ',', '.') . ' Butir',
+                'user_username' => $getUserName($item->user),
+                'trip_username' => null,
                 'raw_timestamp' => $item->created_at ? $item->created_at->timestamp : strtotime($item->date . ' ' . ($item->time ?: '00:00:00')),
             ]);
         }
@@ -122,6 +151,8 @@ class DashboardController extends Controller
                 'time' => $timeStr,
                 'value' => '-' . number_format($item->quantity_kg, 0, ',', '.') . ' Kg',
                 'subvalue' => $item->feeding_time,
+                'user_username' => $getUserName($item->user),
+                'trip_username' => null,
                 'raw_timestamp' => $item->created_at ? $item->created_at->timestamp : strtotime($item->date . ' ' . ($item->time ?: '00:00:00')),
             ]);
         }
@@ -138,6 +169,8 @@ class DashboardController extends Controller
                 'time' => $timeStr,
                 'value' => '-' . $item->count . ' Ekor',
                 'subvalue' => ucfirst($item->type),
+                'user_username' => $getUserName($item->user),
+                'trip_username' => null,
                 'raw_timestamp' => $item->created_at ? $item->created_at->timestamp : strtotime($item->date . ' ' . ($item->time ?: '00:00:00')),
             ]);
         }
@@ -154,6 +187,8 @@ class DashboardController extends Controller
                 'time' => $timeStr,
                 'value' => $item->dosage ?: '1 Kegiatan',
                 'subvalue' => $item->application_method,
+                'user_username' => $getUserName($item->user),
+                'trip_username' => null,
                 'raw_timestamp' => $item->created_at ? $item->created_at->timestamp : strtotime($item->date . ' ' . ($item->time ?: '00:00:00')),
             ]);
         }
@@ -170,6 +205,8 @@ class DashboardController extends Controller
                 'time' => $timeStr,
                 'value' => ($item->type === 'masuk' ? '+' : '-') . number_format($item->quantity, 0, ',', '.') . ' ' . ($item->unit ?: 'Unit'),
                 'subvalue' => ($item->type === 'masuk' ? 'Barang Masuk' : 'Barang Keluar') . ($item->source ? ' (' . $item->source . ')' : ''),
+                'user_username' => $getUserName($item->user),
+                'trip_username' => null,
                 'raw_timestamp' => $item->created_at ? $item->created_at->timestamp : ($item->date ? strtotime($item->date->format('Y-m-d') . ' 00:00:00') : 0),
             ]);
         }
@@ -193,19 +230,40 @@ class DashboardController extends Controller
                 'datetime' => $itemDateStr . ' ' . $timeStr,
                 'time' => $timeStr,
                 'value' => $qtyDisplay,
-                'subvalue' => ($item->invoice_no ? '#' . $item->invoice_no . ' • ' : '') . 'Rp ' . number_format($item->total_amount, 0, ',', '.'),
+                'subvalue' => ($item->invoice_no ? '#' . $item->invoice_no : '') . ($item->payment_status ? ($item->invoice_no ? ' • ' : '') . ucfirst($item->payment_status) : ''),
+                'user_username' => $getUserName($item->user),
+                'trip_username' => $getTripUserName($item->trip_id),
                 'raw_timestamp' => $item->created_at ? $item->created_at->timestamp : ($item->date ? strtotime($item->date->format('Y-m-d') . ' 00:00:00') : 0),
             ]);
         }
 
         // Jika pada tanggal yang dipilih belum ada aktivitas sama sekali, ambil riwayat aktivitas terbaru dari seluruh tanggal
         if ($activities->count() === 0) {
-            $recentEggs = EggProduction::with('coop')->latest('date')->latest('id')->take(5)->get();
-            $recentFeeds = FeedConsumption::with('coop')->latest('date')->latest('id')->take(5)->get();
-            $recentMort = Mortality::with('coop')->latest('date')->latest('id')->take(5)->get();
-            $recentHealth = HealthTreatment::with('coop')->latest('date')->latest('id')->take(5)->get();
-            $recentStock = FarmStock::latest('date')->latest('id')->take(5)->get();
-            $recentSales = \App\Models\Sale::with('items')->latest('date')->latest('id')->take(5)->get();
+            $recentEggs = EggProduction::with(['coop', 'user'])->latest('date')->latest('id')->take(5)->get();
+            $recentFeeds = FeedConsumption::with(['coop', 'user'])->latest('date')->latest('id')->take(5)->get();
+            $recentMort = Mortality::with(['coop', 'user'])->latest('date')->latest('id')->take(5)->get();
+            $recentHealth = HealthTreatment::with(['coop', 'user'])->latest('date')->latest('id')->take(5)->get();
+            $recentStock = FarmStock::with('user')->latest('date')->latest('id')->take(5)->get();
+            $recentSales = \App\Models\Sale::with(['items', 'user'])->latest('date')->latest('id')->take(5)->get();
+
+            $recentTripIds = $recentSales->pluck('trip_id')->filter()->unique();
+            $recentTripUsersMap = collect();
+            if ($recentTripIds->isNotEmpty() && \Illuminate\Support\Facades\Schema::hasTable('trips')) {
+                if (\Illuminate\Support\Facades\Schema::hasTable('users')) {
+                    $recentTripUsersMap = DB::table('trips')
+                        ->leftJoin('users', 'trips.user_id', '=', 'users.id')
+                        ->whereIn('trips.id', $recentTripIds)
+                        ->select('trips.id as trip_id', DB::raw("COALESCE(users.username, users.name) as uname"))
+                        ->pluck('uname', 'trip_id');
+                }
+            }
+
+            $getRecentTripUserName = function($tripId) use ($recentTripUsersMap) {
+                if (!$tripId || !isset($recentTripUsersMap[$tripId])) return null;
+                $uname = $recentTripUsersMap[$tripId];
+                if (!$uname) return null;
+                return str_starts_with($uname, '@') ? $uname : '@' . $uname;
+            };
 
             foreach ($recentEggs as $item) {
                 $coopName = $item->coop ? $item->coop->name : 'Kandang';
@@ -220,6 +278,8 @@ class DashboardController extends Controller
                     'time' => $timeStr,
                     'value' => '+' . number_format($item->crates_count, 0, ',', '.') . ' Peti',
                     'subvalue' => number_format($item->total_eggs, 0, ',', '.') . ' Butir',
+                    'user_username' => $getUserName($item->user),
+                    'trip_username' => null,
                     'raw_timestamp' => $item->created_at ? $item->created_at->timestamp : strtotime($item->date . ' ' . ($item->time ?: '00:00:00')),
                 ]);
             }
@@ -237,6 +297,8 @@ class DashboardController extends Controller
                     'time' => $timeStr,
                     'value' => '-' . number_format($item->quantity_kg, 0, ',', '.') . ' Kg',
                     'subvalue' => $item->feeding_time,
+                    'user_username' => $getUserName($item->user),
+                    'trip_username' => null,
                     'raw_timestamp' => $item->created_at ? $item->created_at->timestamp : strtotime($item->date . ' ' . ($item->time ?: '00:00:00')),
                 ]);
             }
@@ -254,6 +316,8 @@ class DashboardController extends Controller
                     'time' => $timeStr,
                     'value' => '-' . $item->count . ' Ekor',
                     'subvalue' => ucfirst($item->type),
+                    'user_username' => $getUserName($item->user),
+                    'trip_username' => null,
                     'raw_timestamp' => $item->created_at ? $item->created_at->timestamp : strtotime($item->date . ' ' . ($item->time ?: '00:00:00')),
                 ]);
             }
@@ -271,6 +335,8 @@ class DashboardController extends Controller
                     'time' => $timeStr,
                     'value' => $item->dosage ?: '1 Kegiatan',
                     'subvalue' => $item->application_method,
+                    'user_username' => $getUserName($item->user),
+                    'trip_username' => null,
                     'raw_timestamp' => $item->created_at ? $item->created_at->timestamp : strtotime($item->date . ' ' . ($item->time ?: '00:00:00')),
                 ]);
             }
@@ -287,6 +353,8 @@ class DashboardController extends Controller
                     'time' => $timeStr,
                     'value' => ($item->type === 'masuk' ? '+' : '-') . number_format($item->quantity, 0, ',', '.') . ' ' . ($item->unit ?: 'Unit'),
                     'subvalue' => ($item->type === 'masuk' ? 'Barang Masuk' : 'Barang Keluar') . ($item->source ? ' (' . $item->source . ')' : ''),
+                    'user_username' => $getUserName($item->user),
+                    'trip_username' => null,
                     'raw_timestamp' => $item->created_at ? $item->created_at->timestamp : ($item->date ? strtotime($item->date->format('Y-m-d') . ' 00:00:00') : 0),
                 ]);
             }
@@ -310,7 +378,9 @@ class DashboardController extends Controller
                     'datetime' => $iDate . ' ' . $timeStr,
                     'time' => $timeStr,
                     'value' => $qtyDisplay,
-                    'subvalue' => ($item->invoice_no ? '#' . $item->invoice_no . ' • ' : '') . 'Rp ' . number_format($item->total_amount, 0, ',', '.'),
+                    'subvalue' => ($item->invoice_no ? '#' . $item->invoice_no : '') . ($item->payment_status ? ($item->invoice_no ? ' • ' : '') . ucfirst($item->payment_status) : ''),
+                    'user_username' => $getUserName($item->user),
+                    'trip_username' => $getRecentTripUserName($item->trip_id),
                     'raw_timestamp' => $item->created_at ? $item->created_at->timestamp : ($item->date ? strtotime($item->date->format('Y-m-d') . ' 00:00:00') : 0),
                 ]);
             }
@@ -398,9 +468,10 @@ class DashboardController extends Controller
         $farmSisaKg = round(fmod($totalFarmPakanKg, $kgPerKarung), 1);
         $totalFarmKarungStr = ($farmKarung > 0 ? $farmKarung . ' karung ' : '') . ($farmSisaKg > 0 ? '+ ' . $farmSisaKg . ' kg' : ($farmKarung == 0 ? '0 kg' : ''));
 
-        // Hitung HD aktual hari ini per coop dan per flock (HANYA jika telur sudah diinput)
+        // Hitung HD & Pakan aktual hari ini per coop dan per flock (HANYA jika telur/pakan sudah diinput)
         $coopHdData = [];
         $coopEggTodayData = [];
+        $coopFeedTodayData = [];
 
         foreach ($coops as $c) {
             $todayEgg = (int) $eggProdRecords->where('coop_id', $c->id)->sum('total_eggs');
@@ -410,6 +481,7 @@ class DashboardController extends Controller
             } else {
                 $coopHdData[$c->id] = null; // Belum diinput oleh user
             }
+            $coopFeedTodayData[$c->id] = (float) $feedConsRecords->where('coop_id', $c->id)->sum('quantity_kg');
         }
 
         $flockHdData = [];
@@ -466,7 +538,8 @@ class DashboardController extends Controller
             'kgPerKarung',
             'coopHdData',
             'flockHdData',
-            'coopEggTodayData'
+            'coopEggTodayData',
+            'coopFeedTodayData'
         ));
     }
 

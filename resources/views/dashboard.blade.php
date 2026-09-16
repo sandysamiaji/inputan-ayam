@@ -439,8 +439,9 @@
                         <div class="w-2.5 h-2.5 rounded-full bg-maroon-800"></div>
                         <h3 class="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-800">AKTIVITAS TERAKHIR</h3>
                     </div>
-                    <a href="#aktivitas" onclick="showInfoToast('Daftar riwayat lengkap seluruh aktivitas hari ini')" class="text-xs text-maroon-800 font-bold hover:underline">
-                        Lihat semua
+                    <a href="{{ route('rekap.index') }}" class="text-xs text-maroon-800 font-bold hover:underline flex items-center gap-1">
+                        <span>Lihat semua</span>
+                        <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
                     </a>
                 </div>
 
@@ -462,6 +463,18 @@
                                     <div class="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-100 shadow-xs">
                                         <i data-lucide="skull" class="w-4 h-4"></i>
                                     </div>
+                                @elseif($act['category'] === 'stock_masuk')
+                                    <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100 shadow-xs">
+                                        <i data-lucide="arrow-down-left" class="w-4 h-4"></i>
+                                    </div>
+                                @elseif($act['category'] === 'stock_keluar')
+                                    <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-100 shadow-xs">
+                                        <i data-lucide="arrow-up-right" class="w-4 h-4"></i>
+                                    </div>
+                                @elseif($act['category'] === 'sale')
+                                    <div class="w-9 h-9 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center shrink-0 border border-purple-100 shadow-xs">
+                                        <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+                                    </div>
                                 @else
                                     <div class="w-9 h-9 rounded-xl bg-maroon-50 text-maroon-800 flex items-center justify-center shrink-0 border border-maroon-100 shadow-xs">
                                         <i data-lucide="syringe" class="w-4 h-4"></i>
@@ -475,7 +488,7 @@
                             </div>
 
                             <div class="text-right shrink-0 ml-3">
-                                <span class="text-xs sm:text-sm font-black {{ $act['category'] === 'egg' ? 'text-amber-600' : ($act['category'] === 'feed' ? 'text-emerald-600' : ($act['category'] === 'mortality' ? 'text-rose-600' : 'text-maroon-800')) }}">
+                                <span class="text-xs sm:text-sm font-black {{ $act['category'] === 'egg' ? 'text-amber-600' : ($act['category'] === 'feed' ? 'text-emerald-600' : ($act['category'] === 'mortality' ? 'text-rose-600' : ($act['category'] === 'sale' ? 'text-purple-700' : ($act['category'] === 'stock_masuk' ? 'text-blue-600' : ($act['category'] === 'stock_keluar' ? 'text-indigo-600' : 'text-maroon-800'))))) }}">
                                     {{ $act['value'] }}
                                 </span>
                                 @if(!empty($act['subvalue']))
@@ -486,7 +499,7 @@
                     @empty
                         <div class="p-8 text-center text-slate-400">
                             <i data-lucide="inbox" class="w-8 h-8 mx-auto mb-1 text-slate-300"></i>
-                            <p class="text-xs font-medium">Belum ada aktivitas tercatat pada tanggal ini.</p>
+                            <p class="text-xs font-medium">Belum ada aktivitas tercatat.</p>
                         </div>
                     @endforelse
                 </div>

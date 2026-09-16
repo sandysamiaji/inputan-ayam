@@ -86,12 +86,15 @@ class DashboardController extends Controller
         $healthTreatments = HealthTreatment::whereDate('date', $selectedDate)->get();
         $totalHealthActivities = $healthTreatments->count();
 
-        // 6. Aktivitas Terakhir (Timeline Gabungan)
+        // 6. Aktivitas Terakhir (Timeline Gabungan: Produksi, Pakan, Mortalitas, Obat, Gudang, & Penjualan)
+        $farmStockRecords = FarmStock::whereDate('date', $selectedDate)->get();
+        $saleRecords = \App\Models\Sale::with('items')->whereDate('date', $selectedDate)->get();
+
         $activities = collect();
 
         foreach ($eggProdRecords as $item) {
             $coopName = $item->coop ? $item->coop->name : 'Kandang';
-            $timeStr = $item->time ? substr($item->time, 0, 5) : $item->created_at->format('H:i');
+            $timeStr = $item->time ? substr($item->time, 0, 5) : ($item->created_at ? $item->created_at->format('H:i') : '00:00');
             $activities->push([
                 'id' => 'egg_' . $item->id,
                 'category' => 'egg',
@@ -107,7 +110,7 @@ class DashboardController extends Controller
 
         foreach ($feedConsRecords as $item) {
             $coopName = $item->coop ? $item->coop->name : 'Kandang';
-            $timeStr = $item->time ? substr($item->time, 0, 5) : $item->created_at->format('H:i');
+            $timeStr = $item->time ? substr($item->time, 0, 5) : ($item->created_at ? $item->created_at->format('H:i') : '00:00');
             $activities->push([
                 'id' => 'feed_' . $item->id,
                 'category' => 'feed',
@@ -123,15 +126,15 @@ class DashboardController extends Controller
 
         foreach ($mortalityRecords as $item) {
             $coopName = $item->coop ? $item->coop->name : 'Kandang';
-            $timeStr = $item->time ? substr($item->time, 0, 5) : $item->created_at->format('H:i');
+            $timeStr = $item->time ? substr($item->time, 0, 5) : ($item->created_at ? $item->created_at->format('H:i') : '00:00');
             $activities->push([
                 'id' => 'mort_' . $item->id,
                 'category' => 'mortality',
-                'title' => 'Mortalitas',
+                'title' => 'Mortalitas Ayam',
                 'subtitle' => $coopName . ($item->cause ? ' • ' . $item->cause : ''),
                 'datetime' => $carbonDate->format('d/m/Y') . ' ' . $timeStr,
                 'time' => $timeStr,
-                'value' => $item->count . ' Ekor',
+                'value' => '-' . $item->count . ' Ekor',
                 'subvalue' => ucfirst($item->type),
                 'raw_timestamp' => $item->created_at ? $item->created_at->timestamp : strtotime($item->date . ' ' . ($item->time ?: '00:00:00')),
             ]);
@@ -139,7 +142,7 @@ class DashboardController extends Controller
 
         foreach ($healthTreatments as $item) {
             $coopName = $item->coop ? $item->coop->name : 'Semua Blok';
-            $timeStr = $item->time ? substr($item->time, 0, 5) : $item->created_at->format('H:i');
+            $timeStr = $item->time ? substr($item->time, 0, 5) : ($item->created_at ? $item->created_at->format('H:i') : '00:00');
             $activities->push([
                 'id' => 'health_' . $item->id,
                 'category' => 'health',
@@ -153,7 +156,153 @@ class DashboardController extends Controller
             ]);
         }
 
-        $activities = $activities->sortByDesc('raw_timestamp')->values();
+        foreach ($farmStockRecords as $item) {
+            $timeStr = $item->created_at ? $item->created_at->format('H:i') : '00:00';
+            $itemDateStr = $item->date ? $item->date->format('d/m/Y') : $carbonDate->format('d/m/Y');
+            $activities->push([
+                'id' => 'stock_' . $item->id,
+                'category' => $item->type === 'masuk' ? 'stock_masuk' : 'stock_keluar',
+                'title' => 'Mutasi Gudang (' . ucfirst($item->category) . ')',
+                'subtitle' => $item->item_name . ($item->source ? ' • ' . $item->source : ($item->notes ? ' • ' . $item->notes : '')),
+                'datetime' => $itemDateStr . ' ' . $timeStr,
+                'time' => $timeStr,
+                'value' => ($item->type === 'masuk' ? '+' : '-') . number_format($item->quantity, 0, ',', '.') . ' ' . ($item->unit ?: 'Unit'),
+                'subvalue' => ($item->type === 'masuk' ? 'Barang Masuk' : 'Barang Keluar') . ($item->source ? ' (' . $item->source . ')' : ''),
+                'raw_timestamp' => $item->created_at ? $item->created_at->timestamp : ($item->date ? strtotime($item->date->format('Y-m-d') . ' 00:00:00') : 0),
+            ]);
+        }
+
+        foreach ($saleRecords as $item) {
+            $timeStr = $item->created_at ? $item->created_at->format('H:i') : '00:00';
+            $itemDateStr = $item->date ? $item->date->format('d/m/Y') : $carbonDate->format('d/m/Y');
+            $firstItemName = $item->items->count() > 0 ? $item->items->first()->item_name : '';
+            $subTitleStr = ($item->customer_name ?: 'Pelanggan') . ($firstItemName ? ' • ' . $firstItemName : '');
+            $activities->push([
+                'id' => 'sale_' . $item->id,
+                'category' => 'sale',
+                'title' => 'Penjualan ' . ucfirst($item->category ?: 'Telur'),
+                'subtitle' => $subTitleStr,
+                'datetime' => $itemDateStr . ' ' . $timeStr,
+                'time' => $timeStr,
+                'value' => 'Rp ' . number_format($item->total_amount, 0, ',', '.'),
+                'subvalue' => ($item->invoice_no ? $item->invoice_no . ' • ' : '') . ($item->payment_status === 'paid' || $item->payment_status === 'lunas' ? 'Lunas' : ucfirst($item->payment_status ?: 'Terjual')),
+                'raw_timestamp' => $item->created_at ? $item->created_at->timestamp : ($item->date ? strtotime($item->date->format('Y-m-d') . ' 00:00:00') : 0),
+            ]);
+        }
+
+        // Jika pada tanggal yang dipilih belum ada aktivitas sama sekali, ambil riwayat aktivitas terbaru dari seluruh tanggal
+        if ($activities->count() === 0) {
+            $recentEggs = EggProduction::with('coop')->latest('date')->latest('id')->take(5)->get();
+            $recentFeeds = FeedConsumption::with('coop')->latest('date')->latest('id')->take(5)->get();
+            $recentMort = Mortality::with('coop')->latest('date')->latest('id')->take(5)->get();
+            $recentHealth = HealthTreatment::with('coop')->latest('date')->latest('id')->take(5)->get();
+            $recentStock = FarmStock::latest('date')->latest('id')->take(5)->get();
+            $recentSales = \App\Models\Sale::with('items')->latest('date')->latest('id')->take(5)->get();
+
+            foreach ($recentEggs as $item) {
+                $coopName = $item->coop ? $item->coop->name : 'Kandang';
+                $timeStr = $item->time ? substr($item->time, 0, 5) : ($item->created_at ? $item->created_at->format('H:i') : '00:00');
+                $iDate = $item->date ? Carbon::parse($item->date)->format('d/m/Y') : '';
+                $activities->push([
+                    'id' => 'egg_' . $item->id,
+                    'category' => 'egg',
+                    'title' => 'Produksi Telur',
+                    'subtitle' => $coopName . ($item->notes ? ' • ' . $item->notes : ''),
+                    'datetime' => $iDate . ' ' . $timeStr,
+                    'time' => $timeStr,
+                    'value' => '+' . number_format($item->crates_count, 0, ',', '.') . ' Peti',
+                    'subvalue' => number_format($item->total_eggs, 0, ',', '.') . ' Butir',
+                    'raw_timestamp' => $item->created_at ? $item->created_at->timestamp : strtotime($item->date . ' ' . ($item->time ?: '00:00:00')),
+                ]);
+            }
+
+            foreach ($recentFeeds as $item) {
+                $coopName = $item->coop ? $item->coop->name : 'Kandang';
+                $timeStr = $item->time ? substr($item->time, 0, 5) : ($item->created_at ? $item->created_at->format('H:i') : '00:00');
+                $iDate = $item->date ? Carbon::parse($item->date)->format('d/m/Y') : '';
+                $activities->push([
+                    'id' => 'feed_' . $item->id,
+                    'category' => 'feed',
+                    'title' => 'Pemakaian Pakan',
+                    'subtitle' => $coopName . ' • ' . $item->feed_name,
+                    'datetime' => $iDate . ' ' . $timeStr,
+                    'time' => $timeStr,
+                    'value' => '-' . number_format($item->quantity_kg, 0, ',', '.') . ' Kg',
+                    'subvalue' => $item->feeding_time,
+                    'raw_timestamp' => $item->created_at ? $item->created_at->timestamp : strtotime($item->date . ' ' . ($item->time ?: '00:00:00')),
+                ]);
+            }
+
+            foreach ($recentMort as $item) {
+                $coopName = $item->coop ? $item->coop->name : 'Kandang';
+                $timeStr = $item->time ? substr($item->time, 0, 5) : ($item->created_at ? $item->created_at->format('H:i') : '00:00');
+                $iDate = $item->date ? Carbon::parse($item->date)->format('d/m/Y') : '';
+                $activities->push([
+                    'id' => 'mort_' . $item->id,
+                    'category' => 'mortality',
+                    'title' => 'Mortalitas Ayam',
+                    'subtitle' => $coopName . ($item->cause ? ' • ' . $item->cause : ''),
+                    'datetime' => $iDate . ' ' . $timeStr,
+                    'time' => $timeStr,
+                    'value' => '-' . $item->count . ' Ekor',
+                    'subvalue' => ucfirst($item->type),
+                    'raw_timestamp' => $item->created_at ? $item->created_at->timestamp : strtotime($item->date . ' ' . ($item->time ?: '00:00:00')),
+                ]);
+            }
+
+            foreach ($recentHealth as $item) {
+                $coopName = $item->coop ? $item->coop->name : 'Semua Blok';
+                $timeStr = $item->time ? substr($item->time, 0, 5) : ($item->created_at ? $item->created_at->format('H:i') : '00:00');
+                $iDate = $item->date ? Carbon::parse($item->date)->format('d/m/Y') : '';
+                $activities->push([
+                    'id' => 'health_' . $item->id,
+                    'category' => 'health',
+                    'title' => ucfirst($item->type) . ' / Obat',
+                    'subtitle' => $coopName . ' • ' . $item->medicine_name,
+                    'datetime' => $iDate . ' ' . $timeStr,
+                    'time' => $timeStr,
+                    'value' => $item->dosage ?: '1 Kegiatan',
+                    'subvalue' => $item->application_method,
+                    'raw_timestamp' => $item->created_at ? $item->created_at->timestamp : strtotime($item->date . ' ' . ($item->time ?: '00:00:00')),
+                ]);
+            }
+
+            foreach ($recentStock as $item) {
+                $timeStr = $item->created_at ? $item->created_at->format('H:i') : '00:00';
+                $iDate = $item->date ? $item->date->format('d/m/Y') : '';
+                $activities->push([
+                    'id' => 'stock_' . $item->id,
+                    'category' => $item->type === 'masuk' ? 'stock_masuk' : 'stock_keluar',
+                    'title' => 'Mutasi Gudang (' . ucfirst($item->category) . ')',
+                    'subtitle' => $item->item_name . ($item->source ? ' • ' . $item->source : ($item->notes ? ' • ' . $item->notes : '')),
+                    'datetime' => $iDate . ' ' . $timeStr,
+                    'time' => $timeStr,
+                    'value' => ($item->type === 'masuk' ? '+' : '-') . number_format($item->quantity, 0, ',', '.') . ' ' . ($item->unit ?: 'Unit'),
+                    'subvalue' => ($item->type === 'masuk' ? 'Barang Masuk' : 'Barang Keluar') . ($item->source ? ' (' . $item->source . ')' : ''),
+                    'raw_timestamp' => $item->created_at ? $item->created_at->timestamp : ($item->date ? strtotime($item->date->format('Y-m-d') . ' 00:00:00') : 0),
+                ]);
+            }
+
+            foreach ($recentSales as $item) {
+                $timeStr = $item->created_at ? $item->created_at->format('H:i') : '00:00';
+                $iDate = $item->date ? $item->date->format('d/m/Y') : '';
+                $firstItemName = $item->items->count() > 0 ? $item->items->first()->item_name : '';
+                $subTitleStr = ($item->customer_name ?: 'Pelanggan') . ($firstItemName ? ' • ' . $firstItemName : '');
+                $activities->push([
+                    'id' => 'sale_' . $item->id,
+                    'category' => 'sale',
+                    'title' => 'Penjualan ' . ucfirst($item->category ?: 'Telur'),
+                    'subtitle' => $subTitleStr,
+                    'datetime' => $iDate . ' ' . $timeStr,
+                    'time' => $timeStr,
+                    'value' => 'Rp ' . number_format($item->total_amount, 0, ',', '.'),
+                    'subvalue' => ($item->invoice_no ? $item->invoice_no . ' • ' : '') . ($item->payment_status === 'paid' || $item->payment_status === 'lunas' ? 'Lunas' : ucfirst($item->payment_status ?: 'Terjual')),
+                    'raw_timestamp' => $item->created_at ? $item->created_at->timestamp : ($item->date ? strtotime($item->date->format('Y-m-d') . ' 00:00:00') : 0),
+                ]);
+            }
+        }
+
+        $activities = $activities->sortByDesc('raw_timestamp')->take(15)->values();
 
         // 7. Data Master untuk modal quick action
         $flocks = Flock::with(['coops' => function ($q) {

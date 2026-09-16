@@ -301,7 +301,13 @@
                             'source' => $item->source,
                             'notes' => $displayNotes,
                             'date' => $item->date->format('Y-m-d'),
+                            'raw_date' => $item->date->format('Y-m-d'),
                             'time' => $item->created_at ? $item->created_at->format('H:i') : '07:10',
+                            'coop_id' => $item->coop_id ?? null,
+                            'flock_id' => $item->flock_id ?? null,
+                            'feed_name' => $item->feed_name ?? $item->item_name,
+                            'feeding_time' => $item->feeding_time ?? 'Pagi',
+                            'quantity_kg' => $item->quantity_kg ?? $item->quantity,
                         ]) }})" class="w-full px-3.5 py-2 text-left hover:bg-slate-50 flex items-center gap-2">
                             <i data-lucide="edit-3" class="w-3.5 h-3.5 text-blue-600"></i>
                             <span>Edit Data</span>
@@ -572,17 +578,20 @@
 </div>
 
 <!-- ========================================================================= -->
-<!-- MODAL EDIT DATA PAKAN -->
+<!-- MODAL EDIT DATA PAKAN (Matching /input 🌾 Pemakaian Pakan) -->
 <!-- ========================================================================= -->
 <div id="modalEditPakan" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm opacity-0 invisible pointer-events-none transition-all duration-300 flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl transform translate-y-full sm:translate-y-0 transition-transform duration-300 max-h-[90vh] overflow-y-auto">
         
         <div class="flex items-center justify-between pb-3 border-b border-slate-100">
             <div class="flex items-center gap-2">
-                <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold">
-                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-lg">
+                    🌾
                 </div>
-                <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">Edit Transaksi Pakan</h3>
+                <div>
+                    <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">🌾 Pemakaian Pakan</h3>
+                    <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">↘ Gudang Pakan</span>
+                </div>
             </div>
             <button onclick="closeModalEditPakan()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600">
                 <i data-lucide="x" class="w-4 h-4"></i>
@@ -592,48 +601,92 @@
         <form id="formEditPakan" method="POST" action="" class="mt-4 space-y-4">
             @csrf
             @method('PUT')
+            <input type="hidden" name="type" value="keluar">
 
-            <!-- Jenis Transaksi -->
-            <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1.5">Jenis Transaksi *</label>
-                <div class="grid grid-cols-2 gap-3">
-                    <label class="cursor-pointer">
-                        <input type="radio" id="editPakanTypeMasuk" name="type" value="masuk" class="peer sr-only">
-                        <div class="p-2.5 text-center rounded-xl border-2 border-slate-200 peer-checked:border-emerald-600 peer-checked:bg-emerald-50 text-slate-600 peer-checked:text-emerald-800 font-bold text-xs flex items-center justify-center gap-2 transition-all">
-                            <i data-lucide="arrow-down-left" class="w-4 h-4"></i>
-                            <span>Masuk</span>
-                        </div>
-                    </label>
-                    <label class="cursor-pointer">
-                        <input type="radio" id="editPakanTypeKeluar" name="type" value="keluar" class="peer sr-only">
-                        <div class="p-2.5 text-center rounded-xl border-2 border-slate-200 peer-checked:border-rose-600 peer-checked:bg-rose-50 text-slate-600 peer-checked:text-rose-800 font-bold text-xs flex items-center justify-center gap-2 transition-all">
-                            <i data-lucide="arrow-up-right" class="w-4 h-4"></i>
-                            <span>Keluar</span>
-                        </div>
-                    </label>
-                </div>
-            </div>
-
-            <!-- Nama Transaksi -->
-            <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Nama Transaksi *</label>
-                <input type="text" id="editPakanItemName" name="item_name" required class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm">
-            </div>
-
-            <!-- Jumlah & Satuan -->
+            <!-- Kloter & Blok -->
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Jumlah *</label>
-                    <input type="number" step="0.01" id="editPakanQuantity" name="quantity" required class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm font-bold">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Satuan *</label>
-                    <select id="editPakanUnit" name="unit" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white">
-                        <option value="Kg">Kg</option>
-                        <option value="Karung">Karung</option>
-                        <option value="Ton">Ton</option>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Kloter</label>
+                    <select id="editPakanKloter" onchange="filterEditPakanCoops()" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white font-medium">
+                        @foreach($flocks as $flock)
+                            <option value="{{ $flock->id }}">{{ $flock->name }} ({{ $flock->code }})</option>
+                        @endforeach
                     </select>
                 </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Blok *</label>
+                    <select name="coop_id" id="editPakanCoop" onchange="updateEditPakanCoopPop()" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white font-medium">
+                        @foreach($coops as $coop)
+                            <option value="{{ $coop->id }}" 
+                                    data-flock="{{ $coop->flock_id }}" 
+                                    data-pop="{{ $coop->active_chickens }}"
+                                    data-age="{{ $coop->chicken_age_weeks }}"
+                                    data-feed="105"
+                                    data-feedtype="Layer">
+                                {{ $coop->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+
+            <!-- Waktu Pemberian & Jenis Pakan -->
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Waktu Pemberian</label>
+                    <select name="feeding_time" id="editPakanWaktu" onchange="calcEditPakan()" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white font-medium">
+                        <option value="Pagi">Pagi</option>
+                        <option value="Sore">Sore</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Jenis Pakan</label>
+                    <select name="feed_name" id="editPakanJenis" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white font-medium">
+                        <option value="Pakan Layer">Layer</option>
+                        <option value="Pakan Grower">Grower</option>
+                        <option value="Pakan Starter">Starter</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Populasi Aktif -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Populasi Aktif</label>
+                <input class="w-full px-3.5 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-600 font-bold text-xs sm:text-sm" id="editPakanPopulasi" value="762 ekor" readonly>
+            </div>
+
+            <!-- Standar Pakan Master -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Standar Pakan Master</label>
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                    <div class="flex items-center justify-between text-xs">
+                        <b id="editPakanStdTitle" class="text-slate-800 font-extrabold">Umur 21 minggu · Layer</b>
+                        <span class="text-emerald-700 font-bold text-[10px]">✓ Acuan Master</span>
+                    </div>
+                    <div class="text-base font-extrabold text-slate-900">
+                        <span id="editPakanStdGram">105</span> <span class="text-xs font-normal text-slate-500">gram / ekor / hari</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 text-center pt-1">
+                        <div class="bg-white p-2 rounded-lg border border-slate-100 shadow-xs">
+                            <span class="text-[9px] text-slate-400 font-medium block">Standar Blok</span>
+                            <b id="editPakanStdBlok" class="text-xs font-extrabold text-slate-800">80,0 Kg</b>
+                        </div>
+                        <div class="bg-white p-2 rounded-lg border border-slate-100 shadow-xs">
+                            <span class="text-[9px] text-slate-400 font-medium block">Sudah Pagi</span>
+                            <b id="editPakanSudahPagi" class="text-xs font-extrabold text-slate-800">40,0 Kg</b>
+                        </div>
+                        <div class="bg-white p-2 rounded-lg border border-slate-100 shadow-xs">
+                            <span class="text-[9px] text-slate-400 font-medium block">Sisa Hari Ini</span>
+                            <b id="editPakanSisaHari" class="text-xs font-extrabold text-slate-800">40,0 Kg</b>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Jumlah Pakan Aktual (Kg) -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Jumlah Pakan Aktual (Kg) *</label>
+                <input type="number" step="0.1" name="quantity_kg" id="editPakanAktual" value="40" placeholder="Masukkan kg" oninput="calcEditPakanSisa()" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600">
             </div>
 
             <!-- Tanggal & Waktu -->
@@ -648,21 +701,24 @@
                 </div>
             </div>
 
-            <!-- Asal / Supplier / Kandang -->
-            <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Kandang / Supplier</label>
-                <input type="text" id="editPakanSource" name="source" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm">
-            </div>
-
             <!-- Keterangan -->
             <div>
                 <label class="block text-xs font-bold text-slate-700 mb-1">Keterangan</label>
-                <textarea id="editPakanNotes" name="notes" rows="2" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm"></textarea>
+                <textarea id="editPakanNotes" name="notes" rows="2" placeholder="Opsional..." class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm"></textarea>
             </div>
 
-            <div class="pt-2">
-                <button type="submit" class="w-full py-3 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold text-sm shadow-md transition-all active:scale-98">
+            <!-- Sync Alert -->
+            <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs">
+                <b class="text-emerald-800 block text-[11px]">↘ Otomatis potong Gudang Pakan</b>
+                <p class="text-[10px] text-emerald-700 mt-0.5 leading-relaxed">Saat disimpan, pemakaian ini menjadi transaksi keluar/pemakaian. Stok Gudang Pakan langsung berkurang dan masuk ke Rekap & Dashboard.</p>
+            </div>
+
+            <div class="pt-2 space-y-2">
+                <button type="submit" class="w-full py-3 rounded-xl bg-maroon-800 hover:bg-maroon-900 text-white font-bold text-sm shadow-md transition-all active:scale-98">
                     Simpan Perubahan
+                </button>
+                <button type="button" onclick="closeModalEditPakan()" class="w-full py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-xs transition-all">
+                    Batal
                 </button>
             </div>
         </form>
@@ -746,25 +802,98 @@
         content.classList.remove('modal-content-active');
     }
 
-    // 3. EDIT MODAL (PAKAN)
+    // 3. EDIT MODAL (PAKAN) - Matches /input form card
+    function filterEditPakanCoops() {
+        const flockId = document.getElementById('editPakanKloter').value;
+        const coopSelect = document.getElementById('editPakanCoop');
+        let firstMatch = null;
+
+        Array.from(coopSelect.options).forEach(opt => {
+            if (opt.getAttribute('data-flock') == flockId) {
+                opt.style.display = '';
+                if (!firstMatch) firstMatch = opt;
+            } else {
+                opt.style.display = 'none';
+            }
+        });
+
+        if (firstMatch && coopSelect.selectedOptions[0]?.style.display === 'none') {
+            coopSelect.value = firstMatch.value;
+        }
+        updateEditPakanCoopPop();
+    }
+
+    function updateEditPakanCoopPop() {
+        const coopSelect = document.getElementById('editPakanCoop');
+        const selected = coopSelect.selectedOptions[0];
+        if (!selected) return;
+
+        const pop = selected.getAttribute('data-pop') || 0;
+        const age = selected.getAttribute('data-age') || 21;
+        const feedGram = selected.getAttribute('data-feed') || 105;
+        const feedType = selected.getAttribute('data-feedtype') || 'Layer';
+
+        document.getElementById('editPakanPopulasi').value = pop + ' ekor';
+        document.getElementById('editPakanStdTitle').textContent = `Umur ${age} minggu · ${feedType}`;
+        document.getElementById('editPakanStdGram').textContent = feedGram;
+
+        calcEditPakan();
+    }
+
+    function calcEditPakan() {
+        const coopSelect = document.getElementById('editPakanCoop');
+        const selected = coopSelect.selectedOptions[0];
+        if (!selected) return;
+
+        const pop = parseInt(selected.getAttribute('data-pop')) || 0;
+        const feedGram = parseFloat(selected.getAttribute('data-feed')) || 105;
+
+        const totalHariKg = (pop * feedGram) / 1000;
+        const pagiKg = totalHariKg * 0.4;
+        const soreKg = totalHariKg * 0.6;
+
+        const waktu = document.getElementById('editPakanWaktu').value;
+        
+        document.getElementById('editPakanStdBlok').textContent = totalHariKg.toFixed(1).replace('.', ',') + ' Kg';
+        document.getElementById('editPakanSudahPagi').textContent = pagiKg.toFixed(1).replace('.', ',') + ' Kg';
+        document.getElementById('editPakanSisaHari').textContent = soreKg.toFixed(1).replace('.', ',') + ' Kg';
+    }
+
+    function calcEditPakanSisa() {
+        // User manual entry for actual feed quantity
+    }
+
     function openEditPakanModal(data) {
         const modal = document.getElementById('modalEditPakan');
         const content = modal.querySelector('div');
         
         document.getElementById('formEditPakan').action = `/gudang/${data.id}/update`;
-        document.getElementById('editPakanItemName').value = data.title;
-        document.getElementById('editPakanQuantity').value = data.raw_quantity || data.quantity;
-        document.getElementById('editPakanUnit').value = data.unit || 'Kg';
+        document.getElementById('editPakanAktual').value = data.quantity_kg || data.raw_quantity || data.quantity || 40;
         document.getElementById('editPakanDate').value = data.raw_date || data.date;
         document.getElementById('editPakanTime').value = data.time || '07:10';
-        document.getElementById('editPakanSource').value = data.kandang || data.source || '';
         document.getElementById('editPakanNotes').value = data.notes || '';
 
-        if (data.type === 'masuk') {
-            document.getElementById('editPakanTypeMasuk').checked = true;
-        } else {
-            document.getElementById('editPakanTypeKeluar').checked = true;
+        if (data.feeding_time) {
+            document.getElementById('editPakanWaktu').value = data.feeding_time;
         }
+        if (data.feed_name || data.title) {
+            const fn = data.feed_name || data.title;
+            const sel = document.getElementById('editPakanJenis');
+            if (Array.from(sel.options).some(o => o.value === fn)) {
+                sel.value = fn;
+            }
+        }
+
+        if (data.coop_id) {
+            const coopSelect = document.getElementById('editPakanCoop');
+            coopSelect.value = data.coop_id;
+            const opt = coopSelect.selectedOptions[0];
+            if (opt && opt.getAttribute('data-flock')) {
+                document.getElementById('editPakanKloter').value = opt.getAttribute('data-flock');
+            }
+        }
+
+        filterEditPakanCoops();
 
         modal.classList.add('modal-active');
         content.classList.add('modal-content-active');

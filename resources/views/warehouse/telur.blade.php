@@ -292,6 +292,12 @@
                             'notes' => $displayNotes,
                             'date' => $item->date->format('Y-m-d'),
                             'time' => $item->created_at ? $item->created_at->format('H:i') : '06:30',
+                            'good_eggs' => $item->good_eggs ?? null,
+                            'broken_eggs' => $item->broken_eggs ?? null,
+                            'abnormal_eggs' => $item->abnormal_eggs ?? null,
+                            'crates_count' => $item->crates_count ?? null,
+                            'coop_id' => $item->coop_id ?? null,
+                            'flock_id' => $item->flock_id ?? null,
                         ]) }})" class="w-full px-3.5 py-2 text-left hover:bg-slate-50 flex items-center gap-2">
                             <i data-lucide="edit-3" class="w-3.5 h-3.5 text-blue-600"></i>
                             <span>Edit Data</span>
@@ -559,97 +565,129 @@
 </div>
 
 <!-- ========================================================================= -->
-<!-- MODAL EDIT DATA TELUR -->
+<!-- MODAL EDIT DATA PRODUKSI TELUR (Format Sesuai Input Halaman Mobile) -->
 <!-- ========================================================================= -->
 <div id="modalEditTelur" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm opacity-0 invisible pointer-events-none transition-all duration-300 flex items-end sm:items-center justify-center p-0 sm:p-4">
-    <div class="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl transform translate-y-full sm:translate-y-0 transition-transform duration-300 max-h-[90vh] overflow-y-auto">
+    <div class="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl transform translate-y-full sm:translate-y-0 transition-transform duration-300 max-h-[92vh] overflow-y-auto">
         
-        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-            <div class="flex items-center gap-2">
-                <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold">
-                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+        <!-- Header Card: 🥚 Produksi Telur | ↗ Gudang Telur -->
+        <div class="flex items-center justify-between pb-3.5 border-b border-slate-100">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 border border-amber-200/80 flex items-center justify-center font-bold text-base shadow-xs">
+                    🥚
                 </div>
-                <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">Edit Transaksi Telur</h3>
+                <div>
+                    <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">Produksi Telur</h3>
+                    <p class="text-[10px] text-slate-400 font-medium">Edit data hasil produksi telur kandang</p>
+                </div>
             </div>
-            <button onclick="closeModalEditTelur()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600">
-                <i data-lucide="x" class="w-4 h-4"></i>
-            </button>
+            <div class="flex items-center gap-2">
+                <span class="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold flex items-center gap-1">
+                    <i data-lucide="arrow-up-right" class="w-3 h-3 text-emerald-600"></i>
+                    ↗ Gudang Telur
+                </span>
+                <button onclick="closeModalEditTelur()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
         </div>
 
-        <form id="formEditTelur" method="POST" action="" class="mt-4 space-y-4">
+        <form id="formEditTelur" method="POST" action="" class="mt-4 space-y-3.5">
             @csrf
             @method('PUT')
 
-            <!-- Jenis Transaksi -->
-            <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1.5">Jenis Transaksi *</label>
-                <div class="grid grid-cols-2 gap-3">
-                    <label class="cursor-pointer">
-                        <input type="radio" id="editTypeMasuk" name="type" value="masuk" class="peer sr-only">
-                        <div class="p-2.5 text-center rounded-xl border-2 border-slate-200 peer-checked:border-emerald-600 peer-checked:bg-emerald-50 text-slate-600 peer-checked:text-emerald-800 font-bold text-xs flex items-center justify-center gap-2 transition-all">
-                            <i data-lucide="arrow-down-left" class="w-4 h-4"></i>
-                            <span>Masuk</span>
-                        </div>
-                    </label>
-                    <label class="cursor-pointer">
-                        <input type="radio" id="editTypeKeluar" name="type" value="keluar" class="peer sr-only">
-                        <div class="p-2.5 text-center rounded-xl border-2 border-slate-200 peer-checked:border-rose-600 peer-checked:bg-rose-50 text-slate-600 peer-checked:text-rose-800 font-bold text-xs flex items-center justify-center gap-2 transition-all">
-                            <i data-lucide="arrow-up-right" class="w-4 h-4"></i>
-                            <span>Keluar</span>
-                        </div>
-                    </label>
-                </div>
-            </div>
-
-            <!-- Nama Transaksi -->
-            <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Nama Transaksi *</label>
-                <input type="text" id="editItemName" name="item_name" required class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm">
-            </div>
-
-            <!-- Jumlah & Satuan -->
+            <!-- Row 1: Kloter & Blok -->
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Jumlah *</label>
-                    <input type="number" step="0.01" id="editQuantity" name="quantity" required class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm font-bold">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Satuan *</label>
-                    <select id="editUnit" name="unit" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white">
-                        <option value="Peti">Peti</option>
-                        <option value="Kg">Kg</option>
-                        <option value="Butir">Butir</option>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Kloter</label>
+                    <select id="editKloter" onchange="filterEditCoops()" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white font-semibold">
+                        @foreach($flocks as $flock)
+                            <option value="{{ $flock->id }}">{{ $flock->name }} ({{ $flock->code }})</option>
+                        @endforeach
                     </select>
                 </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Blok *</label>
+                    <select name="coop_id" id="editCoop" onchange="updateEditCoopPop()" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white font-bold text-slate-900">
+                        @foreach($coops as $coop)
+                            <option value="{{ $coop->id }}" data-flock="{{ $coop->flock_id }}" data-pop="{{ $coop->active_chickens }}">
+                                {{ $coop->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+
+            <!-- Populasi Aktif (Readonly) -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Populasi Aktif</label>
+                <input class="w-full px-3.5 py-2 rounded-xl border border-slate-200 bg-slate-100 text-xs sm:text-sm font-bold text-slate-600" id="editPopulasi" value="762 ekor" readonly>
+            </div>
+
+            <!-- Row 2: Telur Baik & Retak/Pecah -->
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Telur Baik (Butir) *</label>
+                    <input type="number" name="good_eggs" id="editTelurBaik" min="0" oninput="calcEditProduksi()" required placeholder="0" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Retak/Pecah (Butir)</label>
+                    <input type="number" name="broken_eggs" id="editRetakPecah" min="0" oninput="calcEditProduksi()" placeholder="0" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm font-bold text-amber-700 focus:ring-2 focus:ring-amber-600/20 focus:border-amber-600">
+                </div>
+            </div>
+
+            <!-- Row 3: Telur Rusak & Jumlah Peti -->
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Telur Rusak (Butir)</label>
+                    <input type="number" name="abnormal_eggs" id="editRusak" min="0" oninput="calcEditProduksi()" placeholder="0" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm font-bold text-rose-700 focus:ring-2 focus:ring-rose-600/20 focus:border-rose-600">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Jumlah Peti (Opsional)</label>
+                    <input type="number" step="0.01" name="crates_count" id="editPeti" min="0" placeholder="0" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm font-extrabold text-slate-800">
+                </div>
+            </div>
+
+            <!-- Total Telur (Otomatis) -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Total Telur (Otomatis)</label>
+                <input class="w-full px-3.5 py-2 rounded-xl border border-slate-200 bg-amber-50/70 text-xs sm:text-sm font-black text-maroon-800" id="editTotalTelur" value="0 butir" readonly>
             </div>
 
             <!-- Tanggal & Waktu -->
             <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Tanggal *</label>
-                    <input type="date" id="editDate" name="date" required class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm">
+                    <input type="date" id="editDate" name="date" required class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm font-semibold">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Waktu</label>
-                    <input type="time" id="editTime" name="time" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm">
+                    <input type="time" id="editTime" name="time" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm font-semibold">
                 </div>
-            </div>
-
-            <!-- Asal / Tujuan -->
-            <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Asal / Tujuan</label>
-                <input type="text" id="editSource" name="source" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm">
             </div>
 
             <!-- Keterangan -->
             <div>
                 <label class="block text-xs font-bold text-slate-700 mb-1">Keterangan</label>
-                <textarea id="editNotes" name="notes" rows="2" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm"></textarea>
+                <textarea id="editNotes" name="notes" rows="2" placeholder="Contoh: produksi normal..." class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm"></textarea>
             </div>
 
-            <div class="pt-2">
-                <button type="submit" class="w-full py-3 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold text-sm shadow-md transition-all active:scale-98">
-                    Simpan Perubahan
+            <!-- Sync Info Box -->
+            <div class="p-3 rounded-xl bg-gradient-to-r from-emerald-50 via-white to-amber-50/60 border border-emerald-200/80 text-[11px] text-slate-600 leading-relaxed">
+                <div class="font-bold text-emerald-800 flex items-center gap-1.5 mb-0.5">
+                    <i data-lucide="sparkles" class="w-3.5 h-3.5 text-emerald-600"></i>
+                    <span>↗ Otomatis masuk Gudang Telur</span>
+                </div>
+                <p>Telur baik menjadi <b>stok telur tersedia</b>. Retak dan pecah tetap tercatat sebagai hasil produksi, tetapi tidak masuk stok telur baik.</p>
+            </div>
+
+            <!-- Action Buttons: Simpan Produksi & Batal -->
+            <div class="pt-2 flex items-center gap-2">
+                <button type="submit" class="flex-1 py-2.5 rounded-xl bg-maroon-800 hover:bg-maroon-900 text-white font-extrabold text-xs sm:text-sm shadow-md transition-all active:scale-98">
+                    Simpan Produksi
+                </button>
+                <button type="button" onclick="closeModalEditTelur()" class="py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs sm:text-sm transition-all active:scale-98">
+                    Batal
                 </button>
             </div>
         </form>
@@ -746,25 +784,85 @@
         content.classList.remove('modal-content-active');
     }
 
-    // 3. EDIT MODAL
+    // 3. EDIT MODAL (Sesuai Form 🥚 Produksi Telur)
+    function filterEditCoops() {
+        const flockId = document.getElementById('editKloter').value;
+        const coopSelect = document.getElementById('editCoop');
+        let firstCoop = null;
+        Array.from(coopSelect.options).forEach(opt => {
+            const fId = opt.getAttribute('data-flock');
+            if (!flockId || fId === flockId) {
+                opt.style.display = '';
+                if (!firstCoop) firstCoop = opt;
+            } else {
+                opt.style.display = 'none';
+            }
+        });
+        if (firstCoop && coopSelect.selectedOptions[0]?.style.display === 'none') {
+            coopSelect.value = firstCoop.value;
+        }
+        updateEditCoopPop();
+    }
+
+    function updateEditCoopPop() {
+        const coopSelect = document.getElementById('editCoop');
+        const opt = coopSelect.selectedOptions[0];
+        if (opt) {
+            const pop = opt.getAttribute('data-pop') || 0;
+            document.getElementById('editPopulasi').value = new Intl.NumberFormat('id-ID').format(pop) + ' ekor';
+        }
+    }
+
+    function calcEditProduksi() {
+        const baik = parseInt(document.getElementById('editTelurBaik').value) || 0;
+        const retak = parseInt(document.getElementById('editRetakPecah').value) || 0;
+        const rusak = parseInt(document.getElementById('editRusak').value) || 0;
+        const total = baik + retak + rusak;
+        document.getElementById('editTotalTelur').value = new Intl.NumberFormat('id-ID').format(total) + ' butir';
+        
+        const petiElem = document.getElementById('editPeti');
+        if (!petiElem.dataset.manual) {
+            petiElem.value = (total / 25).toFixed(2);
+        }
+    }
+
+    document.getElementById('editPeti').addEventListener('input', function() {
+        this.dataset.manual = 'true';
+    });
+
     function openEditModal(data) {
         const modal = document.getElementById('modalEditTelur');
         const content = modal.querySelector('div');
         
         document.getElementById('formEditTelur').action = `/gudang/${data.id}/update`;
-        document.getElementById('editItemName').value = data.title;
-        document.getElementById('editQuantity').value = data.raw_quantity || data.quantity;
-        document.getElementById('editUnit').value = data.unit || 'Peti';
+        
+        if (data.coop_id) {
+            document.getElementById('editCoop').value = data.coop_id;
+            const coopOpt = document.querySelector(`#editCoop option[value="${data.coop_id}"]`);
+            if (coopOpt) {
+                const fId = coopOpt.getAttribute('data-flock');
+                if (fId) document.getElementById('editKloter').value = fId;
+            }
+        }
+        filterEditCoops();
+        updateEditCoopPop();
+
+        const goodEggs = data.good_eggs !== undefined && data.good_eggs !== null ? data.good_eggs : (data.type === 'masuk' ? Math.round((data.raw_quantity || data.quantity) * 25) : 0);
+        const brokenEggs = data.broken_eggs !== undefined && data.broken_eggs !== null ? data.broken_eggs : (data.type === 'keluar' ? (data.raw_quantity || data.quantity) : 0);
+        const abnormalEggs = data.abnormal_eggs || 0;
+        const cratesCount = data.crates_count !== undefined && data.crates_count !== null ? data.crates_count : (data.unit === 'Peti' ? (data.raw_quantity || data.quantity) : (goodEggs / 25).toFixed(2));
+
+        document.getElementById('editTelurBaik').value = goodEggs;
+        document.getElementById('editRetakPecah').value = brokenEggs;
+        document.getElementById('editRusak').value = abnormalEggs;
+        document.getElementById('editPeti').value = cratesCount;
+        delete document.getElementById('editPeti').dataset.manual;
+
         document.getElementById('editDate').value = data.raw_date || data.date;
         document.getElementById('editTime').value = data.time || '06:30';
-        document.getElementById('editSource').value = data.source || '';
         document.getElementById('editNotes').value = data.notes || '';
 
-        if (data.type === 'masuk') {
-            document.getElementById('editTypeMasuk').checked = true;
-        } else {
-            document.getElementById('editTypeKeluar').checked = true;
-        }
+        calcEditProduksi();
 
         modal.classList.add('modal-active');
         content.classList.add('modal-content-active');

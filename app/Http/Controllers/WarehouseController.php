@@ -790,13 +790,14 @@ class WarehouseController extends Controller
         $salesList = OutboundIntegrationService::getSalesTransactions('telur', $startDate, $endDate, 50);
         $tripList = OutboundIntegrationService::getTripOutbounds('telur', 10);
 
+        $flocks = \App\Models\Flock::where('is_active', true)->get();
         $coops = Coop::where('is_active', true)->get();
 
         return view('warehouse.telur', compact(
             'user', 'items', 'tab', 'search', 'startDate', 'endDate',
             'totalMasuk', 'totalMasukKg', 'totalKeluar', 'totalKeluarKg', 'stokSaatIni', 'stokSaatIniKg', 'stokSaatIniButir',
             'petiSold', 'kgSold', 'totalRevenue', 'transactionCount', 'totalEggsCount',
-            'salesList', 'tripList', 'coops'
+            'salesList', 'tripList', 'coops', 'flocks'
         ));
     }
 
@@ -872,6 +873,11 @@ class WarehouseController extends Controller
                     'notes' => 'Pemberian pakan ' . ($fc->feeding_time ?? 'pagi/sore') . ' untuk ayam kandang' . ($fc->notes ? ' • ' . $fc->notes : ''),
                     'user' => $fc->user,
                     'is_nonaktif' => str_starts_with(trim($fc->notes ?? ''), '[NONAKTIF]'),
+                    'coop_id' => $fc->coop_id,
+                    'flock_id' => $fc->flock_id,
+                    'feed_name' => $fc->feed_name,
+                    'feeding_time' => $fc->feeding_time,
+                    'quantity_kg' => (float) $fc->quantity_kg,
                 ]);
             }
         }
@@ -902,9 +908,10 @@ class WarehouseController extends Controller
             ['path' => LengthAwarePaginator::resolveCurrentPath(), 'query' => $request->query()]
         );
 
-        // Ringkasan Pakan Terintegrasi Konsumsi Kandang & Penjualan Luar nochifram
+        // Ringkasan Pakan Terintegrasi Penjualan & Konsumsi Kandang
         $feedSummary = OutboundIntegrationService::getFeedOutboundSummary($startDate, $endDate);
         $totalMasuk = $feedSummary['purchased_kg'];
+        $purchasedKarung = $feedSummary['purchased_karung'];
         $totalKeluar = $feedSummary['total_keluar_kg'];
         $stokSaatIni = $feedSummary['current_stock_kg'];
         $currentStockKarung = $feedSummary['current_stock_karung'];
@@ -913,19 +920,19 @@ class WarehouseController extends Controller
         $soldRevenue = $feedSummary['total_revenue'];
         $consumptionKg = $feedSummary['consumption_kg'];
         $consumptionKarung = $feedSummary['consumption_karung'];
-        $purchasedKarung = $feedSummary['purchased_karung'];
 
-        // Data Penjualan Pakan & Trip Pakan dari nochifram
+        // Data Penjualan Pakan dari aplikasi nochifram
         $salesList = OutboundIntegrationService::getSalesTransactions('pakan', $startDate, $endDate, 50);
         $tripList = OutboundIntegrationService::getTripOutbounds('pakan', 10);
 
+        $flocks = \App\Models\Flock::where('is_active', true)->get();
         $coops = Coop::where('is_active', true)->get();
 
         return view('warehouse.pakan', compact(
             'user', 'items', 'tab', 'search', 'startDate', 'endDate',
             'totalMasuk', 'totalKeluar', 'stokSaatIni', 'currentStockKarung',
             'karungSold', 'kgSold', 'soldRevenue', 'consumptionKg', 'consumptionKarung', 'purchasedKarung',
-            'salesList', 'tripList', 'coops'
+            'salesList', 'tripList', 'coops', 'flocks'
         ));
     }
 
@@ -998,6 +1005,12 @@ class WarehouseController extends Controller
                     'notes' => ($ht->application_method ? 'Aplikasi: ' . $ht->application_method . '. ' : '') . ($ht->notes ?? 'Pemberian ke ayam kandang'),
                     'user' => $ht->user,
                     'is_nonaktif' => str_starts_with(trim($ht->notes ?? ''), '[NONAKTIF]'),
+                    'coop_id' => $ht->coop_id,
+                    'flock_id' => $ht->flock_id,
+                    'medicine_name' => $ht->medicine_name,
+                    'medicine_type' => $ht->type,
+                    'dosage' => $ht->dosage,
+                    'application_method' => $ht->application_method,
                 ]);
             }
         }
@@ -1051,10 +1064,11 @@ class WarehouseController extends Controller
         $totalKeluar = $totalKeluarManual + $obatKeluarKandang;
         $stokSaatIni = round($totalMasuk - $totalKeluar, 1);
 
+        $flocks = \App\Models\Flock::where('is_active', true)->get();
         $coops = Coop::where('is_active', true)->get();
 
         return view('warehouse.obat', compact(
-            'user', 'items', 'tab', 'search', 'startDate', 'endDate', 'totalMasuk', 'totalKeluar', 'stokSaatIni', 'coops'
+            'user', 'items', 'tab', 'search', 'startDate', 'endDate', 'totalMasuk', 'totalKeluar', 'stokSaatIni', 'coops', 'flocks'
         ));
     }
 
@@ -1114,6 +1128,12 @@ class WarehouseController extends Controller
             $isBroken = str_starts_with($realId, 'broken_');
             if ($isBroken) $realId = substr($realId, 7);
             $ep = EggProduction::findOrFail($realId);
+            if ($request->has('good_eggs')) $ep->good_eggs = (int) $request->good_eggs;
+            if ($request->has('broken_eggs')) $ep->broken_eggs = (int) $request->broken_eggs;
+            if ($request->has('abnormal_eggs')) $ep->abnormal_eggs = (int) $request->abnormal_eggs;
+            if ($request->has('crates_count')) $ep->crates_count = (float) $request->crates_count;
+            if ($request->has('coop_id')) $ep->coop_id = $request->coop_id;
+            if ($request->has('flock_id')) $ep->flock_id = $request->flock_id;
             if ($request->has('quantity')) {
                 if ($isBroken) {
                     $ep->broken_eggs = (int) $request->quantity;
@@ -1127,15 +1147,33 @@ class WarehouseController extends Controller
             return back()->with('success', 'Data produksi telur berhasil diperbarui!');
         } elseif (str_starts_with($id, 'fc_')) {
             $fc = FeedConsumption::findOrFail(substr($id, 3));
-            if ($request->has('quantity')) $fc->quantity_kg = (float) $request->quantity;
-            if ($request->has('item_name')) $fc->feed_name = $request->item_name;
+            if ($request->has('quantity_kg')) $fc->quantity_kg = (float) $request->quantity_kg;
+            elseif ($request->has('quantity')) $fc->quantity_kg = (float) $request->quantity;
+            
+            if ($request->has('feed_name')) $fc->feed_name = $request->feed_name;
+            elseif ($request->has('item_name')) $fc->feed_name = $request->item_name;
+
+            if ($request->has('coop_id')) $fc->coop_id = $request->coop_id;
+            if ($request->has('flock_id')) $fc->flock_id = $request->flock_id;
+            if ($request->has('feeding_time')) $fc->feeding_time = $request->feeding_time;
             if ($request->has('notes')) $fc->notes = $request->notes;
             if ($request->has('date')) $fc->date = $request->date;
             $fc->save();
             return back()->with('success', 'Data pemberian pakan berhasil diperbarui!');
         } elseif (str_starts_with($id, 'ht_')) {
             $ht = HealthTreatment::findOrFail(substr($id, 3));
-            if ($request->has('item_name')) $ht->medicine_name = $request->item_name;
+            if ($request->has('medicine_name')) $ht->medicine_name = $request->medicine_name;
+            elseif ($request->has('item_name')) $ht->medicine_name = $request->item_name;
+
+            if ($request->has('type')) $ht->type = $request->type;
+            elseif ($request->has('category')) $ht->type = $request->category;
+
+            if ($request->has('dosage')) $ht->dosage = $request->dosage;
+            elseif ($request->has('quantity')) $ht->dosage = $request->quantity . ($request->has('unit') ? ' ' . $request->unit : '');
+
+            if ($request->has('application_method')) $ht->application_method = $request->application_method;
+            if ($request->has('coop_id')) $ht->coop_id = $request->coop_id;
+            if ($request->has('flock_id')) $ht->flock_id = $request->flock_id;
             if ($request->has('notes')) $ht->notes = $request->notes;
             if ($request->has('date')) $ht->date = $request->date;
             $ht->save();
@@ -1144,31 +1182,26 @@ class WarehouseController extends Controller
 
         $stock = FarmStock::findOrFail($id);
 
-        $validated = $request->validate([
-            'item_name' => 'required|string|max:255',
-            'type' => 'required|in:masuk,keluar',
-            'quantity' => 'required|numeric|min:0.01',
-            'unit' => 'required|string|max:50',
-            'date' => 'required|date',
-            'time' => 'nullable|string',
-            'source' => 'nullable|string|max:255',
-            'notes' => 'nullable|string|max:1000',
-        ]);
+        $itemName = $request->input('item_name') ?: ($request->input('feed_name') ?: ($request->input('medicine_name') ?: $stock->item_name));
+        $type = $request->input('type') ?: $stock->type;
+        $quantity = $request->input('quantity_kg') ?: ($request->input('quantity') ?: ($request->input('dosage') ? (float) preg_replace('/[^0-9.]/', '', $request->input('dosage')) : $stock->quantity));
+        $unit = $request->input('unit') ?: $stock->unit;
+        $date = $request->input('date') ?: $stock->date;
 
-        if (!empty($validated['time'])) {
-            $createdAt = Carbon::parse($validated['date']);
-            $timeParts = explode(':', $validated['time']);
+        if ($request->has('time') && !empty($request->time)) {
+            $createdAt = Carbon::parse($date);
+            $timeParts = explode(':', $request->time);
             $createdAt->setTime((int) ($timeParts[0] ?? 0), (int) ($timeParts[1] ?? 0));
             $stock->created_at = $createdAt;
         }
 
-        $stock->item_name = $validated['item_name'];
-        $stock->type = $validated['type'];
-        $stock->quantity = $validated['quantity'];
-        $stock->unit = $validated['unit'];
-        $stock->date = $validated['date'];
-        $stock->source = $validated['source'] ?? null;
-        $stock->notes = $validated['notes'] ?? null;
+        $stock->item_name = $itemName;
+        $stock->type = $type;
+        $stock->quantity = (float) $quantity;
+        $stock->unit = $unit;
+        $stock->date = $date;
+        if ($request->has('source')) $stock->source = $request->source;
+        if ($request->has('notes')) $stock->notes = $request->notes;
         $stock->save();
 
         return back()->with('success', 'Data transaksi berhasil diperbarui!');

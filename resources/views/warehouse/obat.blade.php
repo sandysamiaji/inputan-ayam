@@ -189,13 +189,20 @@
                             'id' => $item->id,
                             'title' => $item->item_name,
                             'type' => $item->type,
-                            'category' => $item->category,
+                            'category' => $item->category ?? 'obat',
                             'quantity' => $item->quantity,
                             'unit' => $item->unit,
                             'source' => $item->source,
                             'notes' => $displayNotes,
                             'date' => $item->date->format('Y-m-d'),
+                            'raw_date' => $item->date->format('Y-m-d'),
                             'time' => $item->created_at ? $item->created_at->format('H:i') : '09:30',
+                            'coop_id' => $item->coop_id ?? null,
+                            'flock_id' => $item->flock_id ?? null,
+                            'medicine_name' => $item->medicine_name ?? $item->item_name,
+                            'medicine_type' => $item->medicine_type ?? ($item->category ?? 'obat'),
+                            'dosage' => $item->dosage ?? ($item->quantity . ' ' . $item->unit),
+                            'application_method' => $item->application_method ?? 'Air minum',
                         ]) }})" class="w-full px-3.5 py-2 text-left hover:bg-slate-50 flex items-center gap-2">
                             <i data-lucide="edit-3" class="w-3.5 h-3.5 text-blue-600"></i>
                             <span>Edit Data</span>
@@ -493,17 +500,20 @@
 </div>
 
 <!-- ========================================================================= -->
-<!-- MODAL EDIT OBAT / VAKSIN -->
+<!-- MODAL EDIT OBAT / VAKSIN (Matching /input 💊 Vaksin & Obat) -->
 <!-- ========================================================================= -->
 <div id="modalEditObat" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm opacity-0 invisible pointer-events-none transition-all duration-300 flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl transform translate-y-full sm:translate-y-0 transition-transform duration-300 max-h-[90vh] overflow-y-auto">
         
         <div class="flex items-center justify-between pb-3 border-b border-slate-100">
             <div class="flex items-center gap-2">
-                <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold">
-                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                <div class="w-8 h-8 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold text-lg">
+                    💊
                 </div>
-                <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">Edit Transaksi Obat / Vaksin</h3>
+                <div>
+                    <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">💊 Vaksin & Obat</h3>
+                    <span class="text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200">↘ Gudang Obat</span>
+                </div>
             </div>
             <button onclick="closeModalEditObat()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600">
                 <i data-lucide="x" class="w-4 h-4"></i>
@@ -513,51 +523,80 @@
         <form id="formEditObat" method="POST" action="" class="mt-4 space-y-4">
             @csrf
             @method('PUT')
+            <input type="hidden" name="type" value="keluar">
 
-            <!-- Jenis Transaksi -->
-            <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1.5">Jenis Transaksi *</label>
-                <div class="grid grid-cols-2 gap-3">
-                    <label class="cursor-pointer">
-                        <input type="radio" id="editObatTypeMasuk" name="type" value="masuk" class="peer sr-only">
-                        <div class="p-2.5 text-center rounded-xl border-2 border-slate-200 peer-checked:border-emerald-600 peer-checked:bg-emerald-50 text-slate-600 peer-checked:text-emerald-800 font-bold text-xs flex items-center justify-center gap-2 transition-all">
-                            <i data-lucide="arrow-down-left" class="w-4 h-4"></i>
-                            <span>Masuk</span>
-                        </div>
-                    </label>
-                    <label class="cursor-pointer">
-                        <input type="radio" id="editObatTypeKeluar" name="type" value="keluar" class="peer sr-only">
-                        <div class="p-2.5 text-center rounded-xl border-2 border-slate-200 peer-checked:border-rose-600 peer-checked:bg-rose-50 text-slate-600 peer-checked:text-rose-800 font-bold text-xs flex items-center justify-center gap-2 transition-all">
-                            <i data-lucide="arrow-up-right" class="w-4 h-4"></i>
-                            <span>Keluar</span>
-                        </div>
-                    </label>
+            <!-- Kloter & Blok -->
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Kloter</label>
+                    <select id="editObatKloter" onchange="filterEditObatCoops()" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white font-medium">
+                        @foreach($flocks as $flock)
+                            <option value="{{ $flock->id }}">{{ $flock->name }} ({{ $flock->code }})</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Blok *</label>
+                    <select name="coop_id" id="editObatCoop" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white font-medium">
+                        @foreach($coops as $coop)
+                            <option value="{{ $coop->id }}" data-flock="{{ $coop->flock_id }}">
+                                {{ $coop->name }}
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
             </div>
 
-            <!-- Nama Transaksi -->
+            <!-- Kategori -->
             <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Nama Item / Transaksi *</label>
-                <input type="text" id="editObatItemName" name="item_name" required class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm">
+                <label class="block text-xs font-bold text-slate-700 mb-1">Kategori</label>
+                <select name="category" id="editObatKategori" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white font-medium">
+                    <option value="vitamin">Vitamin</option>
+                    <option value="vaksin">Vaksin</option>
+                    <option value="obat">Obat</option>
+                    <option value="disinfektan">Disinfektan</option>
+                    <option value="mineral">Mineral / Premix</option>
+                </select>
             </div>
 
-            <!-- Jumlah & Satuan -->
+            <!-- Produk / Nama Obat -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Produk / Nama Obat *</label>
+                <input type="text" name="medicine_name" id="editObatProduk" required placeholder="Nama obat atau vaksin..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-semibold">
+            </div>
+
+            <!-- Jumlah Pemakaian & Satuan -->
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Jumlah *</label>
-                    <input type="number" step="0.01" id="editObatQuantity" name="quantity" required class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm font-bold">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Jumlah Pemakaian *</label>
+                    <input type="number" step="0.01" name="dosage" id="editObatJumlah" value="1" placeholder="Jumlah" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-bold">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Satuan *</label>
-                    <select id="editObatUnit" name="unit" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white">
+                    <select name="unit" id="editObatSatuan" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white font-medium">
                         <option value="Botol">Botol</option>
-                        <option value="Item">Item</option>
+                        <option value="Box">Box</option>
+                        <option value="Kg">Kg</option>
+                        <option value="Gram">Gram</option>
+                        <option value="Liter">Liter</option>
+                        <option value="Dosis">Dosis</option>
                         <option value="Ampul">Ampul</option>
                         <option value="Pack">Pack</option>
-                        <option value="Liter">Liter</option>
                         <option value="Sachet">Sachet</option>
                     </select>
                 </div>
+            </div>
+
+            <!-- Cara / Aplikasi -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Cara / Aplikasi</label>
+                <select name="application_method" id="editObatAplikasi" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white font-medium">
+                    <option value="Air minum">Air minum</option>
+                    <option value="Campur pakan">Campur pakan</option>
+                    <option value="Tetes mata">Tetes mata</option>
+                    <option value="Semprot">Semprot</option>
+                    <option value="Suntik">Suntik</option>
+                </select>
             </div>
 
             <!-- Tanggal & Waktu -->
@@ -572,21 +611,24 @@
                 </div>
             </div>
 
-            <!-- Sumber / Asal -->
-            <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Sumber / Apotek / Kandang</label>
-                <input type="text" id="editObatSource" name="source" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm">
-            </div>
-
             <!-- Keterangan -->
             <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Keterangan</label>
-                <textarea id="editObatNotes" name="notes" rows="2" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm"></textarea>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Keterangan / Cara Aplikasi</label>
+                <textarea id="editObatNotes" name="notes" rows="2" placeholder="Opsional..." class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm"></textarea>
             </div>
 
-            <div class="pt-2">
-                <button type="submit" class="w-full py-3 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold text-sm shadow-md transition-all active:scale-98">
+            <!-- Sync Alert -->
+            <div class="p-3 bg-purple-50 border border-purple-200 rounded-xl text-xs">
+                <b class="text-purple-800 block text-[11px]">↘ Otomatis potong Gudang Obat</b>
+                <p class="text-[10px] text-purple-700 mt-0.5 leading-relaxed">Saat disimpan, pemakaian obat/vaksin ini mengurangi stok Gudang Obat dan masuk ke laporan Rekap.</p>
+            </div>
+
+            <div class="pt-2 space-y-2">
+                <button type="submit" class="w-full py-3 rounded-xl bg-maroon-800 hover:bg-maroon-900 text-white font-bold text-sm shadow-md transition-all active:scale-98">
                     Simpan Perubahan
+                </button>
+                <button type="button" onclick="closeModalEditObat()" class="w-full py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-xs transition-all">
+                    Batal
                 </button>
             </div>
         </form>
@@ -670,25 +712,63 @@
         content.classList.remove('modal-content-active');
     }
 
-    // 3. EDIT MODAL (OBAT)
+    // 3. EDIT MODAL (OBAT) - Matches /input form card
+    function filterEditObatCoops() {
+        const flockId = document.getElementById('editObatKloter').value;
+        const coopSelect = document.getElementById('editObatCoop');
+        let firstMatch = null;
+
+        Array.from(coopSelect.options).forEach(opt => {
+            if (opt.getAttribute('data-flock') == flockId) {
+                opt.style.display = '';
+                if (!firstMatch) firstMatch = opt;
+            } else {
+                opt.style.display = 'none';
+            }
+        });
+
+        if (firstMatch && coopSelect.selectedOptions[0]?.style.display === 'none') {
+            coopSelect.value = firstMatch.value;
+        }
+    }
+
     function openEditObatModal(data) {
         const modal = document.getElementById('modalEditObat');
         const content = modal.querySelector('div');
         
         document.getElementById('formEditObat').action = `/gudang/${data.id}/update`;
-        document.getElementById('editObatItemName').value = data.title;
-        document.getElementById('editObatQuantity').value = data.raw_quantity || data.quantity;
-        document.getElementById('editObatUnit').value = data.unit || 'Botol';
+        document.getElementById('editObatProduk').value = data.medicine_name || data.title || '';
+        document.getElementById('editObatJumlah').value = parseFloat(data.dosage) || data.raw_quantity || data.quantity || 1;
+        document.getElementById('editObatSatuan').value = data.unit || 'Botol';
         document.getElementById('editObatDate').value = data.raw_date || data.date;
         document.getElementById('editObatTime').value = data.time || '09:30';
-        document.getElementById('editObatSource').value = data.source || '';
         document.getElementById('editObatNotes').value = data.notes || '';
 
-        if (data.type === 'masuk') {
-            document.getElementById('editObatTypeMasuk').checked = true;
-        } else {
-            document.getElementById('editObatTypeKeluar').checked = true;
+        if (data.category || data.medicine_type) {
+            const cat = (data.category || data.medicine_type).toLowerCase();
+            const catSelect = document.getElementById('editObatKategori');
+            if (Array.from(catSelect.options).some(o => o.value === cat)) {
+                catSelect.value = cat;
+            }
         }
+
+        if (data.application_method) {
+            const appSelect = document.getElementById('editObatAplikasi');
+            if (Array.from(appSelect.options).some(o => o.value === data.application_method)) {
+                appSelect.value = data.application_method;
+            }
+        }
+
+        if (data.coop_id) {
+            const coopSelect = document.getElementById('editObatCoop');
+            coopSelect.value = data.coop_id;
+            const opt = coopSelect.selectedOptions[0];
+            if (opt && opt.getAttribute('data-flock')) {
+                document.getElementById('editObatKloter').value = opt.getAttribute('data-flock');
+            }
+        }
+
+        filterEditObatCoops();
 
         modal.classList.add('modal-active');
         content.classList.add('modal-content-active');

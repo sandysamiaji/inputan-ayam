@@ -722,6 +722,12 @@ class WarehouseController extends Controller
                     'notes' => 'Panen Telur Utuh: ' . number_format($ep->good_eggs ?? $ep->total_eggs, 0, ',', '.') . ' Butir' . ($ep->weight_kg > 0 ? ' (' . number_format($ep->weight_kg, 1, ',', '.') . ' Kg)' : '') . ($ep->notes ? ' • ' . $ep->notes : ''),
                     'user' => $ep->user,
                     'is_nonaktif' => str_starts_with(trim($ep->notes ?? ''), '[NONAKTIF]'),
+                    'good_eggs' => $ep->good_eggs,
+                    'broken_eggs' => $ep->broken_eggs,
+                    'abnormal_eggs' => $ep->abnormal_eggs ?? 0,
+                    'crates_count' => (float) $ep->crates_count,
+                    'coop_id' => $ep->coop_id,
+                    'flock_id' => $ep->flock_id,
                 ]);
             }
 
@@ -741,6 +747,12 @@ class WarehouseController extends Controller
                     'notes' => 'Telur retak/pecah saat pengumpulan di kandang' . ($ep->notes ? ' • ' . $ep->notes : ''),
                     'user' => $ep->user,
                     'is_nonaktif' => str_starts_with(trim($ep->notes ?? ''), '[NONAKTIF]'),
+                    'good_eggs' => $ep->good_eggs,
+                    'broken_eggs' => $ep->broken_eggs,
+                    'abnormal_eggs' => $ep->abnormal_eggs ?? 0,
+                    'crates_count' => (float) $ep->crates_count,
+                    'coop_id' => $ep->coop_id,
+                    'flock_id' => $ep->flock_id,
                 ]);
             }
         }

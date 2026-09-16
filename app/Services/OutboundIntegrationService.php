@@ -222,13 +222,30 @@ class OutboundIntegrationService
             );
 
         if (\Illuminate\Support\Facades\Schema::hasTable('users')) {
-            $query->leftJoin('users', 'sales.user_id', '=', 'users.id')
-                ->addSelect('users.name as user_name', 'users.username as user_username');
+            $query->leftJoin('users', 'sales.user_id', '=', 'users.id');
+            if (\Illuminate\Support\Facades\Schema::hasColumn('users', 'name')) {
+                $query->addSelect('users.name as user_name');
+            }
+            if (\Illuminate\Support\Facades\Schema::hasColumn('users', 'username')) {
+                $query->addSelect('users.username as user_username');
+            }
         }
 
         if (\Illuminate\Support\Facades\Schema::hasTable('trips')) {
-            $query->leftJoin('trips', 'sales.trip_id', '=', 'trips.id')
-                ->addSelect('trips.trip_code', 'trips.driver_name', 'trips.destination');
+            $query->leftJoin('trips', 'sales.trip_id', '=', 'trips.id');
+            if (\Illuminate\Support\Facades\Schema::hasColumn('trips', 'trip_code')) {
+                $query->addSelect('trips.trip_code');
+            }
+            if (\Illuminate\Support\Facades\Schema::hasColumn('trips', 'vehicle')) {
+                $query->addSelect('trips.vehicle as driver_name');
+            } elseif (\Illuminate\Support\Facades\Schema::hasColumn('trips', 'driver_name')) {
+                $query->addSelect('trips.driver_name');
+            }
+            if (\Illuminate\Support\Facades\Schema::hasColumn('trips', 'route')) {
+                $query->addSelect('trips.route as destination');
+            } elseif (\Illuminate\Support\Facades\Schema::hasColumn('trips', 'destination')) {
+                $query->addSelect('trips.destination');
+            }
         }
 
         $query->orderBy('sales.date', 'desc')

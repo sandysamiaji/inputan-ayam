@@ -266,75 +266,191 @@
             </div>
         </div>
 
-        <!-- 4 Quick Stat Summary Pills (Masuk, Digunakan, Keluar, Terjual) -->
+        <!-- 4 Quick Stat Summary Cards (Masuk, Digunakan, Keluar, Terjual) -->
         <div class="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
             <!-- 1. Masuk -->
-            <div class="p-3 rounded-2xl bg-emerald-50/70 border border-emerald-200/70 flex items-center justify-between">
-                <div>
-                    <span class="text-[10px] font-extrabold uppercase text-emerald-700 tracking-wider flex items-center gap-1">
+            <div class="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/70 flex flex-col justify-between min-h-[110px]">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-extrabold uppercase text-emerald-700 tracking-wider flex items-center gap-1.5">
                         <span class="w-2 h-2 rounded-full bg-emerald-600 inline-block"></span> Masuk
                     </span>
-                    <div id="statMasukVal" class="text-sm sm:text-base font-black text-emerald-900 mt-0.5">
-                        {{ number_format($chartTotals['masuk'], 1, ',', '.') }}
+                    <div class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                        <i data-lucide="arrow-down-left" class="w-4 h-4 stroke-[2.5]"></i>
                     </div>
-                    <span id="statMasukSub" class="text-[10px] text-emerald-600/80 font-medium">Panen / Beli</span>
                 </div>
-                <div class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-                    <i data-lucide="arrow-down-left" class="w-4 h-4 stroke-[2.5]"></i>
-                </div>
+                <div id="statMasukContent" class="mt-1.5"></div>
+                <span id="statMasukSub" class="text-[10px] text-emerald-600/80 font-medium mt-1">Panen & Beli</span>
             </div>
 
             <!-- 2. Digunakan (Kandang) -->
-            <div class="p-3 rounded-2xl bg-indigo-50/70 border border-indigo-200/70 flex items-center justify-between">
-                <div>
-                    <span class="text-[10px] font-extrabold uppercase text-indigo-700 tracking-wider flex items-center gap-1">
+            <div class="p-3.5 rounded-2xl bg-indigo-50/70 border border-indigo-200/70 flex flex-col justify-between min-h-[110px]">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-extrabold uppercase text-indigo-700 tracking-wider flex items-center gap-1.5">
                         <span class="w-2 h-2 rounded-full bg-indigo-600 inline-block"></span> Digunakan
                     </span>
-                    <div id="statDigunakanVal" class="text-sm sm:text-base font-black text-indigo-900 mt-0.5">
-                        {{ number_format($chartTotals['digunakan'], 1, ',', '.') }}
+                    <div class="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
+                        <i data-lucide="utensils" class="w-4 h-4 stroke-[2.5]"></i>
                     </div>
-                    <span id="statDigunakanSub" class="text-[10px] text-indigo-600/80 font-medium">Konsumsi / Pakai</span>
                 </div>
-                <div class="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
-                    <i data-lucide="utensils" class="w-4 h-4 stroke-[2.5]"></i>
-                </div>
+                <div id="statDigunakanContent" class="mt-1.5"></div>
+                <span id="statDigunakanSub" class="text-[10px] text-indigo-600/80 font-medium mt-1">Konsumsi / Pakai</span>
             </div>
 
             <!-- 3. Keluar (Gudang) -->
-            <div class="p-3 rounded-2xl bg-rose-50/70 border border-rose-200/70 flex items-center justify-between">
-                <div>
-                    <span class="text-[10px] font-extrabold uppercase text-rose-700 tracking-wider flex items-center gap-1">
+            <div class="p-3.5 rounded-2xl bg-rose-50/70 border border-rose-200/70 flex flex-col justify-between min-h-[110px]">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-extrabold uppercase text-rose-700 tracking-wider flex items-center gap-1.5">
                         <span class="w-2 h-2 rounded-full bg-rose-600 inline-block"></span> Keluar
                     </span>
-                    <div id="statKeluarVal" class="text-sm sm:text-base font-black text-rose-900 mt-0.5">
-                        {{ number_format($chartTotals['keluar'], 1, ',', '.') }}
+                    <div class="w-7 h-7 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
+                        <i data-lucide="arrow-up-right" class="w-4 h-4 stroke-[2.5]"></i>
                     </div>
-                    <span id="statKeluarSub" class="text-[10px] text-rose-600/80 font-medium">Total Keluar Gudang</span>
                 </div>
-                <div class="w-8 h-8 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
-                    <i data-lucide="arrow-up-right" class="w-4 h-4 stroke-[2.5]"></i>
-                </div>
+                <div id="statKeluarContent" class="mt-1.5"></div>
+                <span id="statKeluarSub" class="text-[10px] text-rose-600/80 font-medium mt-1">Total Keluar Gudang</span>
             </div>
 
             <!-- 4. Terjual -->
-            <div class="p-3 rounded-2xl bg-amber-50/70 border border-amber-200/70 flex items-center justify-between">
-                <div>
-                    <span class="text-[10px] font-extrabold uppercase text-amber-700 tracking-wider flex items-center gap-1">
+            <div class="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/70 flex flex-col justify-between min-h-[110px]">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-extrabold uppercase text-amber-700 tracking-wider flex items-center gap-1.5">
                         <span class="w-2 h-2 rounded-full bg-amber-600 inline-block"></span> Terjual
                     </span>
-                    <div id="statTerjualVal" class="text-sm sm:text-base font-black text-amber-900 mt-0.5">
-                        {{ number_format($chartTotals['terjual'], 1, ',', '.') }}
+                    <div class="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                        <i data-lucide="shopping-cart" class="w-4 h-4 stroke-[2.5]"></i>
                     </div>
-                    <span id="statTerjualSub" class="text-[10px] text-amber-600/80 font-medium">Penjualan nochifram</span>
                 </div>
-                <div class="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
-                    <i data-lucide="shopping-cart" class="w-4 h-4 stroke-[2.5]"></i>
-                </div>
+                <div id="statTerjualContent" class="mt-1.5"></div>
+                <span id="statTerjualSub" class="text-[10px] text-amber-600/80 font-medium mt-1">Penjualan nochifram</span>
+            </div>
+        </div>
+
+        <!-- 8 Direct Links to Specific Data Streams -->
+        <div class="mt-4 pt-3.5 border-t border-slate-100">
+            <div class="flex flex-wrap items-center justify-between gap-1 mb-2">
+                <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                    <i data-lucide="external-link" class="w-3.5 h-3.5 text-slate-400"></i>
+                    Akses Langsung 8 Aliran Data Gudang (14 Hari Terakhir):
+                </span>
+                <span class="text-[10px] text-slate-400">Klik untuk langsung membuka tab data</span>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+                <!-- 1. Telur Masuk -->
+                <a href="{{ route('warehouse.telur', ['tab' => 'masuk']) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-emerald-50/60 border border-slate-200/80 hover:border-emerald-300 hover:shadow-xs transition-all group block">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-extrabold text-slate-700 group-hover:text-emerald-800">Telur Masuk</span>
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                    </div>
+                    <div class="text-xs sm:text-sm font-black text-slate-900 mt-1">
+                        {{ number_format($streamTotals['telur_masuk'], 1, ',', '.') }} <span class="text-[10px] font-normal text-slate-500">Peti</span>
+                    </div>
+                    <div class="text-[9px] text-emerald-600 font-semibold group-hover:underline flex items-center gap-0.5 mt-0.5">
+                        Produksi <i data-lucide="arrow-up-right" class="w-2.5 h-2.5"></i>
+                    </div>
+                </a>
+
+                <!-- 2. Telur Rusak -->
+                <a href="{{ route('warehouse.telur', ['tab' => 'keluar']) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-rose-50/60 border border-slate-200/80 hover:border-rose-300 hover:shadow-xs transition-all group block">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-extrabold text-slate-700 group-hover:text-rose-800">Telur Rusak</span>
+                        <span class="w-2 h-2 rounded-full bg-rose-500 shrink-0"></span>
+                    </div>
+                    <div class="text-xs sm:text-sm font-black text-slate-900 mt-1">
+                        {{ number_format($streamTotals['telur_rusak_peti'], 2, ',', '.') }} <span class="text-[10px] font-normal text-slate-500">Peti</span>
+                    </div>
+                    <div class="text-[9px] text-rose-600 font-semibold group-hover:underline flex items-center gap-0.5 mt-0.5">
+                        {{ number_format($streamTotals['telur_rusak_butir'], 0, ',', '.') }} Btr <i data-lucide="arrow-up-right" class="w-2.5 h-2.5"></i>
+                    </div>
+                </a>
+
+                <!-- 3. Telur Penjualan -->
+                <a href="{{ route('warehouse.telur', ['tab' => 'penjualan']) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-amber-50/60 border border-slate-200/80 hover:border-amber-300 hover:shadow-xs transition-all group block">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-extrabold text-slate-700 group-hover:text-amber-800">Telur Terjual</span>
+                        <span class="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
+                    </div>
+                    <div class="text-xs sm:text-sm font-black text-slate-900 mt-1">
+                        {{ number_format($streamTotals['telur_terjual'], 1, ',', '.') }} <span class="text-[10px] font-normal text-slate-500">Peti</span>
+                    </div>
+                    <div class="text-[9px] text-amber-600 font-semibold group-hover:underline flex items-center gap-0.5 mt-0.5">
+                        Penjualan <i data-lucide="arrow-up-right" class="w-2.5 h-2.5"></i>
+                    </div>
+                </a>
+
+                <!-- 4. Pakan Masuk -->
+                <a href="{{ route('warehouse.pakan', ['tab' => 'masuk']) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-sky-50/60 border border-slate-200/80 hover:border-sky-300 hover:shadow-xs transition-all group block">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-extrabold text-slate-700 group-hover:text-sky-800">Pakan Masuk</span>
+                        <span class="w-2 h-2 rounded-full bg-sky-500 shrink-0"></span>
+                    </div>
+                    <div class="text-xs sm:text-sm font-black text-slate-900 mt-1">
+                        {{ number_format($streamTotals['pakan_masuk'], 1, ',', '.') }} <span class="text-[10px] font-normal text-slate-500">Kg</span>
+                    </div>
+                    <div class="text-[9px] text-sky-600 font-semibold group-hover:underline flex items-center gap-0.5 mt-0.5">
+                        Beli/Masuk <i data-lucide="arrow-up-right" class="w-2.5 h-2.5"></i>
+                    </div>
+                </a>
+
+                <!-- 5. Pemberian Pakan -->
+                <a href="{{ route('warehouse.pakan', ['tab' => 'keluar']) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-purple-50/60 border border-slate-200/80 hover:border-purple-300 hover:shadow-xs transition-all group block">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-extrabold text-slate-700 group-hover:text-purple-800">Pemberian Pakan</span>
+                        <span class="w-2 h-2 rounded-full bg-purple-500 shrink-0"></span>
+                    </div>
+                    <div class="text-xs sm:text-sm font-black text-slate-900 mt-1">
+                        {{ number_format($streamTotals['pakan_konsumsi'], 1, ',', '.') }} <span class="text-[10px] font-normal text-slate-500">Kg</span>
+                    </div>
+                    <div class="text-[9px] text-purple-600 font-semibold group-hover:underline flex items-center gap-0.5 mt-0.5">
+                        Kandang <i data-lucide="arrow-up-right" class="w-2.5 h-2.5"></i>
+                    </div>
+                </a>
+
+                <!-- 6. Pakan Terjual -->
+                <a href="{{ route('warehouse.pakan', ['tab' => 'penjualan']) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-orange-50/60 border border-slate-200/80 hover:border-orange-300 hover:shadow-xs transition-all group block">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-extrabold text-slate-700 group-hover:text-orange-800">Pakan Terjual</span>
+                        <span class="w-2 h-2 rounded-full bg-orange-500 shrink-0"></span>
+                    </div>
+                    <div class="text-xs sm:text-sm font-black text-slate-900 mt-1">
+                        {{ number_format($streamTotals['pakan_terjual'], 1, ',', '.') }} <span class="text-[10px] font-normal text-slate-500">Kg</span>
+                    </div>
+                    <div class="text-[9px] text-orange-600 font-semibold group-hover:underline flex items-center gap-0.5 mt-0.5">
+                        Penjualan <i data-lucide="arrow-up-right" class="w-2.5 h-2.5"></i>
+                    </div>
+                </a>
+
+                <!-- 7. Obat Masuk -->
+                <a href="{{ route('warehouse.obat', ['tab' => 'masuk']) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-teal-50/60 border border-slate-200/80 hover:border-teal-300 hover:shadow-xs transition-all group block">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-extrabold text-slate-700 group-hover:text-teal-800">Obat Masuk</span>
+                        <span class="w-2 h-2 rounded-full bg-teal-500 shrink-0"></span>
+                    </div>
+                    <div class="text-xs sm:text-sm font-black text-slate-900 mt-1">
+                        {{ number_format($streamTotals['obat_masuk'], 1, ',', '.') }} <span class="text-[10px] font-normal text-slate-500">Item</span>
+                    </div>
+                    <div class="text-[9px] text-teal-600 font-semibold group-hover:underline flex items-center gap-0.5 mt-0.5">
+                        Gudang <i data-lucide="arrow-up-right" class="w-2.5 h-2.5"></i>
+                    </div>
+                </a>
+
+                <!-- 8. Pemakaian Obat -->
+                <a href="{{ route('warehouse.obat', ['tab' => 'keluar']) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-pink-50/60 border border-slate-200/80 hover:border-pink-300 hover:shadow-xs transition-all group block">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-extrabold text-slate-700 group-hover:text-pink-800">Pemakaian Obat</span>
+                        <span class="w-2 h-2 rounded-full bg-pink-500 shrink-0"></span>
+                    </div>
+                    <div class="text-xs sm:text-sm font-black text-slate-900 mt-1">
+                        {{ number_format($streamTotals['obat_konsumsi'], 1, ',', '.') }} <span class="text-[10px] font-normal text-slate-500">Dosis</span>
+                    </div>
+                    <div class="text-[9px] text-pink-600 font-semibold group-hover:underline flex items-center gap-0.5 mt-0.5">
+                        Kandang <i data-lucide="arrow-up-right" class="w-2.5 h-2.5"></i>
+                    </div>
+                </a>
             </div>
         </div>
 
         <!-- Line Chart Container -->
-        <div class="mt-5 relative w-full" style="height: 310px;">
+        <div class="mt-5 relative w-full" style="height: 340px;">
             <canvas id="warehouseFlowChart"></canvas>
         </div>
     </div>
@@ -499,115 +615,173 @@
     let flowChartInstance = null;
     const warehouseChartLabels = {!! json_encode($chartLabels) !!};
     const warehouseChartDataSets = {!! json_encode($chartDataSets) !!};
+    const warehouseChartTotals = {!! json_encode($chartTotals) !!};
+    const warehouseStreamTotals = {!! json_encode($streamTotals) !!};
+
+    function updateStatSummaryCards(commodityKey) {
+        const cMasuk = document.getElementById('statMasukContent');
+        const cDigunakan = document.getElementById('statDigunakanContent');
+        const cKeluar = document.getElementById('statKeluarContent');
+        const cTerjual = document.getElementById('statTerjualContent');
+        const sDigunakan = document.getElementById('statDigunakanSub');
+        const sMasuk = document.getElementById('statMasukSub');
+        const sKeluar = document.getElementById('statKeluarSub');
+        const sTerjual = document.getElementById('statTerjualSub');
+
+        if (!cMasuk) return;
+
+        if (commodityKey === 'overview') {
+            if (sMasuk) sMasuk.textContent = 'Panen & Pembelian';
+            if (sDigunakan) sDigunakan.textContent = 'Konsumsi & Kerusakan';
+            if (sKeluar) sKeluar.textContent = 'Total Pengeluaran';
+            if (sTerjual) sTerjual.textContent = 'Penjualan Platform';
+
+            cMasuk.innerHTML = `
+                <div class="space-y-1 text-xs">
+                    <a href="{{ route('warehouse.telur', ['tab' => 'masuk']) }}" class="flex justify-between items-center text-slate-700 hover:text-emerald-700 transition-colors">
+                        <span class="text-slate-500">Telur:</span>
+                        <span class="font-extrabold text-slate-800">${Number(warehouseStreamTotals.telur_masuk).toLocaleString('id-ID', {maximumFractionDigits: 1})} Peti</span>
+                    </a>
+                    <a href="{{ route('warehouse.pakan', ['tab' => 'masuk']) }}" class="flex justify-between items-center text-slate-700 hover:text-emerald-700 transition-colors">
+                        <span class="text-slate-500">Pakan:</span>
+                        <span class="font-extrabold text-slate-800">${Number(warehouseStreamTotals.pakan_masuk).toLocaleString('id-ID', {maximumFractionDigits: 1})} Kg</span>
+                    </a>
+                    <a href="{{ route('warehouse.obat', ['tab' => 'masuk']) }}" class="flex justify-between items-center text-slate-700 hover:text-emerald-700 transition-colors">
+                        <span class="text-slate-500">Obat:</span>
+                        <span class="font-extrabold text-slate-800">${Number(warehouseStreamTotals.obat_masuk).toLocaleString('id-ID', {maximumFractionDigits: 1})} Item</span>
+                    </a>
+                </div>
+            `;
+
+            cDigunakan.innerHTML = `
+                <div class="space-y-1 text-xs">
+                    <a href="{{ route('warehouse.pakan', ['tab' => 'keluar']) }}" class="flex justify-between items-center text-slate-700 hover:text-indigo-700 transition-colors">
+                        <span class="text-slate-500">Pakan:</span>
+                        <span class="font-extrabold text-slate-800">${Number(warehouseStreamTotals.pakan_konsumsi).toLocaleString('id-ID', {maximumFractionDigits: 1})} Kg</span>
+                    </a>
+                    <a href="{{ route('warehouse.telur', ['tab' => 'keluar']) }}" class="flex justify-between items-center text-slate-700 hover:text-indigo-700 transition-colors">
+                        <span class="text-slate-500">Telur Rusak:</span>
+                        <span class="font-extrabold text-slate-800">${Number(warehouseStreamTotals.telur_rusak_butir).toLocaleString('id-ID')} Btr</span>
+                    </a>
+                    <a href="{{ route('warehouse.obat', ['tab' => 'keluar']) }}" class="flex justify-between items-center text-slate-700 hover:text-indigo-700 transition-colors">
+                        <span class="text-slate-500">Obat Dipakai:</span>
+                        <span class="font-extrabold text-slate-800">${Number(warehouseStreamTotals.obat_konsumsi).toLocaleString('id-ID', {maximumFractionDigits: 1})} Dosis</span>
+                    </a>
+                </div>
+            `;
+
+            const totalTelurKeluar = (Number(warehouseStreamTotals.telur_rusak_peti) + Number(warehouseStreamTotals.telur_terjual)).toFixed(1);
+            const totalPakanKeluar = (Number(warehouseStreamTotals.pakan_konsumsi) + Number(warehouseStreamTotals.pakan_terjual)).toFixed(1);
+
+            cKeluar.innerHTML = `
+                <div class="space-y-1 text-xs">
+                    <a href="{{ route('warehouse.telur', ['tab' => 'semua']) }}" class="flex justify-between items-center text-slate-700 hover:text-rose-700 transition-colors">
+                        <span class="text-slate-500">Telur Total:</span>
+                        <span class="font-extrabold text-slate-800">${Number(totalTelurKeluar).toLocaleString('id-ID')} Peti</span>
+                    </a>
+                    <a href="{{ route('warehouse.pakan', ['tab' => 'semua']) }}" class="flex justify-between items-center text-slate-700 hover:text-rose-700 transition-colors">
+                        <span class="text-slate-500">Pakan Total:</span>
+                        <span class="font-extrabold text-slate-800">${Number(totalPakanKeluar).toLocaleString('id-ID')} Kg</span>
+                    </a>
+                    <a href="{{ route('warehouse.obat', ['tab' => 'keluar']) }}" class="flex justify-between items-center text-slate-700 hover:text-rose-700 transition-colors">
+                        <span class="text-slate-500">Obat Pakai:</span>
+                        <span class="font-extrabold text-slate-800">${Number(warehouseStreamTotals.obat_konsumsi).toLocaleString('id-ID', {maximumFractionDigits: 1})} Dosis</span>
+                    </a>
+                </div>
+            `;
+
+            cTerjual.innerHTML = `
+                <div class="space-y-1 text-xs">
+                    <a href="{{ route('warehouse.telur', ['tab' => 'penjualan']) }}" class="flex justify-between items-center text-slate-700 hover:text-amber-700 transition-colors">
+                        <span class="text-slate-500">Telur:</span>
+                        <span class="font-extrabold text-slate-800">${Number(warehouseStreamTotals.telur_terjual).toLocaleString('id-ID', {maximumFractionDigits: 1})} Peti</span>
+                    </a>
+                    <a href="{{ route('warehouse.pakan', ['tab' => 'penjualan']) }}" class="flex justify-between items-center text-slate-700 hover:text-amber-700 transition-colors">
+                        <span class="text-slate-500">Pakan:</span>
+                        <span class="font-extrabold text-slate-800">${Number(warehouseStreamTotals.pakan_terjual).toLocaleString('id-ID', {maximumFractionDigits: 1})} Kg</span>
+                    </a>
+                    <div class="flex justify-between items-center text-[10px] text-amber-700/70 pt-0.5 border-t border-amber-200/50">
+                        <span>Platform:</span>
+                        <span class="font-semibold">nochifram</span>
+                    </div>
+                </div>
+            `;
+        } else {
+            const dataTotals = warehouseChartTotals[commodityKey] || {};
+
+            if (sMasuk) sMasuk.textContent = commodityKey === 'telur' ? 'Panen Kandang' : (commodityKey === 'pakan' ? 'Pembelian / Masuk' : 'Obat Masuk');
+            if (sDigunakan) sDigunakan.textContent = commodityKey === 'telur' ? 'Telur Rusak / Pecah' : (commodityKey === 'pakan' ? 'Pemberian Pakan Kandang' : 'Pemakaian Obat Kandang');
+            if (sKeluar) sKeluar.textContent = 'Total Keluar Gudang';
+            if (sTerjual) sTerjual.textContent = 'Penjualan nochifram';
+
+            cMasuk.innerHTML = `
+                <div class="text-base sm:text-xl font-black text-emerald-900 mt-1">
+                    ${dataTotals.masuk || '0'}
+                </div>
+            `;
+
+            cDigunakan.innerHTML = `
+                <div class="text-base sm:text-xl font-black text-indigo-900 mt-1">
+                    ${dataTotals.digunakan || '0'}
+                </div>
+            `;
+
+            cKeluar.innerHTML = `
+                <div class="text-base sm:text-xl font-black text-rose-900 mt-1">
+                    ${dataTotals.keluar || '0'}
+                </div>
+            `;
+
+            cTerjual.innerHTML = `
+                <div class="text-base sm:text-xl font-black text-amber-900 mt-1">
+                    ${dataTotals.terjual || '0'}
+                </div>
+            `;
+        }
+    }
 
     function renderWarehouseFlowChart(commodityKey) {
         const ctx = document.getElementById('warehouseFlowChart');
         if (!ctx) return;
 
         const ds = warehouseChartDataSets[commodityKey] || warehouseChartDataSets.overview;
+        const isOverview = ds.is_overview === true;
         
         // Update Title
         const titleElem = document.getElementById('chartMainTitle');
         if (titleElem) titleElem.textContent = ds.title;
 
-        // Calculate Totals for this commodity
-        const sumMasuk = ds.masuk.reduce((a, b) => a + Number(b), 0);
-        const sumDigunakan = ds.digunakan.reduce((a, b) => a + Number(b), 0);
-        const sumKeluar = ds.keluar.reduce((a, b) => a + Number(b), 0);
-        const sumTerjual = ds.terjual.reduce((a, b) => a + Number(b), 0);
-        const unit = ds.unit || '';
-
-        const statMasuk = document.getElementById('statMasukVal');
-        const statDigunakan = document.getElementById('statDigunakanVal');
-        const statKeluar = document.getElementById('statKeluarVal');
-        const statTerjual = document.getElementById('statTerjualVal');
-
-        if (statMasuk) statMasuk.textContent = sumMasuk.toLocaleString('id-ID', {maximumFractionDigits: 1}) + ' ' + unit;
-        if (statDigunakan) statDigunakan.textContent = sumDigunakan.toLocaleString('id-ID', {maximumFractionDigits: 1}) + ' ' + unit;
-        if (statKeluar) statKeluar.textContent = sumKeluar.toLocaleString('id-ID', {maximumFractionDigits: 1}) + ' ' + unit;
-        if (statTerjual) statTerjual.textContent = sumTerjual.toLocaleString('id-ID', {maximumFractionDigits: 1}) + ' ' + unit;
-
-        const statDigunakanSub = document.getElementById('statDigunakanSub');
-        if (statDigunakanSub) {
-            if (commodityKey === 'telur') {
-                statDigunakanSub.textContent = 'Telur Rusak / Pecah';
-            } else if (commodityKey === 'pakan') {
-                statDigunakanSub.textContent = 'Pemberian Pakan Kandang';
-            } else if (commodityKey === 'obat') {
-                statDigunakanSub.textContent = 'Pemakaian di Kandang';
-            } else {
-                statDigunakanSub.textContent = 'Konsumsi / Pakai';
-            }
-        }
+        // Update Stat Cards
+        updateStatSummaryCards(commodityKey);
 
         if (flowChartInstance) {
             flowChartInstance.destroy();
         }
 
-        const secondLabel = commodityKey === 'telur' ? 'Telur Rusak' : (commodityKey === 'pakan' ? 'Pemberian Pakan' : (commodityKey === 'obat' ? 'Pemakaian Obat' : 'Digunakan di Kandang'));
+        const chartDatasets = (ds.datasets || []).map(item => ({
+            label: item.label,
+            data: item.data,
+            borderColor: item.borderColor,
+            backgroundColor: item.backgroundColor,
+            borderDash: item.borderDash || [],
+            borderWidth: 2.2,
+            fill: false,
+            tension: 0.32,
+            pointBackgroundColor: item.borderColor,
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 1.5,
+            pointRadius: 3.5,
+            pointHoverRadius: 6,
+            yAxisID: item.yAxisID || 'y',
+            unit: item.unit || ds.unit || '',
+            tab_url: item.tab_url || null,
+        }));
 
         flowChartInstance = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: warehouseChartLabels,
-                datasets: [
-                    {
-                        label: 'Barang Masuk',
-                        data: ds.masuk,
-                        borderColor: '#059669',
-                        backgroundColor: 'rgba(5, 150, 105, 0.08)',
-                        borderWidth: 2.5,
-                        fill: false,
-                        tension: 0.35,
-                        pointBackgroundColor: '#059669',
-                        pointBorderColor: '#ffffff',
-                        pointBorderWidth: 2,
-                        pointRadius: 4,
-                        pointHoverRadius: 6,
-                    },
-                    {
-                        label: secondLabel,
-                        data: ds.digunakan,
-                        borderColor: '#4f46e5',
-                        backgroundColor: 'rgba(79, 70, 229, 0.08)',
-                        borderWidth: 2.5,
-                        fill: false,
-                        tension: 0.35,
-                        pointBackgroundColor: '#4f46e5',
-                        pointBorderColor: '#ffffff',
-                        pointBorderWidth: 2,
-                        pointRadius: 4,
-                        pointHoverRadius: 6,
-                    },
-                    {
-                        label: 'Barang Keluar (Total)',
-                        data: ds.keluar,
-                        borderColor: '#be123c',
-                        backgroundColor: 'rgba(190, 18, 60, 0.08)',
-                        borderWidth: 2.5,
-                        fill: false,
-                        tension: 0.35,
-                        pointBackgroundColor: '#be123c',
-                        pointBorderColor: '#ffffff',
-                        pointBorderWidth: 2,
-                        pointRadius: 4,
-                        pointHoverRadius: 6,
-                    },
-                    {
-                        label: 'Barang Terjual',
-                        data: ds.terjual,
-                        borderColor: '#d97706',
-                        backgroundColor: 'rgba(217, 119, 6, 0.08)',
-                        borderWidth: 2.5,
-                        fill: false,
-                        tension: 0.35,
-                        pointBackgroundColor: '#d97706',
-                        pointBorderColor: '#ffffff',
-                        pointBorderWidth: 2,
-                        pointRadius: 4,
-                        pointHoverRadius: 6,
-                    }
-                ]
+                datasets: chartDatasets
             },
             options: {
                 responsive: true,
@@ -628,18 +802,20 @@
                                 weight: 'bold',
                                 family: "'Inter', sans-serif"
                             },
-                            color: '#334155'
+                            color: '#334155',
+                            padding: 12
                         }
                     },
                     tooltip: {
-                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                        backgroundColor: 'rgba(15, 23, 42, 0.92)',
                         titleFont: { size: 12, weight: 'bold' },
                         bodyFont: { size: 11 },
-                        padding: 10,
+                        padding: 12,
                         cornerRadius: 10,
                         callbacks: {
                             label: function(context) {
-                                return context.dataset.label + ': ' + Number(context.parsed.y).toLocaleString('id-ID') + ' ' + unit;
+                                const itemUnit = context.dataset.unit || '';
+                                return ' ' + context.dataset.label + ': ' + Number(context.parsed.y).toLocaleString('id-ID') + ' ' + itemUnit;
                             }
                         }
                     }
@@ -653,11 +829,37 @@
                         }
                     },
                     y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
                         beginAtZero: true,
                         grid: { color: 'rgba(226, 232, 240, 0.6)' },
+                        title: {
+                            display: true,
+                            text: isOverview ? 'Peti / Butir / Item / Dosis' : (ds.unit || ''),
+                            font: { size: 10, weight: 'bold' },
+                            color: '#64748b'
+                        },
                         ticks: {
                             font: { size: 10, weight: '600' },
                             color: '#64748b'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: isOverview,
+                        position: 'right',
+                        beginAtZero: true,
+                        grid: { drawOnChartArea: false },
+                        title: {
+                            display: isOverview,
+                            text: 'Pakan (Kg)',
+                            font: { size: 10, weight: 'bold' },
+                            color: '#0284c7'
+                        },
+                        ticks: {
+                            font: { size: 10, weight: '600' },
+                            color: '#0284c7'
                         }
                     }
                 }

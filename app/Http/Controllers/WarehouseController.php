@@ -242,46 +242,247 @@ class WarehouseController extends Controller
             $cursor->addDay();
         }
 
+        // Totals per real data stream (14 hari terakhir)
+        $sumTelurMasuk = round(array_sum($chartEggMasuk), 1);
+        $sumTelurRusakPeti = round(array_sum($chartEggRusak), 2);
+        $sumTelurRusakButir = round($sumTelurRusakPeti * 25);
+        $sumTelurTerjual = round(array_sum($chartEggTerjual), 1);
+
+        $sumPakanMasuk = round(array_sum($chartFeedMasuk), 1);
+        $sumPakanKonsumsi = round(array_sum($chartFeedKonsumsi), 1);
+        $sumPakanTerjual = round(array_sum($chartFeedTerjual), 1);
+
+        $sumObatMasuk = round(array_sum($chartObatMasuk), 1);
+        $sumObatKonsumsi = round(array_sum($chartObatKonsumsi), 1);
+
+        $streamTotals = [
+            'telur_masuk' => $sumTelurMasuk,
+            'telur_rusak_peti' => $sumTelurRusakPeti,
+            'telur_rusak_butir' => $sumTelurRusakButir,
+            'telur_terjual' => $sumTelurTerjual,
+            'pakan_masuk' => $sumPakanMasuk,
+            'pakan_konsumsi' => $sumPakanKonsumsi,
+            'pakan_terjual' => $sumPakanTerjual,
+            'obat_masuk' => $sumObatMasuk,
+            'obat_konsumsi' => $sumObatKonsumsi,
+        ];
+
         $chartDataSets = [
             'overview' => [
-                'title' => 'TREN SEMUA ALIRAN BARANG GUDANG',
-                'unit' => 'Poin Aktivitas',
-                'masuk' => $chartAllMasuk,
-                'digunakan' => $chartAllDigunakan,
-                'keluar' => $chartAllKeluar,
-                'terjual' => $chartAllTerjual,
+                'title' => 'TREN SEMUA ALIRAN BARANG GUDANG (8 DATA STREAM)',
+                'is_overview' => true,
+                'datasets' => [
+                    [
+                        'label' => 'Telur Masuk (Peti)',
+                        'tab_url' => route('warehouse.telur', ['tab' => 'masuk']),
+                        'data' => $chartEggMasuk,
+                        'borderColor' => '#059669',
+                        'backgroundColor' => 'rgba(5, 150, 105, 0.05)',
+                        'yAxisID' => 'y',
+                        'unit' => 'Peti',
+                    ],
+                    [
+                        'label' => 'Telur Rusak (Peti)',
+                        'tab_url' => route('warehouse.telur', ['tab' => 'keluar']),
+                        'data' => $chartEggRusak,
+                        'borderColor' => '#e11d48',
+                        'backgroundColor' => 'rgba(225, 29, 72, 0.05)',
+                        'borderDash' => [4, 4],
+                        'yAxisID' => 'y',
+                        'unit' => 'Peti',
+                    ],
+                    [
+                        'label' => 'Telur Terjual (Peti)',
+                        'tab_url' => route('warehouse.telur', ['tab' => 'penjualan']),
+                        'data' => $chartEggTerjual,
+                        'borderColor' => '#d97706',
+                        'backgroundColor' => 'rgba(217, 119, 6, 0.05)',
+                        'yAxisID' => 'y',
+                        'unit' => 'Peti',
+                    ],
+                    [
+                        'label' => 'Pakan Masuk (Kg)',
+                        'tab_url' => route('warehouse.pakan', ['tab' => 'masuk']),
+                        'data' => $chartFeedMasuk,
+                        'borderColor' => '#0284c7',
+                        'backgroundColor' => 'rgba(2, 132, 199, 0.05)',
+                        'yAxisID' => 'y1',
+                        'unit' => 'Kg',
+                    ],
+                    [
+                        'label' => 'Pemberian Pakan (Kg)',
+                        'tab_url' => route('warehouse.pakan', ['tab' => 'keluar']),
+                        'data' => $chartFeedKonsumsi,
+                        'borderColor' => '#7c3aed',
+                        'backgroundColor' => 'rgba(124, 58, 237, 0.05)',
+                        'yAxisID' => 'y1',
+                        'unit' => 'Kg',
+                    ],
+                    [
+                        'label' => 'Pakan Terjual (Kg)',
+                        'tab_url' => route('warehouse.pakan', ['tab' => 'penjualan']),
+                        'data' => $chartFeedTerjual,
+                        'borderColor' => '#ea580c',
+                        'backgroundColor' => 'rgba(234, 88, 12, 0.05)',
+                        'yAxisID' => 'y1',
+                        'unit' => 'Kg',
+                    ],
+                    [
+                        'label' => 'Obat Masuk (Item)',
+                        'tab_url' => route('warehouse.obat', ['tab' => 'masuk']),
+                        'data' => $chartObatMasuk,
+                        'borderColor' => '#0d9488',
+                        'backgroundColor' => 'rgba(13, 148, 136, 0.05)',
+                        'yAxisID' => 'y',
+                        'unit' => 'Item',
+                    ],
+                    [
+                        'label' => 'Pemakaian Obat (Dosis)',
+                        'tab_url' => route('warehouse.obat', ['tab' => 'keluar']),
+                        'data' => $chartObatKonsumsi,
+                        'borderColor' => '#db2777',
+                        'backgroundColor' => 'rgba(219, 39, 119, 0.05)',
+                        'yAxisID' => 'y',
+                        'unit' => 'Dosis',
+                    ],
+                ]
             ],
             'telur' => [
                 'title' => 'TREN ALIRAN GUDANG TELUR (PETI)',
+                'is_overview' => false,
                 'unit' => 'Peti',
-                'masuk' => $chartEggMasuk,
-                'digunakan' => $chartEggRusak,
-                'keluar' => $chartEggTotalKeluar,
-                'terjual' => $chartEggTerjual,
+                'datasets' => [
+                    [
+                        'label' => 'Telur Masuk / Produksi (Peti)',
+                        'tab_url' => route('warehouse.telur', ['tab' => 'masuk']),
+                        'data' => $chartEggMasuk,
+                        'borderColor' => '#059669',
+                        'backgroundColor' => 'rgba(5, 150, 105, 0.08)',
+                        'yAxisID' => 'y',
+                        'unit' => 'Peti',
+                    ],
+                    [
+                        'label' => 'Telur Rusak / Pecah (Peti)',
+                        'tab_url' => route('warehouse.telur', ['tab' => 'keluar']),
+                        'data' => $chartEggRusak,
+                        'borderColor' => '#e11d48',
+                        'backgroundColor' => 'rgba(225, 29, 72, 0.08)',
+                        'borderDash' => [4, 4],
+                        'yAxisID' => 'y',
+                        'unit' => 'Peti',
+                    ],
+                    [
+                        'label' => 'Telur Terjual (Peti)',
+                        'tab_url' => route('warehouse.telur', ['tab' => 'penjualan']),
+                        'data' => $chartEggTerjual,
+                        'borderColor' => '#d97706',
+                        'backgroundColor' => 'rgba(217, 119, 6, 0.08)',
+                        'yAxisID' => 'y',
+                        'unit' => 'Peti',
+                    ],
+                ]
             ],
             'pakan' => [
                 'title' => 'TREN ALIRAN GUDANG PAKAN (KG)',
+                'is_overview' => false,
                 'unit' => 'Kg',
-                'masuk' => $chartFeedMasuk,
-                'digunakan' => $chartFeedKonsumsi,
-                'keluar' => $chartFeedTotalKeluar,
-                'terjual' => $chartFeedTerjual,
+                'datasets' => [
+                    [
+                        'label' => 'Pakan Masuk / Beli (Kg)',
+                        'tab_url' => route('warehouse.pakan', ['tab' => 'masuk']),
+                        'data' => $chartFeedMasuk,
+                        'borderColor' => '#0284c7',
+                        'backgroundColor' => 'rgba(2, 132, 199, 0.08)',
+                        'yAxisID' => 'y',
+                        'unit' => 'Kg',
+                    ],
+                    [
+                        'label' => 'Pemberian Pakan Kandang (Kg)',
+                        'tab_url' => route('warehouse.pakan', ['tab' => 'keluar']),
+                        'data' => $chartFeedKonsumsi,
+                        'borderColor' => '#7c3aed',
+                        'backgroundColor' => 'rgba(124, 58, 237, 0.08)',
+                        'yAxisID' => 'y',
+                        'unit' => 'Kg',
+                    ],
+                    [
+                        'label' => 'Pakan Terjual (Kg)',
+                        'tab_url' => route('warehouse.pakan', ['tab' => 'penjualan']),
+                        'data' => $chartFeedTerjual,
+                        'borderColor' => '#ea580c',
+                        'backgroundColor' => 'rgba(234, 88, 12, 0.08)',
+                        'yAxisID' => 'y',
+                        'unit' => 'Kg',
+                    ],
+                ]
             ],
             'obat' => [
                 'title' => 'TREN ALIRAN OBAT & VAKSIN (ITEM / DOSIS)',
-                'unit' => 'Item',
-                'masuk' => $chartObatMasuk,
-                'digunakan' => $chartObatKonsumsi,
-                'keluar' => $chartObatTotalKeluar,
-                'terjual' => array_fill(0, count($chartLabels), 0),
+                'is_overview' => false,
+                'unit' => 'Item / Dosis',
+                'datasets' => [
+                    [
+                        'label' => 'Obat Masuk (Item)',
+                        'tab_url' => route('warehouse.obat', ['tab' => 'masuk']),
+                        'data' => $chartObatMasuk,
+                        'borderColor' => '#0d9488',
+                        'backgroundColor' => 'rgba(13, 148, 136, 0.08)',
+                        'yAxisID' => 'y',
+                        'unit' => 'Item',
+                    ],
+                    [
+                        'label' => 'Pemakaian Obat Kandang (Dosis)',
+                        'tab_url' => route('warehouse.obat', ['tab' => 'keluar']),
+                        'data' => $chartObatKonsumsi,
+                        'borderColor' => '#db2777',
+                        'backgroundColor' => 'rgba(219, 39, 119, 0.08)',
+                        'yAxisID' => 'y',
+                        'unit' => 'Dosis',
+                    ],
+                ]
             ],
         ];
 
         $chartTotals = [
-            'masuk' => round(array_sum($chartAllMasuk), 1),
-            'digunakan' => round(array_sum($chartAllDigunakan), 1),
-            'keluar' => round(array_sum($chartAllKeluar), 1),
-            'terjual' => round(array_sum($chartAllTerjual), 1),
+            'overview' => [
+                'masuk' => [
+                    ['label' => 'Telur', 'val' => number_format($sumTelurMasuk, 1, ',', '.') . ' Peti', 'url' => route('warehouse.telur', ['tab' => 'masuk'])],
+                    ['label' => 'Pakan', 'val' => number_format($sumPakanMasuk, 1, ',', '.') . ' Kg', 'url' => route('warehouse.pakan', ['tab' => 'masuk'])],
+                    ['label' => 'Obat', 'val' => number_format($sumObatMasuk, 1, ',', '.') . ' Item', 'url' => route('warehouse.obat', ['tab' => 'masuk'])],
+                ],
+                'digunakan' => [
+                    ['label' => 'Pakan', 'val' => number_format($sumPakanKonsumsi, 1, ',', '.') . ' Kg', 'url' => route('warehouse.pakan', ['tab' => 'keluar'])],
+                    ['label' => 'Telur Rusak', 'val' => number_format($sumTelurRusakButir, 0, ',', '.') . ' Btr', 'url' => route('warehouse.telur', ['tab' => 'keluar'])],
+                    ['label' => 'Obat', 'val' => number_format($sumObatKonsumsi, 1, ',', '.') . ' Dosis', 'url' => route('warehouse.obat', ['tab' => 'keluar'])],
+                ],
+                'keluar' => [
+                    ['label' => 'Telur Total', 'val' => number_format($sumTelurRusakPeti + $sumTelurTerjual, 1, ',', '.') . ' Peti', 'url' => route('warehouse.telur', ['tab' => 'semua'])],
+                    ['label' => 'Pakan Total', 'val' => number_format($sumPakanKonsumsi + $sumPakanTerjual, 1, ',', '.') . ' Kg', 'url' => route('warehouse.pakan', ['tab' => 'semua'])],
+                    ['label' => 'Obat Pakai', 'val' => number_format($sumObatKonsumsi, 1, ',', '.') . ' Dosis', 'url' => route('warehouse.obat', ['tab' => 'keluar'])],
+                ],
+                'terjual' => [
+                    ['label' => 'Telur Terjual', 'val' => number_format($sumTelurTerjual, 1, ',', '.') . ' Peti', 'url' => route('warehouse.telur', ['tab' => 'penjualan'])],
+                    ['label' => 'Pakan Terjual', 'val' => number_format($sumPakanTerjual, 1, ',', '.') . ' Kg', 'url' => route('warehouse.pakan', ['tab' => 'penjualan'])],
+                ],
+            ],
+            'telur' => [
+                'masuk' => number_format($sumTelurMasuk, 1, ',', '.') . ' Peti',
+                'digunakan' => number_format($sumTelurRusakPeti, 2, ',', '.') . ' Peti (' . number_format($sumTelurRusakButir, 0, ',', '.') . ' Btr)',
+                'keluar' => number_format($sumTelurRusakPeti + $sumTelurTerjual, 1, ',', '.') . ' Peti',
+                'terjual' => number_format($sumTelurTerjual, 1, ',', '.') . ' Peti',
+            ],
+            'pakan' => [
+                'masuk' => number_format($sumPakanMasuk, 1, ',', '.') . ' Kg',
+                'digunakan' => number_format($sumPakanKonsumsi, 1, ',', '.') . ' Kg',
+                'keluar' => number_format($sumPakanKonsumsi + $sumPakanTerjual, 1, ',', '.') . ' Kg',
+                'terjual' => number_format($sumPakanTerjual, 1, ',', '.') . ' Kg',
+            ],
+            'obat' => [
+                'masuk' => number_format($sumObatMasuk, 1, ',', '.') . ' Item',
+                'digunakan' => number_format($sumObatKonsumsi, 1, ',', '.') . ' Dosis',
+                'keluar' => number_format($sumObatKonsumsi, 1, ',', '.') . ' Dosis',
+                'terjual' => '0 Item',
+            ],
         ];
 
         // Mutasi stok internal terbaru gabungan
@@ -296,7 +497,7 @@ class WarehouseController extends Controller
             'pakanMasuk', 'pakanMasukKarung', 'pakanKeluar', 'pakanTotalKarungKeluar', 'pakanStok', 'pakanStokKarung', 'pakanKarungSold', 'pakanKgSold', 'pakanConsumptionKg', 'pakanConsumptionKarung', 'pakanRevenue',
             'obatMasuk', 'obatKeluar', 'obatStok',
             'recentTransactions', 'recentSales',
-            'chartLabels', 'chartDataSets', 'chartTotals'
+            'chartLabels', 'chartDataSets', 'chartTotals', 'streamTotals'
         ));
     }
 

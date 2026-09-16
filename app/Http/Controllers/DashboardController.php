@@ -177,8 +177,14 @@ class DashboardController extends Controller
         foreach ($saleRecords as $item) {
             $timeStr = $item->created_at ? $item->created_at->format('H:i') : '00:00';
             $itemDateStr = $item->date ? $item->date->format('d/m/Y') : $carbonDate->format('d/m/Y');
-            $firstItemName = $item->items->count() > 0 ? $item->items->first()->item_name : '';
+            $firstItem = $item->items->first();
+            $firstItemName = $firstItem ? $firstItem->item_name : '';
             $subTitleStr = ($item->customer_name ?: 'Pelanggan') . ($firstItemName ? ' • ' . $firstItemName : '');
+            
+            $totalQty = $item->items->sum('quantity');
+            $unitStr = $firstItem ? ($firstItem->unit ?: 'Item') : 'Item';
+            $qtyDisplay = $totalQty > 0 ? '-' . number_format($totalQty, 0, ',', '.') . ' ' . $unitStr : '-';
+
             $activities->push([
                 'id' => 'sale_' . $item->id,
                 'category' => 'sale',
@@ -186,8 +192,8 @@ class DashboardController extends Controller
                 'subtitle' => $subTitleStr,
                 'datetime' => $itemDateStr . ' ' . $timeStr,
                 'time' => $timeStr,
-                'value' => 'Rp ' . number_format($item->total_amount, 0, ',', '.'),
-                'subvalue' => ($item->invoice_no ? $item->invoice_no . ' • ' : '') . ($item->payment_status === 'paid' || $item->payment_status === 'lunas' ? 'Lunas' : ucfirst($item->payment_status ?: 'Terjual')),
+                'value' => $qtyDisplay,
+                'subvalue' => ($item->invoice_no ? '#' . $item->invoice_no . ' • ' : '') . 'Rp ' . number_format($item->total_amount, 0, ',', '.'),
                 'raw_timestamp' => $item->created_at ? $item->created_at->timestamp : ($item->date ? strtotime($item->date->format('Y-m-d') . ' 00:00:00') : 0),
             ]);
         }
@@ -288,8 +294,14 @@ class DashboardController extends Controller
             foreach ($recentSales as $item) {
                 $timeStr = $item->created_at ? $item->created_at->format('H:i') : '00:00';
                 $iDate = $item->date ? $item->date->format('d/m/Y') : '';
-                $firstItemName = $item->items->count() > 0 ? $item->items->first()->item_name : '';
+                $firstItem = $item->items->first();
+                $firstItemName = $firstItem ? $firstItem->item_name : '';
                 $subTitleStr = ($item->customer_name ?: 'Pelanggan') . ($firstItemName ? ' • ' . $firstItemName : '');
+
+                $totalQty = $item->items->sum('quantity');
+                $unitStr = $firstItem ? ($firstItem->unit ?: 'Item') : 'Item';
+                $qtyDisplay = $totalQty > 0 ? '-' . number_format($totalQty, 0, ',', '.') . ' ' . $unitStr : '-';
+
                 $activities->push([
                     'id' => 'sale_' . $item->id,
                     'category' => 'sale',
@@ -297,8 +309,8 @@ class DashboardController extends Controller
                     'subtitle' => $subTitleStr,
                     'datetime' => $iDate . ' ' . $timeStr,
                     'time' => $timeStr,
-                    'value' => 'Rp ' . number_format($item->total_amount, 0, ',', '.'),
-                    'subvalue' => ($item->invoice_no ? $item->invoice_no . ' • ' : '') . ($item->payment_status === 'paid' || $item->payment_status === 'lunas' ? 'Lunas' : ucfirst($item->payment_status ?: 'Terjual')),
+                    'value' => $qtyDisplay,
+                    'subvalue' => ($item->invoice_no ? '#' . $item->invoice_no . ' • ' : '') . 'Rp ' . number_format($item->total_amount, 0, ',', '.'),
                     'raw_timestamp' => $item->created_at ? $item->created_at->timestamp : ($item->date ? strtotime($item->date->format('Y-m-d') . ' 00:00:00') : 0),
                 ]);
             }

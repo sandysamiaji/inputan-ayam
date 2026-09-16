@@ -130,7 +130,12 @@
                 <span class="text-xs font-bold text-maroon-800">Total: {{ $transactionCount }} Transaksi</span>
             </div>
             @forelse($salesList as $sale)
-                <div class="farm-card p-3.5 sm:p-4 hover:border-maroon-200 transition-all flex items-center justify-between gap-3">
+                @php
+                    $petugasName = $sale->user_name ?? ($sale->user_username ?? null);
+                    $tripInfo = $sale->driver_name ? $sale->driver_name . ($sale->trip_code ? " ({$sale->trip_code})" : '') : ($sale->trip_code ?? null);
+                    $tooltipText = "Petugas Input: " . ($petugasName ?: 'Kasir System') . ($tripInfo ? " | Perjalanan/Armada: {$tripInfo}" : '');
+                @endphp
+                <div class="farm-card p-3.5 sm:p-4 hover:border-maroon-200 transition-all flex items-center justify-between gap-3" title="{{ $tooltipText }}">
                     <div class="flex items-center gap-3.5 min-w-0 flex-1">
                         <div class="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-200/80 text-maroon-800 flex items-center justify-center shrink-0 shadow-inner">
                             <i data-lucide="shopping-bag" class="w-6 h-6 text-maroon-800"></i>
@@ -151,6 +156,20 @@
                                 <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">{{ $sale->payment_status }} ({{ $sale->payment_method }})</span>
                                 <span>•</span>
                                 <span class="text-slate-400">{{ \Carbon\Carbon::parse($sale->date)->translatedFormat('d M Y') }}</span>
+                                @if($petugasName)
+                                    <span>•</span>
+                                    <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200" title="Petugas Input: {{ $petugasName }}">
+                                        <i data-lucide="user-check" class="w-3 h-3"></i>
+                                        <span>Input: <b>{{ $petugasName }}</b></span>
+                                    </span>
+                                @endif
+                                @if($tripInfo)
+                                    <span>•</span>
+                                    <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-200" title="Perjalanan / Armada: {{ $tripInfo }}">
+                                        <i data-lucide="truck" class="w-3 h-3"></i>
+                                        <span>Armada: <b>{{ $tripInfo }}</b></span>
+                                    </span>
+                                @endif
                             </div>
                         </div>
                     </div>

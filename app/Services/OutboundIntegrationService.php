@@ -219,8 +219,19 @@ class OutboundIntegrationService
                 'sale_items.quantity',
                 'sale_items.unit_price',
                 'sale_items.total_price'
-            )
-            ->orderBy('sales.date', 'desc')
+            );
+
+        if (\Illuminate\Support\Facades\Schema::hasTable('users')) {
+            $query->leftJoin('users', 'sales.user_id', '=', 'users.id')
+                ->addSelect('users.name as user_name', 'users.username as user_username');
+        }
+
+        if (\Illuminate\Support\Facades\Schema::hasTable('trips')) {
+            $query->leftJoin('trips', 'sales.trip_id', '=', 'trips.id')
+                ->addSelect('trips.trip_code', 'trips.driver_name', 'trips.destination');
+        }
+
+        $query->orderBy('sales.date', 'desc')
             ->orderBy('sales.id', 'desc');
 
         if ($category) {

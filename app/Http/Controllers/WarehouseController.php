@@ -1128,12 +1128,22 @@ class WarehouseController extends Controller
             $isBroken = str_starts_with($realId, 'broken_');
             if ($isBroken) $realId = substr($realId, 7);
             $ep = EggProduction::findOrFail($realId);
+
+            if ($request->has('coop_id')) {
+                $coop = Coop::find($request->coop_id);
+                if ($coop) {
+                    $ep->coop_id = $coop->id;
+                    $ep->flock_id = $coop->flock_id;
+                }
+            }
+
             if ($request->has('good_eggs')) $ep->good_eggs = (int) $request->good_eggs;
             if ($request->has('broken_eggs')) $ep->broken_eggs = (int) $request->broken_eggs;
-            if ($request->has('abnormal_eggs')) $ep->abnormal_eggs = (int) $request->abnormal_eggs;
-            if ($request->has('crates_count')) $ep->crates_count = (float) $request->crates_count;
-            if ($request->has('coop_id')) $ep->coop_id = $request->coop_id;
-            if ($request->has('flock_id')) $ep->flock_id = $request->flock_id;
+            
+            if (\Illuminate\Support\Facades\Schema::hasColumn('egg_productions', 'abnormal_eggs') && $request->has('abnormal_eggs')) {
+                $ep->abnormal_eggs = (int) $request->abnormal_eggs;
+            }
+
             if ($request->has('quantity')) {
                 if ($isBroken) {
                     $ep->broken_eggs = (int) $request->quantity;
@@ -1141,6 +1151,17 @@ class WarehouseController extends Controller
                     $ep->crates_count = (float) $request->quantity;
                 }
             }
+
+            if ($request->has('crates_count') && (float) $request->crates_count > 0) {
+                $ep->crates_count = (float) $request->crates_count;
+            }
+
+            $abnormalVal = isset($ep->abnormal_eggs) ? (int) $ep->abnormal_eggs : 0;
+            $ep->total_eggs = (int) ($ep->good_eggs + $ep->broken_eggs + $abnormalVal);
+            if ($ep->crates_count <= 0) {
+                $ep->crates_count = round($ep->total_eggs / 25, 2);
+            }
+
             if ($request->has('notes')) $ep->notes = $request->notes;
             if ($request->has('date')) $ep->date = $request->date;
             $ep->save();
@@ -1153,8 +1174,13 @@ class WarehouseController extends Controller
             if ($request->has('feed_name')) $fc->feed_name = $request->feed_name;
             elseif ($request->has('item_name')) $fc->feed_name = $request->item_name;
 
-            if ($request->has('coop_id')) $fc->coop_id = $request->coop_id;
-            if ($request->has('flock_id')) $fc->flock_id = $request->flock_id;
+            if ($request->has('coop_id')) {
+                $coop = Coop::find($request->coop_id);
+                if ($coop) {
+                    $fc->coop_id = $coop->id;
+                    $fc->flock_id = $coop->flock_id;
+                }
+            }
             if ($request->has('feeding_time')) $fc->feeding_time = $request->feeding_time;
             if ($request->has('notes')) $fc->notes = $request->notes;
             if ($request->has('date')) $fc->date = $request->date;
@@ -1172,8 +1198,13 @@ class WarehouseController extends Controller
             elseif ($request->has('quantity')) $ht->dosage = $request->quantity . ($request->has('unit') ? ' ' . $request->unit : '');
 
             if ($request->has('application_method')) $ht->application_method = $request->application_method;
-            if ($request->has('coop_id')) $ht->coop_id = $request->coop_id;
-            if ($request->has('flock_id')) $ht->flock_id = $request->flock_id;
+            if ($request->has('coop_id')) {
+                $coop = Coop::find($request->coop_id);
+                if ($coop) {
+                    $ht->coop_id = $coop->id;
+                    $ht->flock_id = $coop->flock_id;
+                }
+            }
             if ($request->has('notes')) $ht->notes = $request->notes;
             if ($request->has('date')) $ht->date = $request->date;
             $ht->save();

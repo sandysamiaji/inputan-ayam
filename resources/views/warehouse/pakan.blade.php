@@ -105,7 +105,7 @@
             @endif
         </a>
         <a href="{{ route('warehouse.pakan', ['tab' => 'keluar', 'q' => $search]) }}" class="pb-3 text-xs sm:text-sm font-bold transition-all relative shrink-0 {{ $tab === 'keluar' ? 'text-maroon-800' : 'text-slate-400 hover:text-slate-600' }}">
-            Keluar (Kandang)
+            Pemberian Pakan
             @if($tab === 'keluar')
                 <span class="absolute bottom-0 left-0 right-0 h-0.5 bg-maroon-800 rounded-full"></span>
             @endif
@@ -186,8 +186,8 @@
                     'date' => \Carbon\Carbon::parse($item->date)->translatedFormat('d F Y'),
                     'raw_date' => $item->date->format('Y-m-d'),
                     'time' => $item->created_at ? $item->created_at->format('H:i') : '07:10',
-                    'petugas' => $item->user ? $item->user->name : 'Petugas01',
-                    'kandang' => $item->source ?? 'A1, A2, A3',
+                    'petugas' => $item->user ? $item->user->name : 'Petugas',
+                    'kandang' => $item->source ?? 'Semua Blok',
                     'jenis_pakan' => str_contains(strtolower($item->notes ?? ''), 'layer') ? 'Pakan Layer' : (str_contains(strtolower($item->notes ?? ''), 'starter') ? 'Pakan Starter' : 'Pakan Komplit'),
                     'is_nonaktif' => $isNonaktif
                 ]) }})">
@@ -200,17 +200,17 @@
                     </div>
 
                     <div class="min-w-0">
-                        <!-- Badge Masuk / Keluar -->
+                        <!-- Badge Masuk / Keluar / Pemberian Pakan -->
                         <div class="flex items-center gap-2 mb-0.5">
-                            <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase {{ $isMasuk ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200' }}">
-                                {{ $item->type }}
+                            <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase {{ $isMasuk ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-blue-50 text-blue-700 border border-blue-200' }}">
+                                {{ $item->type === 'keluar' ? 'PEMBERIAN PAKAN' : 'MASUK (BELI)' }}
                             </span>
                             @if($isNonaktif)
                                 <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-200 text-slate-600">NONAKTIF</span>
                             @endif
                         </div>
 
-                        <!-- Judul Transaksi (Pembelian Pakan / Pemakaian Pakan) -->
+                        <!-- Judul Transaksi (Pembelian Pakan / Pemberian Pakan) -->
                         <h2 class="text-xs sm:text-sm font-bold text-slate-800 truncate">{{ $item->item_name }}</h2>
 
                         <!-- Jumlah Kg -->
@@ -222,8 +222,13 @@
                         <div class="text-[10px] sm:text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5">
                             <span>{{ \Carbon\Carbon::parse($item->date)->translatedFormat('d M Y') }} {{ $item->created_at ? $item->created_at->format('H:i') : '' }}</span>
                             <span>•</span>
-                            <span class="text-slate-500 font-medium">{{ $item->user ? $item->user->name : 'Petugas01' }}</span>
+                            <span class="text-slate-500 font-medium">{{ $item->user ? $item->user->name : 'Petugas' }}</span>
+                            @if($item->source)
+                                <span>•</span>
+                                <span class="text-slate-500">{{ $item->source }}</span>
+                            @endif
                         </div>
+
                     </div>
                 </div>
 
@@ -663,11 +668,11 @@
 
         // Badge
         const badge = document.getElementById('detailPakanBadge');
-        badge.textContent = data.type.toUpperCase();
+        badge.textContent = data.type === 'keluar' ? 'PEMBERIAN PAKAN' : (data.type === 'masuk' ? 'MASUK (BELI)' : data.type.toUpperCase());
         if (data.type === 'masuk') {
             badge.className = 'px-2.5 py-0.5 rounded text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800 border border-emerald-200';
         } else {
-            badge.className = 'px-2.5 py-0.5 rounded text-[10px] font-extrabold uppercase bg-rose-100 text-rose-800 border border-rose-200';
+            badge.className = 'px-2.5 py-0.5 rounded text-[10px] font-extrabold uppercase bg-blue-100 text-blue-800 border border-blue-200';
         }
 
         // Form actions

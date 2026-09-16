@@ -58,22 +58,22 @@
         </button>
     </div>
 
-    <!-- Filter Tabs: Semua | Masuk | Keluar (Sesuai Mockup) -->
+    <!-- Filter Tabs: Semua | Masuk | Pemakaian (Kandang) -->
     <div class="flex items-center border-b border-slate-200 gap-6 sm:gap-8 px-1">
         <a href="{{ route('warehouse.obat', ['tab' => 'semua', 'q' => $search]) }}" class="pb-3 text-xs sm:text-sm font-bold transition-all relative {{ $tab === 'semua' ? 'text-maroon-800' : 'text-slate-400 hover:text-slate-600' }}">
-            Semua
+            Semua Data
             @if($tab === 'semua')
                 <span class="absolute bottom-0 left-0 right-0 h-0.5 bg-maroon-800 rounded-full"></span>
             @endif
         </a>
         <a href="{{ route('warehouse.obat', ['tab' => 'masuk', 'q' => $search]) }}" class="pb-3 text-xs sm:text-sm font-bold transition-all relative {{ $tab === 'masuk' ? 'text-maroon-800' : 'text-slate-400 hover:text-slate-600' }}">
-            Masuk
+            Masuk (Beli)
             @if($tab === 'masuk')
                 <span class="absolute bottom-0 left-0 right-0 h-0.5 bg-maroon-800 rounded-full"></span>
             @endif
         </a>
         <a href="{{ route('warehouse.obat', ['tab' => 'keluar', 'q' => $search]) }}" class="pb-3 text-xs sm:text-sm font-bold transition-all relative {{ $tab === 'keluar' ? 'text-maroon-800' : 'text-slate-400 hover:text-slate-600' }}">
-            Keluar
+            Pemakaian / Keluar (Kandang)
             @if($tab === 'keluar')
                 <span class="absolute bottom-0 left-0 right-0 h-0.5 bg-maroon-800 rounded-full"></span>
             @endif
@@ -116,14 +116,16 @@
                     </div>
 
                     <div class="min-w-0">
-                        <!-- Badge Masuk / Keluar -->
+                        <!-- Badge Masuk / Keluar / Pemakaian -->
                         <div class="flex items-center gap-2 mb-0.5">
                             <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase {{ $isMasuk ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200' }}">
-                                {{ $item->type }}
+                                {{ $item->type === 'keluar' ? 'PEMAKAIAN KANDANG' : 'MASUK (BELI)' }}
                             </span>
-                            <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
-                                {{ strtoupper($item->category) }}
-                            </span>
+                            @if(isset($item->category))
+                                <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                                    {{ strtoupper($item->category) }}
+                                </span>
+                            @endif
                             @if($isNonaktif)
                                 <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-200 text-slate-600">NONAKTIF</span>
                             @endif
@@ -613,7 +615,7 @@
 
         // Badge
         const badge = document.getElementById('detailObatBadge');
-        badge.textContent = data.type.toUpperCase();
+        badge.textContent = data.type === 'keluar' ? 'PEMAKAIAN KANDANG' : (data.type === 'masuk' ? 'MASUK (BELI)' : data.type.toUpperCase());
         if (data.type === 'masuk') {
             badge.className = 'px-2.5 py-0.5 rounded text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800 border border-emerald-200';
         } else {

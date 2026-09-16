@@ -8,9 +8,13 @@ use App\Models\User;
 use App\Models\Coop;
 use App\Models\EggProduction;
 use App\Models\FeedConsumption;
+use App\Models\HealthTreatment;
 use App\Services\OutboundIntegrationService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 class WarehouseController extends Controller
 {
@@ -79,12 +83,209 @@ class WarehouseController extends Controller
         $obatKeluar = $obatKeluarManual + $obatKeluarKandang;
         $obatStok = round($obatMasuk - $obatKeluar, 1);
 
-        // Mutasi stok internal terbaru
-        $recentTransactions = FarmStock::with('user')
-            ->orderBy('date', 'desc')
-            ->orderBy('created_at', 'desc')
-            ->take(8)
-            ->get();
+        // DATA GRAFIK ALIRAN BARANG (14 HARI TERAKHIR)
+        $startDate = Carbon::today()->subDays(13)->toDateString();
+        $endDate = Carbon::today()->toDateString();
+        $startCarbon = Carbon::parse($startDate);
+        $endCarbon = Carbon::parse($endDate);
+
+        // Pre-query data 14 hari
+        $eggProdByDate = EggProduction::whereBetween('date', [$startDate, $endDate])
+            ->select(
+                DB::raw('DATE(date) as dt'),
+                DB::raw('SUM(crates_count) as total_crates'),
+                DB::raw('SUM(broken_eggs) as total_broken'),
+                DB::raw('SUM(good_eggs) as total_good')
+            )
+            ->groupBy(DB::raw('DATE(date)'))
+            ->get()
+            ->keyBy('dt');
+
+        $feedConsByDate = FeedConsumption::whereBetween('date', [$startDate, $endDate])
+            ->select(
+                DB::raw('DATE(date) as dt'),
+                DB::raw('SUM(quantity_kg) as total_kg')
+            )
+            ->groupBy(DB::raw('DATE(date)'))
+            ->get()
+            ->keyBy('dt');
+
+        $farmStockByDate = FarmStock::whereBetween('date', [$startDate, $endDate])
+            ->select(
+                DB::raw('DATE(date) as dt'),
+                'category',
+                'type',
+                DB::raw('SUM(quantity) as total_qty')
+            )
+            ->groupBy(DB::raw('DATE(date)'), 'category', 'type')
+            ->get()
+            ->groupBy('dt');
+
+        $salesByDate = DB::table('sale_items')
+            ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->whereBetween('sales.date', [$startDate, $endDate])
+            ->select(
+                'sales.date as dt',
+                'sales.category',
+                'sale_items.unit',
+                DB::raw('SUM(sale_items.quantity) as total_qty')
+            )
+            ->groupBy('sales.date', 'sales.category', 'sale_items.unit')
+            ->get()
+            ->groupBy('dt');
+
+        $healthByDate = HealthTreatment::whereBetween('date', [$startDate, $endDate])
+            ->get()
+            ->groupBy(fn($ht) => Carbon::parse($ht->date)->toDateString());
+
+        $chartLabels = [];
+        $chartEggMasuk = [];
+        $chartEggRusak = [];
+        $chartEggTerjual = [];
+        $chartEggTotalKeluar = [];
+
+        $chartFeedMasuk = [];
+        $chartFeedKonsumsi = [];
+        $chartFeedTerjual = [];
+        $chartFeedTotalKeluar = [];
+
+        $chartObatMasuk = [];
+        $chartObatKonsumsi = [];
+        $chartObatTotalKeluar = [];
+
+        $chartAllMasuk = [];
+        $chartAllDigunakan = [];
+        $chartAllKeluar = [];
+        $chartAllTerjual = [];
+
+        $bulanShort = [
+            1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'Mei', 6 => 'Jun',
+            7 => 'Jul', 8 => 'Agt', 9 => 'Sep', 10 => 'Okt', 11 => 'Nov', 12 => 'Des'
+        ];
+
+        $cursor = $startCarbon->copy();
+        while ($cursor->lte($endCarbon)) {
+            $dt = $cursor->toDateString();
+            $chartLabels[] = $cursor->day . ' ' . ($bulanShort[$cursor->month] ?? $cursor->format('M'));
+
+            // 1. Telur (Satuan: Peti)
+            $ep = $eggProdByDate->get($dt);
+            $fsEggList = $farmStockByDate->get($dt, collect())->where('category', 'telur');
+            $fsEggMasuk = (float) $fsEggList->where('type', 'masuk')->sum('total_qty');
+            $fsEggKeluar = (float) $fsEggList->where('type', 'keluar')->sum('total_qty');
+
+            $eggMasukPeti = ($ep ? (float) $ep->total_crates : 0.0) + $fsEggMasuk;
+            $eggRusakButir = $ep ? (int) $ep->total_broken : 0;
+            $eggRusakPeti = round($eggRusakButir / 25, 2);
+
+            $salesListDay = $salesByDate->get($dt, collect());
+            $eggSalesDay = $salesListDay->where('category', 'telur');
+            $eggPetiSold = (float) $eggSalesDay->where('unit', 'Peti')->sum('total_qty');
+            $eggKgSold = (float) $eggSalesDay->where('unit', 'Kg')->sum('total_qty');
+            $eggTotalSoldPeti = $eggPetiSold + round($eggKgSold / 15, 2);
+
+            $eggTotalKeluarPeti = $eggTotalSoldPeti + $eggRusakPeti + $fsEggKeluar;
+
+            $chartEggMasuk[] = round($eggMasukPeti, 1);
+            $chartEggRusak[] = round($eggRusakPeti, 2);
+            $chartEggTerjual[] = round($eggTotalSoldPeti, 1);
+            $chartEggTotalKeluar[] = round($eggTotalKeluarPeti, 1);
+
+            // 2. Pakan (Satuan: Kg)
+            $fc = $feedConsByDate->get($dt);
+            $feedKonsumsiKg = $fc ? (float) $fc->total_kg : 0.0;
+
+            $fsFeedList = $farmStockByDate->get($dt, collect())->where('category', 'pakan');
+            $feedMasukKg = (float) $fsFeedList->where('type', 'masuk')->sum('total_qty');
+            $feedManualKeluarKg = (float) $fsFeedList->where('type', 'keluar')->sum('total_qty');
+
+            $feedSalesDay = $salesListDay->where('category', 'pakan');
+            $feedKarungSold = (float) $feedSalesDay->where('unit', 'Karung')->sum('total_qty');
+            $feedKgSold = (float) $feedSalesDay->where('unit', 'Kg')->sum('total_qty');
+            $feedSoldTotalKg = ($feedKarungSold * 50) + $feedKgSold;
+
+            $feedTotalKeluarKg = $feedKonsumsiKg + $feedSoldTotalKg + $feedManualKeluarKg;
+
+            $chartFeedMasuk[] = round($feedMasukKg, 1);
+            $chartFeedKonsumsi[] = round($feedKonsumsiKg, 1);
+            $chartFeedTerjual[] = round($feedSoldTotalKg, 1);
+            $chartFeedTotalKeluar[] = round($feedTotalKeluarKg, 1);
+
+            // 3. Obat & Vaksin (Satuan: Item/Dosis)
+            $fsObatList = $farmStockByDate->get($dt, collect())->whereIn('category', ['obat', 'vaksin', 'vitamin']);
+            $obatMasukDay = (float) $fsObatList->where('type', 'masuk')->sum('total_qty');
+            $obatManualKeluarDay = (float) $fsObatList->where('type', 'keluar')->sum('total_qty');
+
+            $htDay = $healthByDate->get($dt, collect());
+            $obatKonsumsiDay = 0;
+            foreach ($htDay as $ht) {
+                $v = (float) preg_replace('/[^0-9.]/', '', $ht->dosage);
+                $obatKonsumsiDay += ($v > 0 ? $v : 1);
+            }
+            $obatTotalKeluarDay = $obatKonsumsiDay + $obatManualKeluarDay;
+
+            $chartObatMasuk[] = round($obatMasukDay, 1);
+            $chartObatKonsumsi[] = round($obatKonsumsiDay, 1);
+            $chartObatTotalKeluar[] = round($obatTotalKeluarDay, 1);
+
+            // 4. Semua Aliran Barang (Overview Gabungan)
+            $allMasuk = $eggMasukPeti + round($feedMasukKg / 50, 1) + $obatMasukDay;
+            $allDigunakan = $eggRusakPeti + round($feedKonsumsiKg / 50, 1) + $obatKonsumsiDay;
+            $allKeluar = $eggTotalKeluarPeti + round($feedTotalKeluarKg / 50, 1) + $obatTotalKeluarDay;
+            $allTerjual = $eggTotalSoldPeti + round($feedSoldTotalKg / 50, 1);
+
+            $chartAllMasuk[] = round($allMasuk, 1);
+            $chartAllDigunakan[] = round($allDigunakan, 1);
+            $chartAllKeluar[] = round($allKeluar, 1);
+            $chartAllTerjual[] = round($allTerjual, 1);
+
+            $cursor->addDay();
+        }
+
+        $chartDataSets = [
+            'overview' => [
+                'title' => 'TREN SEMUA ALIRAN BARANG GUDANG',
+                'unit' => 'Poin Aktivitas',
+                'masuk' => $chartAllMasuk,
+                'digunakan' => $chartAllDigunakan,
+                'keluar' => $chartAllKeluar,
+                'terjual' => $chartAllTerjual,
+            ],
+            'telur' => [
+                'title' => 'TREN ALIRAN GUDANG TELUR (PETI)',
+                'unit' => 'Peti',
+                'masuk' => $chartEggMasuk,
+                'digunakan' => $chartEggRusak,
+                'keluar' => $chartEggTotalKeluar,
+                'terjual' => $chartEggTerjual,
+            ],
+            'pakan' => [
+                'title' => 'TREN ALIRAN GUDANG PAKAN (KG)',
+                'unit' => 'Kg',
+                'masuk' => $chartFeedMasuk,
+                'digunakan' => $chartFeedKonsumsi,
+                'keluar' => $chartFeedTotalKeluar,
+                'terjual' => $chartFeedTerjual,
+            ],
+            'obat' => [
+                'title' => 'TREN ALIRAN OBAT & VAKSIN (ITEM / DOSIS)',
+                'unit' => 'Item',
+                'masuk' => $chartObatMasuk,
+                'digunakan' => $chartObatKonsumsi,
+                'keluar' => $chartObatTotalKeluar,
+                'terjual' => array_fill(0, count($chartLabels), 0),
+            ],
+        ];
+
+        $chartTotals = [
+            'masuk' => round(array_sum($chartAllMasuk), 1),
+            'digunakan' => round(array_sum($chartAllDigunakan), 1),
+            'keluar' => round(array_sum($chartAllKeluar), 1),
+            'terjual' => round(array_sum($chartAllTerjual), 1),
+        ];
+
+        // Mutasi stok internal terbaru gabungan
+        $recentTransactions = $this->getUnifiedRecentTransactions(10);
 
         // Transaksi penjualan terbaru dari nochifram
         $recentSales = OutboundIntegrationService::getSalesTransactions(null, null, null, 6);
@@ -94,8 +295,107 @@ class WarehouseController extends Controller
             'telurMasuk', 'telurMasukButir', 'telurMasukKg', 'telurKeluar', 'telurKeluarKg', 'telurKeluarEggs', 'telurStok', 'telurStokKgTotal', 'telurStokButir', 'telurPetiSold', 'telurKgSold', 'telurRevenue',
             'pakanMasuk', 'pakanMasukKarung', 'pakanKeluar', 'pakanTotalKarungKeluar', 'pakanStok', 'pakanStokKarung', 'pakanKarungSold', 'pakanKgSold', 'pakanConsumptionKg', 'pakanConsumptionKarung', 'pakanRevenue',
             'obatMasuk', 'obatKeluar', 'obatStok',
-            'recentTransactions', 'recentSales'
+            'recentTransactions', 'recentSales',
+            'chartLabels', 'chartDataSets', 'chartTotals'
         ));
+    }
+
+    /**
+     * Helper mutasi aktivitas terkini gabungan
+     */
+    private function getUnifiedRecentTransactions($limit = 10)
+    {
+        $transactions = collect();
+
+        // 1. Dari FarmStock
+        $farmStocks = FarmStock::with('user')->orderBy('date', 'desc')->orderBy('created_at', 'desc')->take($limit)->get();
+        foreach ($farmStocks as $fs) {
+            $transactions->push((object) [
+                'id' => $fs->id,
+                'category' => $fs->category,
+                'type' => $fs->type,
+                'item_name' => $fs->item_name,
+                'quantity' => (float) $fs->quantity,
+                'unit' => $fs->unit,
+                'date' => Carbon::parse($fs->date),
+                'created_at' => $fs->created_at ? Carbon::parse($fs->created_at) : Carbon::parse($fs->date),
+                'source' => $fs->source ?: 'Gudang',
+                'notes' => $fs->notes,
+                'user' => $fs->user,
+            ]);
+        }
+
+        // 2. Dari EggProduction
+        $eggProds = EggProduction::with(['coop', 'user'])->orderBy('date', 'desc')->orderBy('created_at', 'desc')->take($limit)->get();
+        foreach ($eggProds as $ep) {
+            $transactions->push((object) [
+                'id' => 'ep_' . $ep->id,
+                'category' => 'telur',
+                'type' => 'masuk',
+                'item_name' => 'Produksi Telur: ' . ($ep->coop ? $ep->coop->name : 'Kandang'),
+                'quantity' => (float) $ep->crates_count,
+                'unit' => 'Peti',
+                'date' => Carbon::parse($ep->date),
+                'created_at' => $ep->created_at ? Carbon::parse($ep->created_at) : Carbon::parse($ep->date),
+                'source' => $ep->coop ? $ep->coop->name : 'Kandang',
+                'notes' => 'Panen ' . number_format($ep->total_eggs, 0, ',', '.') . ' Butir' . ($ep->notes ? ' • ' . $ep->notes : ''),
+                'user' => $ep->user,
+            ]);
+            if ($ep->broken_eggs > 0) {
+                $transactions->push((object) [
+                    'id' => 'ep_broken_' . $ep->id,
+                    'category' => 'telur',
+                    'type' => 'keluar',
+                    'item_name' => 'Telur Rusak / Pecah: ' . ($ep->coop ? $ep->coop->name : 'Kandang'),
+                    'quantity' => (float) $ep->broken_eggs,
+                    'unit' => 'Butir',
+                    'date' => Carbon::parse($ep->date),
+                    'created_at' => $ep->created_at ? Carbon::parse($ep->created_at) : Carbon::parse($ep->date),
+                    'source' => $ep->coop ? $ep->coop->name : 'Kandang',
+                    'notes' => 'Telur rusak/pecah saat pengumpulan',
+                    'user' => $ep->user,
+                ]);
+            }
+        }
+
+        // 3. Dari FeedConsumption
+        $feedCons = FeedConsumption::with(['coop', 'user'])->orderBy('date', 'desc')->orderBy('created_at', 'desc')->take($limit)->get();
+        foreach ($feedCons as $fc) {
+            $transactions->push((object) [
+                'id' => 'fc_' . $fc->id,
+                'category' => 'pakan',
+                'type' => 'keluar',
+                'item_name' => 'Pemberian Pakan: ' . $fc->feed_name,
+                'quantity' => (float) $fc->quantity_kg,
+                'unit' => 'Kg',
+                'date' => Carbon::parse($fc->date),
+                'created_at' => $fc->created_at ? Carbon::parse($fc->created_at) : Carbon::parse($fc->date),
+                'source' => $fc->coop ? $fc->coop->name : 'Kandang',
+                'notes' => 'Pemberian ' . ($fc->feeding_time ?? 'harian') . ($fc->notes ? ' • ' . $fc->notes : ''),
+                'user' => $fc->user,
+            ]);
+        }
+
+        // 4. Dari HealthTreatment
+        $healths = HealthTreatment::with(['coop', 'user'])->orderBy('date', 'desc')->orderBy('created_at', 'desc')->take($limit)->get();
+        foreach ($healths as $ht) {
+            $v = (float) preg_replace('/[^0-9.]/', '', $ht->dosage);
+            $transactions->push((object) [
+                'id' => 'ht_' . $ht->id,
+                'category' => 'obat',
+                'type' => 'keluar',
+                'item_name' => ($ht->type ? ucfirst($ht->type) . ': ' : 'Obat: ') . $ht->medicine_name,
+                'quantity' => ($v > 0 ? $v : 1),
+                'unit' => 'Dosis',
+                'date' => Carbon::parse($ht->date),
+                'created_at' => $ht->created_at ? Carbon::parse($ht->created_at) : Carbon::parse($ht->date),
+                'source' => $ht->coop ? $ht->coop->name : 'Kandang',
+                'notes' => $ht->notes ?: 'Aplikasi di kandang',
+                'user' => $ht->user,
+            ]);
+        }
+
+        return $transactions->sortByDesc(fn($t) => $t->date->toDateString() . ' ' . $t->created_at->format('H:i:s'))->take($limit)->values();
     }
 
     /**
@@ -105,25 +405,103 @@ class WarehouseController extends Controller
     {
         $user = Auth::user() ?? User::first();
         $tab = $request->query('tab', 'semua');
+        if ($tab === 'rusak') $tab = 'keluar';
         $search = $request->query('q');
 
-        $query = FarmStock::with('user')->where('category', 'telur');
+        $collection = collect();
 
+        // 1. Data dari FarmStock (khusus kategori telur)
+        $fsQuery = FarmStock::with('user')->where('category', 'telur');
         if ($tab === 'masuk') {
-            $query->where('type', 'masuk');
+            $fsQuery->where('type', 'masuk');
         } elseif ($tab === 'keluar') {
-            $query->where('type', 'keluar');
+            $fsQuery->where('type', 'keluar');
+        }
+        foreach ($fsQuery->get() as $fs) {
+            $collection->push((object) [
+                'id' => $fs->id,
+                'raw_id' => $fs->id,
+                'source_type' => 'farm_stock',
+                'item_name' => $fs->item_name,
+                'type' => $fs->type,
+                'quantity' => (float) $fs->quantity,
+                'unit' => $fs->unit,
+                'date' => Carbon::parse($fs->date),
+                'created_at' => $fs->created_at ? Carbon::parse($fs->created_at) : Carbon::parse($fs->date),
+                'source' => $fs->source ?: 'Gudang',
+                'notes' => $fs->notes,
+                'user' => $fs->user,
+                'is_nonaktif' => str_starts_with(trim($fs->notes ?? ''), '[NONAKTIF]'),
+            ]);
         }
 
+        // 2. Data dari EggProduction (produksi kandang & telur rusak)
+        $eggProductions = EggProduction::with(['coop', 'flock', 'user'])->get();
+        foreach ($eggProductions as $ep) {
+            // A. Telur Masuk (Produksi utuh/peti)
+            if ($tab === 'semua' || $tab === 'masuk') {
+                $collection->push((object) [
+                    'id' => 'ep_' . $ep->id,
+                    'raw_id' => $ep->id,
+                    'source_type' => 'egg_production',
+                    'item_name' => 'Produksi Telur - ' . ($ep->coop ? $ep->coop->name : 'Kandang'),
+                    'type' => 'masuk',
+                    'quantity' => (float) $ep->crates_count,
+                    'unit' => 'Peti',
+                    'date' => Carbon::parse($ep->date),
+                    'created_at' => $ep->created_at ? Carbon::parse($ep->created_at) : Carbon::parse($ep->date),
+                    'source' => $ep->coop ? ($ep->coop->name . ($ep->flock ? ' (' . $ep->flock->name . ')' : '')) : 'Kandang',
+                    'notes' => 'Panen Telur Utuh: ' . number_format($ep->good_eggs ?? $ep->total_eggs, 0, ',', '.') . ' Butir' . ($ep->weight_kg > 0 ? ' (' . number_format($ep->weight_kg, 1, ',', '.') . ' Kg)' : '') . ($ep->notes ? ' • ' . $ep->notes : ''),
+                    'user' => $ep->user,
+                    'is_nonaktif' => str_starts_with(trim($ep->notes ?? ''), '[NONAKTIF]'),
+                ]);
+            }
+
+            // B. Telur Rusak / Pecah (Untuk tab keluar / data rusak & semua)
+            if (($tab === 'semua' || $tab === 'keluar') && $ep->broken_eggs > 0) {
+                $collection->push((object) [
+                    'id' => 'ep_broken_' . $ep->id,
+                    'raw_id' => $ep->id,
+                    'source_type' => 'egg_production',
+                    'item_name' => 'Telur Rusak / Pecah - ' . ($ep->coop ? $ep->coop->name : 'Kandang'),
+                    'type' => 'keluar',
+                    'quantity' => (float) $ep->broken_eggs,
+                    'unit' => 'Butir',
+                    'date' => Carbon::parse($ep->date),
+                    'created_at' => $ep->created_at ? Carbon::parse($ep->created_at) : Carbon::parse($ep->date),
+                    'source' => $ep->coop ? ($ep->coop->name . ($ep->flock ? ' (' . $ep->flock->name . ')' : '')) : 'Kandang',
+                    'notes' => 'Telur retak/pecah saat pengumpulan di kandang' . ($ep->notes ? ' • ' . $ep->notes : ''),
+                    'user' => $ep->user,
+                    'is_nonaktif' => str_starts_with(trim($ep->notes ?? ''), '[NONAKTIF]'),
+                ]);
+            }
+        }
+
+        // Filter pencarian
         if (!empty($search)) {
-            $query->where(function ($q) use ($search) {
-                $q->where('item_name', 'like', "%{$search}%")
-                  ->orWhere('source', 'like', "%{$search}%")
-                  ->orWhere('notes', 'like', "%{$search}%");
+            $s = strtolower($search);
+            $collection = $collection->filter(function ($item) use ($s) {
+                return str_contains(strtolower($item->item_name), $s) ||
+                       str_contains(strtolower($item->source ?? ''), $s) ||
+                       str_contains(strtolower($item->notes ?? ''), $s);
             });
         }
 
-        $items = $query->orderBy('date', 'desc')->orderBy('created_at', 'desc')->paginate(15)->withQueryString();
+        // Urutkan tanggal desc, created_at desc
+        $sorted = $collection->sortByDesc(function ($item) {
+            return $item->date->toDateString() . ' ' . ($item->created_at ? $item->created_at->format('H:i:s') : '00:00:00');
+        })->values();
+
+        // Paginasi
+        $page = LengthAwarePaginator::resolveCurrentPage() ?: 1;
+        $perPage = 15;
+        $items = new LengthAwarePaginator(
+            $sorted->forPage($page, $perPage)->values(),
+            $sorted->count(),
+            $perPage,
+            $page,
+            ['path' => LengthAwarePaginator::resolveCurrentPath(), 'query' => $request->query()]
+        );
 
         // Ringkasan Telur Terintegrasi Penjualan nochifram
         $eggSummary = OutboundIntegrationService::getEggOutboundSummary();
@@ -161,25 +539,91 @@ class WarehouseController extends Controller
     {
         $user = Auth::user() ?? User::first();
         $tab = $request->query('tab', 'semua');
+        if ($tab === 'pemberian') $tab = 'keluar';
         $search = $request->query('q');
 
-        $query = FarmStock::with('user')->where('category', 'pakan');
+        $collection = collect();
 
+        // 1. Data Pembelian & Mutasi Pakan dari FarmStock
+        $fsQuery = FarmStock::with('user')->where('category', 'pakan');
         if ($tab === 'masuk') {
-            $query->where('type', 'masuk');
+            $fsQuery->where('type', 'masuk');
         } elseif ($tab === 'keluar') {
-            $query->where('type', 'keluar');
-        }
-
-        if (!empty($search)) {
-            $query->where(function ($q) use ($search) {
-                $q->where('item_name', 'like', "%{$search}%")
-                  ->orWhere('source', 'like', "%{$search}%")
-                  ->orWhere('notes', 'like', "%{$search}%");
+            $fsQuery->where('type', 'keluar')
+                    ->where(function($q) {
+                        $q->whereNull('notes')->orWhere('notes', 'not like', '[AUTO-KONSUMSI]%');
+                    });
+        } else {
+            $fsQuery->where(function($q) {
+                $q->whereNull('notes')->orWhere('notes', 'not like', '[AUTO-KONSUMSI]%');
             });
         }
 
-        $items = $query->orderBy('date', 'desc')->orderBy('created_at', 'desc')->paginate(15)->withQueryString();
+        foreach ($fsQuery->get() as $fs) {
+            $collection->push((object) [
+                'id' => $fs->id,
+                'raw_id' => $fs->id,
+                'source_type' => 'farm_stock',
+                'item_name' => $fs->item_name,
+                'type' => $fs->type,
+                'quantity' => (float) $fs->quantity,
+                'unit' => $fs->unit,
+                'date' => Carbon::parse($fs->date),
+                'created_at' => $fs->created_at ? Carbon::parse($fs->created_at) : Carbon::parse($fs->date),
+                'source' => $fs->source ?: 'Gudang',
+                'notes' => $fs->notes,
+                'user' => $fs->user,
+                'is_nonaktif' => str_starts_with(trim($fs->notes ?? ''), '[NONAKTIF]'),
+            ]);
+        }
+
+        // 2. Data Pemberian Pakan Harian dari FeedConsumption
+        if ($tab === 'semua' || $tab === 'keluar') {
+            $feedConsumptions = FeedConsumption::with(['coop', 'flock', 'user'])->get();
+            foreach ($feedConsumptions as $fc) {
+                $collection->push((object) [
+                    'id' => 'fc_' . $fc->id,
+                    'raw_id' => $fc->id,
+                    'source_type' => 'feed_consumption',
+                    'item_name' => 'Pemberian Pakan: ' . $fc->feed_name . ' (' . ($fc->feeding_time ?? 'Harian') . ')',
+                    'type' => 'keluar',
+                    'quantity' => (float) $fc->quantity_kg,
+                    'unit' => 'Kg',
+                    'date' => Carbon::parse($fc->date),
+                    'created_at' => $fc->created_at ? Carbon::parse($fc->created_at) : Carbon::parse($fc->date),
+                    'source' => $fc->coop ? ($fc->coop->name . ($fc->flock ? ' (' . $fc->flock->name . ')' : '')) : 'Kandang',
+                    'notes' => 'Pemberian pakan ' . ($fc->feeding_time ?? 'pagi/sore') . ' untuk ayam kandang' . ($fc->notes ? ' • ' . $fc->notes : ''),
+                    'user' => $fc->user,
+                    'is_nonaktif' => str_starts_with(trim($fc->notes ?? ''), '[NONAKTIF]'),
+                ]);
+            }
+        }
+
+        // Filter pencarian
+        if (!empty($search)) {
+            $s = strtolower($search);
+            $collection = $collection->filter(function ($item) use ($s) {
+                return str_contains(strtolower($item->item_name), $s) ||
+                       str_contains(strtolower($item->source ?? ''), $s) ||
+                       str_contains(strtolower($item->notes ?? ''), $s);
+            });
+        }
+
+        // Urutkan tanggal desc, created_at desc
+        $sorted = $collection->sortByDesc(function ($item) {
+            return $item->date->toDateString() . ' ' . ($item->created_at ? $item->created_at->format('H:i:s') : '00:00:00');
+        })->values();
+
+        // Paginasi
+        $page = LengthAwarePaginator::resolveCurrentPage() ?: 1;
+        $perPage = 15;
+        $items = new LengthAwarePaginator(
+            $sorted->forPage($page, $perPage)->values(),
+            $sorted->count(),
+            $perPage,
+            $page,
+            ['path' => LengthAwarePaginator::resolveCurrentPath(), 'query' => $request->query()]
+        );
 
         // Ringkasan Pakan Terintegrasi Konsumsi Kandang & Penjualan Luar nochifram
         $feedSummary = OutboundIntegrationService::getFeedOutboundSummary();
@@ -217,30 +661,93 @@ class WarehouseController extends Controller
         $tab = $request->query('tab', 'semua');
         $search = $request->query('q');
 
-        $query = FarmStock::with('user')->whereIn('category', ['obat', 'vaksin', 'vitamin']);
+        $collection = collect();
 
+        // 1. Data Pembelian & Stok Obat/Vaksin/Vitamin dari FarmStock
+        $fsQuery = FarmStock::with('user')->whereIn('category', ['obat', 'vaksin', 'vitamin']);
         if ($tab === 'masuk') {
-            $query->where('type', 'masuk');
+            $fsQuery->where('type', 'masuk');
         } elseif ($tab === 'keluar') {
-            $query->where('type', 'keluar');
+            $fsQuery->where('type', 'keluar');
         }
 
+        foreach ($fsQuery->get() as $fs) {
+            $collection->push((object) [
+                'id' => $fs->id,
+                'raw_id' => $fs->id,
+                'source_type' => 'farm_stock',
+                'category' => $fs->category,
+                'item_name' => $fs->item_name,
+                'type' => $fs->type,
+                'quantity' => (float) $fs->quantity,
+                'unit' => $fs->unit,
+                'date' => Carbon::parse($fs->date),
+                'created_at' => $fs->created_at ? Carbon::parse($fs->created_at) : Carbon::parse($fs->date),
+                'source' => $fs->source ?: 'CV Medika Farma',
+                'notes' => $fs->notes,
+                'user' => $fs->user,
+                'is_nonaktif' => str_starts_with(trim($fs->notes ?? ''), '[NONAKTIF]'),
+            ]);
+        }
+
+        // 2. Data Pemakaian Obat/Vaksin/Vitamin dari HealthTreatment
+        if ($tab === 'semua' || $tab === 'keluar') {
+            $healthTreatments = HealthTreatment::with(['coop', 'flock', 'user'])->get();
+            foreach ($healthTreatments as $ht) {
+                $val = (float) preg_replace('/[^0-9.]/', '', $ht->dosage);
+                if ($val <= 0) $val = 1;
+
+                $collection->push((object) [
+                    'id' => 'ht_' . $ht->id,
+                    'raw_id' => $ht->id,
+                    'source_type' => 'health_treatment',
+                    'category' => strtolower($ht->type ?: 'obat'),
+                    'item_name' => ($ht->type ? ucfirst($ht->type) . ': ' : 'Obat: ') . $ht->medicine_name . ($ht->dosage ? ' (' . $ht->dosage . ')' : ''),
+                    'type' => 'keluar',
+                    'quantity' => $val,
+                    'unit' => 'Dosis',
+                    'date' => Carbon::parse($ht->date),
+                    'created_at' => $ht->created_at ? Carbon::parse($ht->created_at) : Carbon::parse($ht->date),
+                    'source' => $ht->coop ? ($ht->coop->name . ($ht->flock ? ' (' . $ht->flock->name . ')' : '')) : 'Kandang',
+                    'notes' => ($ht->application_method ? 'Aplikasi: ' . $ht->application_method . '. ' : '') . ($ht->notes ?? 'Pemberian ke ayam kandang'),
+                    'user' => $ht->user,
+                    'is_nonaktif' => str_starts_with(trim($ht->notes ?? ''), '[NONAKTIF]'),
+                ]);
+            }
+        }
+
+        // Filter pencarian
         if (!empty($search)) {
-            $query->where(function ($q) use ($search) {
-                $q->where('item_name', 'like', "%{$search}%")
-                  ->orWhere('source', 'like', "%{$search}%")
-                  ->orWhere('notes', 'like', "%{$search}%")
-                  ->orWhere('category', 'like', "%{$search}%");
+            $s = strtolower($search);
+            $collection = $collection->filter(function ($item) use ($s) {
+                return str_contains(strtolower($item->item_name), $s) ||
+                       str_contains(strtolower($item->source ?? ''), $s) ||
+                       str_contains(strtolower($item->notes ?? ''), $s) ||
+                       str_contains(strtolower($item->category ?? ''), $s);
             });
         }
 
-        $items = $query->orderBy('date', 'desc')->orderBy('created_at', 'desc')->paginate(15)->withQueryString();
+        // Urutkan tanggal desc, created_at desc
+        $sorted = $collection->sortByDesc(function ($item) {
+            return $item->date->toDateString() . ' ' . ($item->created_at ? $item->created_at->format('H:i:s') : '00:00:00');
+        })->values();
+
+        // Paginasi
+        $page = LengthAwarePaginator::resolveCurrentPage() ?: 1;
+        $perPage = 15;
+        $items = new LengthAwarePaginator(
+            $sorted->forPage($page, $perPage)->values(),
+            $sorted->count(),
+            $perPage,
+            $page,
+            ['path' => LengthAwarePaginator::resolveCurrentPath(), 'query' => $request->query()]
+        );
 
         // Ringkasan Obat, Vaksin & Vitamin
         $totalMasuk = (float) FarmStock::whereIn('category', ['obat', 'vaksin', 'vitamin'])->where('type', 'masuk')->sum('quantity');
         $totalKeluarManual = (float) FarmStock::whereIn('category', ['obat', 'vaksin', 'vitamin'])->where('type', 'keluar')->sum('quantity');
         
-        $healthTreatments = \App\Models\HealthTreatment::all();
+        $healthTreatments = HealthTreatment::all();
         $obatKeluarKandang = 0;
         foreach ($healthTreatments as $ht) {
             $val = (float) preg_replace('/[^0-9.]/', '', $ht->dosage);
@@ -309,6 +816,39 @@ class WarehouseController extends Controller
      */
     public function update(Request $request, $id)
     {
+        if (str_starts_with($id, 'ep_')) {
+            $realId = substr($id, 3);
+            $isBroken = str_starts_with($realId, 'broken_');
+            if ($isBroken) $realId = substr($realId, 7);
+            $ep = EggProduction::findOrFail($realId);
+            if ($request->has('quantity')) {
+                if ($isBroken) {
+                    $ep->broken_eggs = (int) $request->quantity;
+                } else {
+                    $ep->crates_count = (float) $request->quantity;
+                }
+            }
+            if ($request->has('notes')) $ep->notes = $request->notes;
+            if ($request->has('date')) $ep->date = $request->date;
+            $ep->save();
+            return back()->with('success', 'Data produksi telur berhasil diperbarui!');
+        } elseif (str_starts_with($id, 'fc_')) {
+            $fc = FeedConsumption::findOrFail(substr($id, 3));
+            if ($request->has('quantity')) $fc->quantity_kg = (float) $request->quantity;
+            if ($request->has('item_name')) $fc->feed_name = $request->item_name;
+            if ($request->has('notes')) $fc->notes = $request->notes;
+            if ($request->has('date')) $fc->date = $request->date;
+            $fc->save();
+            return back()->with('success', 'Data pemberian pakan berhasil diperbarui!');
+        } elseif (str_starts_with($id, 'ht_')) {
+            $ht = HealthTreatment::findOrFail(substr($id, 3));
+            if ($request->has('item_name')) $ht->medicine_name = $request->item_name;
+            if ($request->has('notes')) $ht->notes = $request->notes;
+            if ($request->has('date')) $ht->date = $request->date;
+            $ht->save();
+            return back()->with('success', 'Data pemakaian obat berhasil diperbarui!');
+        }
+
         $stock = FarmStock::findOrFail($id);
 
         $validated = $request->validate([
@@ -346,6 +886,32 @@ class WarehouseController extends Controller
      */
     public function toggleStatus($id)
     {
+        if (str_starts_with($id, 'ep_') || str_starts_with($id, 'fc_') || str_starts_with($id, 'ht_')) {
+            $model = null;
+            if (str_starts_with($id, 'ep_')) {
+                $realId = substr($id, 3);
+                if (str_starts_with($realId, 'broken_')) $realId = substr($realId, 7);
+                $model = EggProduction::find($realId);
+            } elseif (str_starts_with($id, 'fc_')) {
+                $model = FeedConsumption::find(substr($id, 3));
+            } elseif (str_starts_with($id, 'ht_')) {
+                $model = HealthTreatment::find(substr($id, 3));
+            }
+
+            if ($model) {
+                $currentNotes = $model->notes ?? '';
+                if (str_starts_with(trim($currentNotes), '[NONAKTIF]')) {
+                    $model->notes = trim(substr(trim($currentNotes), strlen('[NONAKTIF]')));
+                    $msg = 'Data berhasil diaktifkan kembali.';
+                } else {
+                    $model->notes = '[NONAKTIF] ' . $currentNotes;
+                    $msg = 'Data berhasil dinonaktifkan.';
+                }
+                $model->save();
+                return back()->with('success', $msg);
+            }
+        }
+
         $stock = FarmStock::findOrFail($id);
         $currentNotes = $stock->notes ?? '';
 
@@ -366,8 +932,24 @@ class WarehouseController extends Controller
      */
     public function destroy($id)
     {
+        if (str_starts_with($id, 'ep_')) {
+            $realId = substr($id, 3);
+            if (str_starts_with($realId, 'broken_')) {
+                $realId = substr($realId, 7);
+            }
+            EggProduction::find($realId)?->delete();
+            return back()->with('success', 'Data produksi telur berhasil dihapus!');
+        } elseif (str_starts_with($id, 'fc_')) {
+            $realId = substr($id, 3);
+            FeedConsumption::find($realId)?->delete();
+            return back()->with('success', 'Data pemberian pakan berhasil dihapus!');
+        } elseif (str_starts_with($id, 'ht_')) {
+            $realId = substr($id, 3);
+            HealthTreatment::find($realId)?->delete();
+            return back()->with('success', 'Data penggunaan obat berhasil dihapus!');
+        }
+
         $stock = FarmStock::findOrFail($id);
-        $category = $stock->category;
         $stock->delete();
 
         return back()->with('success', 'Data transaksi gudang berhasil dihapus!');

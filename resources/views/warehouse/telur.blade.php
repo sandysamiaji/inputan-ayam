@@ -102,7 +102,7 @@
             @endif
         </a>
         <a href="{{ route('warehouse.telur', ['tab' => 'keluar', 'q' => $search]) }}" class="pb-3 text-xs sm:text-sm font-bold transition-all relative shrink-0 {{ $tab === 'keluar' ? 'text-maroon-800' : 'text-slate-400 hover:text-slate-600' }}">
-            Keluar (Gudang)
+            Telur Rusak
             @if($tab === 'keluar')
                 <span class="absolute bottom-0 left-0 right-0 h-0.5 bg-maroon-800 rounded-full"></span>
             @endif
@@ -196,10 +196,10 @@
                     </div>
 
                     <div class="min-w-0">
-                        <!-- Badge Masuk / Keluar -->
+                        <!-- Badge Masuk / Keluar / Telur Rusak -->
                         <div class="flex items-center gap-2 mb-0.5">
                             <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase {{ $isMasuk ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200' }}">
-                                {{ $item->type }}
+                                {{ $item->type === 'keluar' ? 'TELUR RUSAK' : 'MASUK (PRODUKSI)' }}
                             </span>
                             @if($isNonaktif)
                                 <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-200 text-slate-600">NONAKTIF</span>
@@ -209,9 +209,9 @@
                         <!-- Judul Transaksi -->
                         <h2 class="text-xs sm:text-sm font-bold text-slate-800 truncate">{{ $item->item_name }}</h2>
 
-                        <!-- Jumlah Peti & Butir -->
-                        <p class="text-xs font-extrabold {{ $isMasuk ? 'text-slate-800' : 'text-slate-800' }}">
-                            {{ number_format($item->quantity, 0, ',', '.') }} {{ $item->unit }}
+                        <!-- Jumlah Peti / Butir -->
+                        <p class="text-xs font-extrabold text-slate-800">
+                            {{ number_format($item->quantity, $item->unit === 'Peti' ? 1 : 0, ',', '.') }} {{ $item->unit }}
                             @if(str_contains(strtolower($item->notes ?? ''), 'butir'))
                                 <span class="text-slate-400 font-normal text-[11px]">
                                     ({{ Str::after($item->notes, '(') ? Str::before(Str::after($item->notes, '('), ')') : '' }})
@@ -223,7 +223,7 @@
                         <div class="text-[10px] sm:text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5">
                             <span>{{ \Carbon\Carbon::parse($item->date)->translatedFormat('d M Y') }} {{ $item->created_at ? $item->created_at->format('H:i') : '' }}</span>
                             <span>•</span>
-                            <span class="text-slate-500 font-medium">{{ $item->user ? $item->user->name : 'Petugas01' }}</span>
+                            <span class="text-slate-500 font-medium">{{ $item->user ? $item->user->name : 'Petugas' }}</span>
                         </div>
                     </div>
                 </div>
@@ -673,7 +673,7 @@
 
         // Badge
         const badge = document.getElementById('detailBadge');
-        badge.textContent = data.type.toUpperCase();
+        badge.textContent = data.type === 'keluar' ? 'TELUR RUSAK' : (data.type === 'masuk' ? 'MASUK (PRODUKSI)' : data.type.toUpperCase());
         if (data.type === 'masuk') {
             badge.className = 'px-2.5 py-0.5 rounded text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800 border border-emerald-200';
         } else {

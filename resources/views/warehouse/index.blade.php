@@ -230,6 +230,115 @@
 
     </div>
 
+    <!-- ========================================================================= -->
+    <!-- GRAFIK ALIRAN BARANG GUDANG: MASUK, DIGUNAKAN, KELUAR & TERJUAL -->
+    <!-- ========================================================================= -->
+    <div class="farm-card p-5 sm:p-6 border border-slate-200/80 shadow-sm relative overflow-hidden">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-maroon-800 text-white flex items-center justify-center shadow-md shrink-0">
+                    <i data-lucide="trending-up" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h3 class="font-extrabold text-slate-800 text-sm sm:text-base tracking-tight" id="chartMainTitle">
+                        GRAFIK TREN ALIRAN BARANG GUDANG
+                    </h3>
+                    <p class="text-[11px] text-slate-400">
+                        Visualisasi pergerakan 14 hari terakhir: Masuk, Digunakan (Kandang), Keluar & Terjual
+                    </p>
+                </div>
+            </div>
+
+            <!-- Metric Filter Pills -->
+            <div class="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100/80 rounded-xl border border-slate-200/60 self-start sm:self-auto">
+                <button type="button" onclick="switchChartCommodity('overview')" id="btn-chart-overview" class="chart-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-maroon-800 shadow-xs">
+                    Semua Barang
+                </button>
+                <button type="button" onclick="switchChartCommodity('telur')" id="btn-chart-telur" class="chart-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-500 hover:text-slate-800">
+                    Telur (Peti)
+                </button>
+                <button type="button" onclick="switchChartCommodity('pakan')" id="btn-chart-pakan" class="chart-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-500 hover:text-slate-800">
+                    Pakan (Kg)
+                </button>
+                <button type="button" onclick="switchChartCommodity('obat')" id="btn-chart-obat" class="chart-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-500 hover:text-slate-800">
+                    Obat (Item)
+                </button>
+            </div>
+        </div>
+
+        <!-- 4 Quick Stat Summary Pills (Masuk, Digunakan, Keluar, Terjual) -->
+        <div class="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
+            <!-- 1. Masuk -->
+            <div class="p-3 rounded-2xl bg-emerald-50/70 border border-emerald-200/70 flex items-center justify-between">
+                <div>
+                    <span class="text-[10px] font-extrabold uppercase text-emerald-700 tracking-wider flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full bg-emerald-600 inline-block"></span> Masuk
+                    </span>
+                    <div id="statMasukVal" class="text-sm sm:text-base font-black text-emerald-900 mt-0.5">
+                        {{ number_format($chartTotals['masuk'], 1, ',', '.') }}
+                    </div>
+                    <span id="statMasukSub" class="text-[10px] text-emerald-600/80 font-medium">Panen / Beli</span>
+                </div>
+                <div class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                    <i data-lucide="arrow-down-left" class="w-4 h-4 stroke-[2.5]"></i>
+                </div>
+            </div>
+
+            <!-- 2. Digunakan (Kandang) -->
+            <div class="p-3 rounded-2xl bg-indigo-50/70 border border-indigo-200/70 flex items-center justify-between">
+                <div>
+                    <span class="text-[10px] font-extrabold uppercase text-indigo-700 tracking-wider flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full bg-indigo-600 inline-block"></span> Digunakan
+                    </span>
+                    <div id="statDigunakanVal" class="text-sm sm:text-base font-black text-indigo-900 mt-0.5">
+                        {{ number_format($chartTotals['digunakan'], 1, ',', '.') }}
+                    </div>
+                    <span id="statDigunakanSub" class="text-[10px] text-indigo-600/80 font-medium">Konsumsi / Pakai</span>
+                </div>
+                <div class="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
+                    <i data-lucide="utensils" class="w-4 h-4 stroke-[2.5]"></i>
+                </div>
+            </div>
+
+            <!-- 3. Keluar (Gudang) -->
+            <div class="p-3 rounded-2xl bg-rose-50/70 border border-rose-200/70 flex items-center justify-between">
+                <div>
+                    <span class="text-[10px] font-extrabold uppercase text-rose-700 tracking-wider flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full bg-rose-600 inline-block"></span> Keluar
+                    </span>
+                    <div id="statKeluarVal" class="text-sm sm:text-base font-black text-rose-900 mt-0.5">
+                        {{ number_format($chartTotals['keluar'], 1, ',', '.') }}
+                    </div>
+                    <span id="statKeluarSub" class="text-[10px] text-rose-600/80 font-medium">Total Keluar Gudang</span>
+                </div>
+                <div class="w-8 h-8 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
+                    <i data-lucide="arrow-up-right" class="w-4 h-4 stroke-[2.5]"></i>
+                </div>
+            </div>
+
+            <!-- 4. Terjual -->
+            <div class="p-3 rounded-2xl bg-amber-50/70 border border-amber-200/70 flex items-center justify-between">
+                <div>
+                    <span class="text-[10px] font-extrabold uppercase text-amber-700 tracking-wider flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full bg-amber-600 inline-block"></span> Terjual
+                    </span>
+                    <div id="statTerjualVal" class="text-sm sm:text-base font-black text-amber-900 mt-0.5">
+                        {{ number_format($chartTotals['terjual'], 1, ',', '.') }}
+                    </div>
+                    <span id="statTerjualSub" class="text-[10px] text-amber-600/80 font-medium">Penjualan nochifram</span>
+                </div>
+                <div class="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                    <i data-lucide="shopping-cart" class="w-4 h-4 stroke-[2.5]"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Line Chart Container -->
+        <div class="mt-5 relative w-full" style="height: 310px;">
+            <canvas id="warehouseFlowChart"></canvas>
+        </div>
+    </div>
+
     <!-- Riwayat Aktivitas & Mutasi Terkini Gudang -->
     <div class="farm-card p-5 sm:p-6">
         <div class="flex items-center justify-between pb-4 border-b border-slate-100">
@@ -384,3 +493,193 @@
 
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    let flowChartInstance = null;
+    const warehouseChartLabels = {!! json_encode($chartLabels) !!};
+    const warehouseChartDataSets = {!! json_encode($chartDataSets) !!};
+
+    function renderWarehouseFlowChart(commodityKey) {
+        const ctx = document.getElementById('warehouseFlowChart');
+        if (!ctx) return;
+
+        const ds = warehouseChartDataSets[commodityKey] || warehouseChartDataSets.overview;
+        
+        // Update Title
+        const titleElem = document.getElementById('chartMainTitle');
+        if (titleElem) titleElem.textContent = ds.title;
+
+        // Calculate Totals for this commodity
+        const sumMasuk = ds.masuk.reduce((a, b) => a + Number(b), 0);
+        const sumDigunakan = ds.digunakan.reduce((a, b) => a + Number(b), 0);
+        const sumKeluar = ds.keluar.reduce((a, b) => a + Number(b), 0);
+        const sumTerjual = ds.terjual.reduce((a, b) => a + Number(b), 0);
+        const unit = ds.unit || '';
+
+        const statMasuk = document.getElementById('statMasukVal');
+        const statDigunakan = document.getElementById('statDigunakanVal');
+        const statKeluar = document.getElementById('statKeluarVal');
+        const statTerjual = document.getElementById('statTerjualVal');
+
+        if (statMasuk) statMasuk.textContent = sumMasuk.toLocaleString('id-ID', {maximumFractionDigits: 1}) + ' ' + unit;
+        if (statDigunakan) statDigunakan.textContent = sumDigunakan.toLocaleString('id-ID', {maximumFractionDigits: 1}) + ' ' + unit;
+        if (statKeluar) statKeluar.textContent = sumKeluar.toLocaleString('id-ID', {maximumFractionDigits: 1}) + ' ' + unit;
+        if (statTerjual) statTerjual.textContent = sumTerjual.toLocaleString('id-ID', {maximumFractionDigits: 1}) + ' ' + unit;
+
+        const statDigunakanSub = document.getElementById('statDigunakanSub');
+        if (statDigunakanSub) {
+            if (commodityKey === 'telur') {
+                statDigunakanSub.textContent = 'Telur Rusak / Pecah';
+            } else if (commodityKey === 'pakan') {
+                statDigunakanSub.textContent = 'Pemberian Pakan Kandang';
+            } else if (commodityKey === 'obat') {
+                statDigunakanSub.textContent = 'Pemakaian di Kandang';
+            } else {
+                statDigunakanSub.textContent = 'Konsumsi / Pakai';
+            }
+        }
+
+        if (flowChartInstance) {
+            flowChartInstance.destroy();
+        }
+
+        const secondLabel = commodityKey === 'telur' ? 'Telur Rusak' : (commodityKey === 'pakan' ? 'Pemberian Pakan' : (commodityKey === 'obat' ? 'Pemakaian Obat' : 'Digunakan di Kandang'));
+
+        flowChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: warehouseChartLabels,
+                datasets: [
+                    {
+                        label: 'Barang Masuk',
+                        data: ds.masuk,
+                        borderColor: '#059669',
+                        backgroundColor: 'rgba(5, 150, 105, 0.08)',
+                        borderWidth: 2.5,
+                        fill: false,
+                        tension: 0.35,
+                        pointBackgroundColor: '#059669',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                    },
+                    {
+                        label: secondLabel,
+                        data: ds.digunakan,
+                        borderColor: '#4f46e5',
+                        backgroundColor: 'rgba(79, 70, 229, 0.08)',
+                        borderWidth: 2.5,
+                        fill: false,
+                        tension: 0.35,
+                        pointBackgroundColor: '#4f46e5',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                    },
+                    {
+                        label: 'Barang Keluar (Total)',
+                        data: ds.keluar,
+                        borderColor: '#be123c',
+                        backgroundColor: 'rgba(190, 18, 60, 0.08)',
+                        borderWidth: 2.5,
+                        fill: false,
+                        tension: 0.35,
+                        pointBackgroundColor: '#be123c',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                    },
+                    {
+                        label: 'Barang Terjual',
+                        data: ds.terjual,
+                        borderColor: '#d97706',
+                        backgroundColor: 'rgba(217, 119, 6, 0.08)',
+                        borderWidth: 2.5,
+                        fill: false,
+                        tension: 0.35,
+                        pointBackgroundColor: '#d97706',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            boxWidth: 12,
+                            boxHeight: 12,
+                            usePointStyle: true,
+                            font: {
+                                size: 11,
+                                weight: 'bold',
+                                family: "'Inter', sans-serif"
+                            },
+                            color: '#334155'
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                        titleFont: { size: 12, weight: 'bold' },
+                        bodyFont: { size: 11 },
+                        padding: 10,
+                        cornerRadius: 10,
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + Number(context.parsed.y).toLocaleString('id-ID') + ' ' + unit;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            font: { size: 10, weight: '600' },
+                            color: '#64748b'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(226, 232, 240, 0.6)' },
+                        ticks: {
+                            font: { size: 10, weight: '600' },
+                            color: '#64748b'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function switchChartCommodity(key) {
+        document.querySelectorAll('.chart-tab-btn').forEach(btn => {
+            btn.classList.remove('bg-white', 'text-maroon-800', 'shadow-xs');
+            btn.classList.add('text-slate-500');
+        });
+        const activeBtn = document.getElementById('btn-chart-' + key);
+        if (activeBtn) {
+            activeBtn.classList.remove('text-slate-500');
+            activeBtn.classList.add('bg-white', 'text-maroon-800', 'shadow-xs');
+        }
+        renderWarehouseFlowChart(key);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        renderWarehouseFlowChart('overview');
+    });
+</script>
+@endpush

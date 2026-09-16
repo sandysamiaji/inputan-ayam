@@ -27,7 +27,7 @@
         <!-- Stok Quick Stat Banner -->
         <div class="hidden sm:flex items-center gap-4 bg-white px-4 py-2 rounded-2xl border border-slate-100 shadow-sm">
             <div class="text-right">
-                <span class="text-[10px] uppercase font-bold text-slate-400 block">Stok Saat Ini</span>
+                <span class="text-[10px] uppercase font-bold text-slate-400 block">Sisa Stok</span>
                 <span class="text-base font-extrabold {{ $stokSaatIni < 0 ? 'text-rose-600' : 'text-emerald-600' }}">{{ number_format($stokSaatIni, 0, ',', '.') }} Item</span>
             </div>
             <div class="h-7 w-px bg-slate-200"></div>

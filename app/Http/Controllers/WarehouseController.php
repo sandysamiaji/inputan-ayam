@@ -79,7 +79,6 @@ class WarehouseController extends Controller
         $formattedEndDate = ($namaHari[$endCarbon->format('l')] ?? $endCarbon->format('D')) . ', ' . $endCarbon->day . ' ' . ($bulanShort[$endCarbon->month] ?? $endCarbon->format('M')) . ' ' . $endCarbon->year;
 
         // 1. Gudang Telur (Terintegrasi Penjualan nochifram)
-        $eggSummaryAllTime = OutboundIntegrationService::getEggOutboundSummary();
         $eggSummary = OutboundIntegrationService::getEggOutboundSummary($startDate, $endDate);
         $telurMasuk = $eggSummary['total_produced_crates'];
         $telurMasukButir = $eggSummary['total_produced_eggs'];
@@ -87,22 +86,21 @@ class WarehouseController extends Controller
         $telurKeluar = $eggSummary['total_keluar_peti'];
         $telurKeluarKg = $eggSummary['total_keluar_kg'];
         $telurKeluarEggs = $eggSummary['total_keluar_eggs'];
-        $telurStok = $eggSummaryAllTime['current_stock_peti'];
-        $telurStokKgTotal = $eggSummaryAllTime['current_stock_kg_total'];
-        $telurStokButir = $eggSummaryAllTime['current_stock_eggs'];
+        $telurStok = $eggSummary['current_stock_peti'];
+        $telurStokKgTotal = $eggSummary['current_stock_kg_total'];
+        $telurStokButir = $eggSummary['current_stock_eggs'];
         $telurPetiSold = $eggSummary['peti_sold'];
         $telurKgSold = $eggSummary['kg_sold'];
         $telurRevenue = $eggSummary['total_revenue'];
 
         // 2. Gudang Pakan (Terintegrasi Konsumsi Kandang & Penjualan Luar)
-        $feedSummaryAllTime = OutboundIntegrationService::getFeedOutboundSummary();
         $feedSummary = OutboundIntegrationService::getFeedOutboundSummary($startDate, $endDate);
         $pakanMasuk = $feedSummary['purchased_kg'];
         $pakanMasukKarung = $feedSummary['purchased_karung'];
         $pakanKeluar = $feedSummary['total_keluar_kg'];
         $pakanTotalKarungKeluar = $feedSummary['total_keluar_karung'];
-        $pakanStok = $feedSummaryAllTime['current_stock_kg'];
-        $pakanStokKarung = $feedSummaryAllTime['current_stock_karung'];
+        $pakanStok = $feedSummary['current_stock_kg'];
+        $pakanStokKarung = $feedSummary['current_stock_karung'];
         $pakanKarungSold = $feedSummary['karung_sold'];
         $pakanKgSold = $feedSummary['kg_sold'];
         $pakanConsumptionKg = $feedSummary['consumption_kg'];
@@ -128,16 +126,7 @@ class WarehouseController extends Controller
         }
         
         $obatKeluar = $obatKeluarManual + $obatKeluarKandang;
-
-        $totalObatMasukAllTime = (float) FarmStock::whereIn('category', ['obat', 'vaksin', 'vitamin'])->where('type', 'masuk')->sum('quantity');
-        $totalObatKeluarManualAllTime = (float) FarmStock::whereIn('category', ['obat', 'vaksin', 'vitamin'])->where('type', 'keluar')->sum('quantity');
-        $totalObatKeluarKandangAllTime = 0;
-        foreach (\App\Models\HealthTreatment::all() as $ht) {
-            $val = (float) preg_replace('/[^0-9.]/', '', $ht->dosage);
-            if ($val == 0) $val = 1;
-            $totalObatKeluarKandangAllTime += $val;
-        }
-        $obatStok = round($totalObatMasukAllTime - ($totalObatKeluarManualAllTime + $totalObatKeluarKandangAllTime), 1);
+        $obatStok = round($obatMasuk - $obatKeluar, 1);
 
         // Pre-query data aliran barang berdasarkan rentang tanggal
         $eggProdByDate = EggProduction::whereBetween('date', [$startDate, $endDate])
@@ -783,15 +772,14 @@ class WarehouseController extends Controller
         );
 
         // Ringkasan Telur Terintegrasi Penjualan nochifram
-        $eggSummaryAllTime = OutboundIntegrationService::getEggOutboundSummary();
         $eggSummary = OutboundIntegrationService::getEggOutboundSummary($startDate, $endDate);
         $totalMasuk = $eggSummary['total_produced_crates'];
         $totalMasukKg = $eggSummary['total_produced_kg'];
         $totalKeluar = $eggSummary['total_keluar_peti'];
         $totalKeluarKg = $eggSummary['total_keluar_kg'];
-        $stokSaatIni = $eggSummaryAllTime['current_stock_peti'];
-        $stokSaatIniKg = $eggSummaryAllTime['current_stock_kg_total'];
-        $stokSaatIniButir = $eggSummaryAllTime['current_stock_eggs'];
+        $stokSaatIni = $eggSummary['current_stock_peti'];
+        $stokSaatIniKg = $eggSummary['current_stock_kg_total'];
+        $stokSaatIniButir = $eggSummary['current_stock_eggs'];
         $petiSold = $eggSummary['peti_sold'];
         $kgSold = $eggSummary['kg_sold'];
         $totalRevenue = $eggSummary['total_revenue'];
@@ -915,12 +903,11 @@ class WarehouseController extends Controller
         );
 
         // Ringkasan Pakan Terintegrasi Konsumsi Kandang & Penjualan Luar nochifram
-        $feedSummaryAllTime = OutboundIntegrationService::getFeedOutboundSummary();
         $feedSummary = OutboundIntegrationService::getFeedOutboundSummary($startDate, $endDate);
         $totalMasuk = $feedSummary['purchased_kg'];
         $totalKeluar = $feedSummary['total_keluar_kg'];
-        $stokSaatIni = $feedSummaryAllTime['current_stock_kg'];
-        $currentStockKarung = $feedSummaryAllTime['current_stock_karung'];
+        $stokSaatIni = $feedSummary['current_stock_kg'];
+        $currentStockKarung = $feedSummary['current_stock_karung'];
         $karungSold = $feedSummary['karung_sold'];
         $kgSold = $feedSummary['kg_sold'];
         $soldRevenue = $feedSummary['total_revenue'];
@@ -1062,16 +1049,7 @@ class WarehouseController extends Controller
         }
         
         $totalKeluar = $totalKeluarManual + $obatKeluarKandang;
-
-        $totalObatMasukAllTime = (float) FarmStock::whereIn('category', ['obat', 'vaksin', 'vitamin'])->where('type', 'masuk')->sum('quantity');
-        $totalObatKeluarManualAllTime = (float) FarmStock::whereIn('category', ['obat', 'vaksin', 'vitamin'])->where('type', 'keluar')->sum('quantity');
-        $totalObatKeluarKandangAllTime = 0;
-        foreach (HealthTreatment::all() as $ht) {
-            $val = (float) preg_replace('/[^0-9.]/', '', $ht->dosage);
-            if ($val == 0) $val = 1;
-            $totalObatKeluarKandangAllTime += $val;
-        }
-        $stokSaatIni = round($totalObatMasukAllTime - ($totalObatKeluarManualAllTime + $totalObatKeluarKandangAllTime), 1);
+        $stokSaatIni = round($totalMasuk - $totalKeluar, 1);
 
         $coops = Coop::where('is_active', true)->get();
 

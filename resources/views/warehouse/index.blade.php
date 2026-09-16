@@ -185,7 +185,7 @@
 
                 <!-- 3. Stok Saat Ini (Peti & Kg - Mendukung Nilai Mines / Defisit) -->
                 <div class="text-right space-y-0.5 min-w-0">
-                    <div class="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider">Stok Saat Ini</div>
+                    <div class="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider">Sisa Stok</div>
                     <div class="text-xs sm:text-sm font-black leading-tight {{ $telurStok < 0 || $telurStokKgTotal < 0 ? 'text-rose-600' : 'text-emerald-600' }}">
                         <div>{{ number_format($telurStok, 0, ',', '.') }} <span class="text-[10px] font-bold {{ $telurStok < 0 ? 'text-rose-600' : 'text-emerald-700' }}">Peti</span></div>
                         <div class="text-[11px] sm:text-xs font-bold {{ $telurStokKgTotal < 0 ? 'text-rose-600' : 'text-emerald-600' }}">& {{ number_format($telurStokKgTotal, 0, ',', '.') }} <span class="text-[9px] font-normal text-slate-500">Kg</span></div>
@@ -252,7 +252,7 @@
 
                 <!-- 3. Stok Saat Ini (Mendukung Nilai Mines / Defisit) -->
                 <div class="text-right space-y-0.5 min-w-0">
-                    <div class="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider">Stok Saat Ini</div>
+                    <div class="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider">Sisa Stok</div>
                     <div class="text-xs sm:text-lg font-black leading-tight {{ $pakanStok < 0 ? 'text-rose-600' : 'text-emerald-600' }}">
                         {{ number_format($pakanStok, 0, ',', '.') }} <span class="text-[10px] sm:text-xs font-bold {{ $pakanStok < 0 ? 'text-rose-600' : 'text-emerald-700' }}">Kg</span>
                     </div>
@@ -313,7 +313,7 @@
 
                 <!-- 3. Stok Saat Ini (Mendukung Nilai Mines / Defisit) -->
                 <div class="text-right space-y-0.5 min-w-0 pl-1">
-                    <div class="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider">Stok Saat Ini</div>
+                    <div class="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider">Sisa Stok</div>
                     <div class="text-xs sm:text-xl font-extrabold leading-tight truncate {{ $obatStok < 0 ? 'text-rose-600' : 'text-emerald-600' }}">
                         {{ number_format($obatStok, 0, ',', '.') }} <span class="text-[10px] sm:text-xs font-bold {{ $obatStok < 0 ? 'text-rose-600' : 'text-emerald-700' }}">Item</span>
                     </div>

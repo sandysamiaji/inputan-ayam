@@ -571,7 +571,7 @@ class DashboardController extends Controller
             ? (float) $validated['crates_count']
             : round($totalEggs / 25, 2);
 
-        $eggProduction = EggProduction::create([
+        $dataToInsert = [
             'flock_id' => $coop->flock_id,
             'coop_id' => $coop->id,
             'user_id' => Auth::id() ?? User::where('username', 'petugas')->value('id') ?? User::value('id'),
@@ -579,11 +579,16 @@ class DashboardController extends Controller
             'time' => $validated['time'] ?? Carbon::now()->format('H:i:s'),
             'total_eggs' => $totalEggs,
             'broken_eggs' => $brokenEggs,
-            'abnormal_eggs' => $abnormalEggs,
             'good_eggs' => $goodEggs,
             'crates_count' => $cratesCount,
             'notes' => $validated['notes'] ?? null,
-        ]);
+        ];
+
+        if (\Illuminate\Support\Facades\Schema::hasColumn('egg_productions', 'abnormal_eggs')) {
+            $dataToInsert['abnormal_eggs'] = $abnormalEggs;
+        }
+
+        $eggProduction = EggProduction::create($dataToInsert);
 
         if ($request->wantsJson()) {
             return response()->json([

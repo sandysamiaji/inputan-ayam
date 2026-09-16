@@ -35,44 +35,91 @@ class WarehouseController extends Controller
     /**
      * 1. Halaman Utama Gudang (Overview)
      */
-    public function index()
+    public function index(Request $request)
     {
         $user = Auth::user() ?? User::where('role', 'user')->orWhere('username', 'petugas')->first() ?? User::first();
 
+        // Parameter Rentang Tanggal (Default 14 Hari Terakhir)
+        $defaultStartDate = Carbon::today()->subDays(13)->toDateString();
+        $defaultEndDate = Carbon::today()->toDateString();
+
+        $startDate = $request->input('start_date', $defaultStartDate);
+        $endDate = $request->input('end_date', $defaultEndDate);
+
+        try {
+            $startCarbon = Carbon::parse($startDate)->startOfDay();
+            $endCarbon = Carbon::parse($endDate)->endOfDay();
+        } catch (\Exception $e) {
+            $startCarbon = Carbon::parse($defaultStartDate)->startOfDay();
+            $endCarbon = Carbon::parse($defaultEndDate)->endOfDay();
+            $startDate = $defaultStartDate;
+            $endDate = $defaultEndDate;
+        }
+
+        if ($startCarbon->gt($endCarbon)) {
+            $temp = $startCarbon;
+            $startCarbon = $endCarbon->copy()->startOfDay();
+            $endCarbon = $temp->copy()->endOfDay();
+            $startDate = $startCarbon->toDateString();
+            $endDate = $endCarbon->toDateString();
+        }
+
+        $diffDays = $startCarbon->diffInDays($endCarbon) + 1;
+
+        $namaHari = [
+            'Sunday' => 'Min', 'Monday' => 'Sen', 'Tuesday' => 'Sel',
+            'Wednesday' => 'Rab', 'Thursday' => 'Kam', 'Friday' => 'Jum', 'Saturday' => 'Sab'
+        ];
+        $bulanShort = [
+            1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'Mei', 6 => 'Jun',
+            7 => 'Jul', 8 => 'Agt', 9 => 'Sep', 10 => 'Okt', 11 => 'Nov', 12 => 'Des'
+        ];
+
+        $formattedStartDate = ($namaHari[$startCarbon->format('l')] ?? $startCarbon->format('D')) . ', ' . $startCarbon->day . ' ' . ($bulanShort[$startCarbon->month] ?? $startCarbon->format('M')) . ' ' . $startCarbon->year;
+        $formattedEndDate = ($namaHari[$endCarbon->format('l')] ?? $endCarbon->format('D')) . ', ' . $endCarbon->day . ' ' . ($bulanShort[$endCarbon->month] ?? $endCarbon->format('M')) . ' ' . $endCarbon->year;
+
         // 1. Gudang Telur (Terintegrasi Penjualan nochifram)
-        $eggSummary = OutboundIntegrationService::getEggOutboundSummary();
+        $eggSummaryAllTime = OutboundIntegrationService::getEggOutboundSummary();
+        $eggSummary = OutboundIntegrationService::getEggOutboundSummary($startDate, $endDate);
         $telurMasuk = $eggSummary['total_produced_crates'];
         $telurMasukButir = $eggSummary['total_produced_eggs'];
         $telurMasukKg = $eggSummary['total_produced_kg'];
         $telurKeluar = $eggSummary['total_keluar_peti'];
         $telurKeluarKg = $eggSummary['total_keluar_kg'];
         $telurKeluarEggs = $eggSummary['total_keluar_eggs'];
-        $telurStok = $eggSummary['current_stock_peti'];
-        $telurStokKgTotal = $eggSummary['current_stock_kg_total'];
-        $telurStokButir = $eggSummary['current_stock_eggs'];
+        $telurStok = $eggSummaryAllTime['current_stock_peti'];
+        $telurStokKgTotal = $eggSummaryAllTime['current_stock_kg_total'];
+        $telurStokButir = $eggSummaryAllTime['current_stock_eggs'];
         $telurPetiSold = $eggSummary['peti_sold'];
         $telurKgSold = $eggSummary['kg_sold'];
         $telurRevenue = $eggSummary['total_revenue'];
 
         // 2. Gudang Pakan (Terintegrasi Konsumsi Kandang & Penjualan Luar)
-        $feedSummary = OutboundIntegrationService::getFeedOutboundSummary();
+        $feedSummaryAllTime = OutboundIntegrationService::getFeedOutboundSummary();
+        $feedSummary = OutboundIntegrationService::getFeedOutboundSummary($startDate, $endDate);
         $pakanMasuk = $feedSummary['purchased_kg'];
         $pakanMasukKarung = $feedSummary['purchased_karung'];
         $pakanKeluar = $feedSummary['total_keluar_kg'];
         $pakanTotalKarungKeluar = $feedSummary['total_keluar_karung'];
-        $pakanStok = $feedSummary['current_stock_kg'];
-        $pakanStokKarung = $feedSummary['current_stock_karung'];
+        $pakanStok = $feedSummaryAllTime['current_stock_kg'];
+        $pakanStokKarung = $feedSummaryAllTime['current_stock_karung'];
         $pakanKarungSold = $feedSummary['karung_sold'];
         $pakanKgSold = $feedSummary['kg_sold'];
         $pakanConsumptionKg = $feedSummary['consumption_kg'];
         $pakanConsumptionKarung = $feedSummary['consumption_karung'];
         $pakanRevenue = $feedSummary['total_revenue'];
 
-        // 3. Gudang Obat, Vaksin & Vitamin (Satuan: Item / Botol) - Bisa minus jika keluar melebihi masuk
-        $obatMasuk = (float) FarmStock::whereIn('category', ['obat', 'vaksin', 'vitamin'])->where('type', 'masuk')->sum('quantity');
-        $obatKeluarManual = (float) FarmStock::whereIn('category', ['obat', 'vaksin', 'vitamin'])->where('type', 'keluar')->sum('quantity');
+        // 3. Gudang Obat, Vaksin & Vitamin (Satuan: Item / Botol)
+        $obatMasuk = (float) FarmStock::whereIn('category', ['obat', 'vaksin', 'vitamin'])
+            ->where('type', 'masuk')
+            ->whereBetween('date', [$startDate, $endDate])
+            ->sum('quantity');
+        $obatKeluarManual = (float) FarmStock::whereIn('category', ['obat', 'vaksin', 'vitamin'])
+            ->where('type', 'keluar')
+            ->whereBetween('date', [$startDate, $endDate])
+            ->sum('quantity');
         
-        $healthTreatments = \App\Models\HealthTreatment::all();
+        $healthTreatments = \App\Models\HealthTreatment::whereBetween('date', [$startDate, $endDate])->get();
         $obatKeluarKandang = 0;
         foreach ($healthTreatments as $ht) {
             $val = (float) preg_replace('/[^0-9.]/', '', $ht->dosage);
@@ -81,15 +128,18 @@ class WarehouseController extends Controller
         }
         
         $obatKeluar = $obatKeluarManual + $obatKeluarKandang;
-        $obatStok = round($obatMasuk - $obatKeluar, 1);
 
-        // DATA GRAFIK ALIRAN BARANG (14 HARI TERAKHIR)
-        $startDate = Carbon::today()->subDays(13)->toDateString();
-        $endDate = Carbon::today()->toDateString();
-        $startCarbon = Carbon::parse($startDate);
-        $endCarbon = Carbon::parse($endDate);
+        $totalObatMasukAllTime = (float) FarmStock::whereIn('category', ['obat', 'vaksin', 'vitamin'])->where('type', 'masuk')->sum('quantity');
+        $totalObatKeluarManualAllTime = (float) FarmStock::whereIn('category', ['obat', 'vaksin', 'vitamin'])->where('type', 'keluar')->sum('quantity');
+        $totalObatKeluarKandangAllTime = 0;
+        foreach (\App\Models\HealthTreatment::all() as $ht) {
+            $val = (float) preg_replace('/[^0-9.]/', '', $ht->dosage);
+            if ($val == 0) $val = 1;
+            $totalObatKeluarKandangAllTime += $val;
+        }
+        $obatStok = round($totalObatMasukAllTime - ($totalObatKeluarManualAllTime + $totalObatKeluarKandangAllTime), 1);
 
-        // Pre-query data 14 hari
+        // Pre-query data aliran barang berdasarkan rentang tanggal
         $eggProdByDate = EggProduction::whereBetween('date', [$startDate, $endDate])
             ->select(
                 DB::raw('DATE(date) as dt'),
@@ -497,7 +547,8 @@ class WarehouseController extends Controller
             'pakanMasuk', 'pakanMasukKarung', 'pakanKeluar', 'pakanTotalKarungKeluar', 'pakanStok', 'pakanStokKarung', 'pakanKarungSold', 'pakanKgSold', 'pakanConsumptionKg', 'pakanConsumptionKarung', 'pakanRevenue',
             'obatMasuk', 'obatKeluar', 'obatStok',
             'recentTransactions', 'recentSales',
-            'chartLabels', 'chartDataSets', 'chartTotals', 'streamTotals'
+            'chartLabels', 'chartDataSets', 'chartTotals', 'streamTotals',
+            'startDate', 'endDate', 'defaultStartDate', 'defaultEndDate', 'diffDays', 'formattedStartDate', 'formattedEndDate'
         ));
     }
 

@@ -17,20 +17,136 @@
             </div>
         </div>
 
-        <!-- Desktop Quick Action Buttons -->
-        <div class="hidden sm:flex items-center gap-2">
-            <a href="{{ route('warehouse.telur') }}" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-white text-maroon-800 border border-maroon-200 hover:bg-rose-50 shadow-sm transition-all active:scale-95">
-                <i data-lucide="egg" class="w-4 h-4 text-amber-600"></i>
-                <span>Gudang Telur</span>
-            </a>
-            <a href="{{ route('warehouse.pakan') }}" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-white text-maroon-800 border border-maroon-200 hover:bg-rose-50 shadow-sm transition-all active:scale-95">
-                <i data-lucide="wheat" class="w-4 h-4 text-emerald-600"></i>
-                <span>Gudang Pakan</span>
-            </a>
-            <a href="{{ route('warehouse.obat') }}" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-maroon-800 text-white hover:bg-maroon-900 shadow-md shadow-maroon-900/20 transition-all active:scale-95">
-                <i data-lucide="flask-conical" class="w-4 h-4 text-rose-200"></i>
-                <span>Obat & Vaksin</span>
-            </a>
+        <!-- Traveloka Style Date Range Selector -->
+        <div class="relative" id="travelokaDatePicker">
+            <!-- Traveloka Search Capsule Trigger -->
+            <div onclick="toggleTravelokaPopover()" 
+                 id="travelokaTriggerBtn"
+                 class="cursor-pointer bg-white hover:bg-slate-50/90 border border-slate-200/90 hover:border-maroon-300 shadow-xs hover:shadow-md transition-all rounded-2xl p-1.5 sm:p-2 flex items-center gap-1.5 sm:gap-2.5 group select-none">
+                
+                <!-- Start Date Segment -->
+                <div class="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-slate-50 group-hover:bg-white transition-colors">
+                    <div class="w-7 h-7 rounded-lg bg-rose-50 text-maroon-800 flex items-center justify-center shrink-0">
+                        <i data-lucide="calendar" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <div class="text-[9px] font-extrabold uppercase tracking-wider text-slate-400">Dari Tanggal</div>
+                        <div class="text-xs sm:text-sm font-black text-slate-800 whitespace-nowrap">
+                            {{ $formattedStartDate }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Center Duration Badge (Traveloka Style) -->
+                <div class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-rose-50 to-amber-50 text-maroon-900 text-[10px] font-extrabold shrink-0 border border-rose-200/80 shadow-2xs">
+                    <span>{{ $diffDays }} Hari</span>
+                    <i data-lucide="arrow-right" class="w-3 h-3 text-maroon-700"></i>
+                </div>
+
+                <!-- End Date Segment -->
+                <div class="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-slate-50 group-hover:bg-white transition-colors">
+                    <div class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+                        <i data-lucide="calendar-check-2" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <div class="text-[9px] font-extrabold uppercase tracking-wider text-slate-400">Sampai Tanggal</div>
+                        <div class="text-xs sm:text-sm font-black text-slate-800 whitespace-nowrap">
+                            {{ $formattedEndDate }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Toggle Dropdown Icon -->
+                <div class="w-7 h-7 rounded-xl bg-slate-100 group-hover:bg-maroon-800 group-hover:text-white text-slate-500 flex items-center justify-center transition-all shrink-0">
+                    <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i>
+                </div>
+            </div>
+
+            <!-- Traveloka Popover Dropdown Panel -->
+            <div id="travelokaPopoverPanel" 
+                 class="hidden absolute right-0 top-full mt-2 w-[340px] sm:w-[440px] bg-white rounded-2xl shadow-2xl border border-slate-200/90 p-4 sm:p-5 z-50 animate-in fade-in zoom-in-95 duration-150">
+                
+                <!-- Popover Header -->
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3.5">
+                    <div class="flex items-center gap-2">
+                        <div class="w-7 h-7 rounded-lg bg-rose-50 text-maroon-800 flex items-center justify-center">
+                            <i data-lucide="calendar-range" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-xs sm:text-sm font-extrabold text-slate-800">Pilih Rentang Tanggal</h4>
+                            <p class="text-[10px] text-slate-400">Sesuaikan periode data analitik gudang</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="closeTravelokaPopover()" class="w-6 h-6 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center transition-colors">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- Traveloka Quick Presets -->
+                <div class="mb-4">
+                    <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-2">Pilihan Cepat (Presets)</span>
+                    <div class="flex flex-wrap gap-1.5">
+                        <button type="button" onclick="setTravelokaPreset(7, 'days')" class="px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-200 hover:border-maroon-400 hover:bg-rose-50 hover:text-maroon-800 text-slate-600 transition-all active:scale-95 {{ $diffDays == 7 ? 'bg-rose-50 border-maroon-400 text-maroon-800 font-extrabold' : '' }}">
+                            7 Hari
+                        </button>
+                        <button type="button" onclick="setTravelokaPreset(14, 'days')" class="px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-200 hover:border-maroon-400 hover:bg-rose-50 hover:text-maroon-800 text-slate-600 transition-all active:scale-95 {{ $diffDays == 14 ? 'bg-rose-50 border-maroon-400 text-maroon-800 font-extrabold' : '' }}">
+                            14 Hari (Default)
+                        </button>
+                        <button type="button" onclick="setTravelokaPreset(30, 'days')" class="px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-200 hover:border-maroon-400 hover:bg-rose-50 hover:text-maroon-800 text-slate-600 transition-all active:scale-95 {{ $diffDays == 30 ? 'bg-rose-50 border-maroon-400 text-maroon-800 font-extrabold' : '' }}">
+                            30 Hari
+                        </button>
+                        <button type="button" onclick="setTravelokaPreset(null, 'this_month')" class="px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-200 hover:border-maroon-400 hover:bg-rose-50 hover:text-maroon-800 text-slate-600 transition-all active:scale-95">
+                            Bulan Ini
+                        </button>
+                        <button type="button" onclick="setTravelokaPreset(null, 'last_month')" class="px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-200 hover:border-maroon-400 hover:bg-rose-50 hover:text-maroon-800 text-slate-600 transition-all active:scale-95">
+                            Bulan Lalu
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Custom Date Inputs Form -->
+                <form id="travelokaDateForm" action="{{ route('warehouse.index') }}" method="GET" class="space-y-3.5">
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block mb-1">
+                                Tanggal Mulai
+                            </label>
+                            <input type="date" 
+                                   id="travelokaStartDate" 
+                                   name="start_date" 
+                                   value="{{ $startDate }}"
+                                   class="w-full px-3 py-2 rounded-xl text-xs font-bold border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-maroon-800 focus:ring-2 focus:ring-rose-200 transition-all outline-hidden">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block mb-1">
+                                Tanggal Selesai
+                            </label>
+                            <input type="date" 
+                                   id="travelokaEndDate" 
+                                   name="end_date" 
+                                   value="{{ $endDate }}"
+                                   class="w-full px-3 py-2 rounded-xl text-xs font-bold border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-maroon-800 focus:ring-2 focus:ring-rose-200 transition-all outline-hidden">
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+                        @if($startDate !== $defaultStartDate || $endDate !== $defaultEndDate)
+                            <a href="{{ route('warehouse.index') }}" class="text-xs font-bold text-slate-500 hover:text-rose-700 transition-colors">
+                                Reset Default
+                            </a>
+                        @else
+                            <span class="text-[10px] text-slate-400 font-medium">Periode aktif: {{ $diffDays }} hari</span>
+                        @endif
+
+                        <button type="submit" 
+                                class="px-4 py-2 rounded-xl bg-gradient-to-r from-maroon-800 to-rose-700 hover:from-maroon-900 hover:to-rose-800 text-white font-bold text-xs shadow-md shadow-maroon-900/20 hover:shadow-lg transition-all flex items-center gap-1.5 active:scale-95">
+                            <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                            <span>Terapkan Rentang</span>
+                        </button>
+                    </div>
+                </form>
+
+            </div>
         </div>
     </div>
 
@@ -243,8 +359,8 @@
                     <h3 class="font-extrabold text-slate-800 text-sm sm:text-base tracking-tight" id="chartMainTitle">
                         GRAFIK TREN ALIRAN BARANG GUDANG
                     </h3>
-                    <p class="text-[11px] text-slate-400">
-                        Visualisasi pergerakan 14 hari terakhir: Masuk, Digunakan (Kandang), Keluar & Terjual
+                    <p class="text-[11px] text-slate-400" id="chartSubtitle">
+                        Visualisasi pergerakan {{ $diffDays }} hari ({{ $formattedStartDate }} – {{ $formattedEndDate }}): Masuk, Digunakan, Keluar & Terjual
                     </p>
                 </div>
             </div>
@@ -330,7 +446,7 @@
             <div class="flex flex-wrap items-center justify-between gap-1 mb-2">
                 <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                     <i data-lucide="external-link" class="w-3.5 h-3.5 text-slate-400"></i>
-                    Akses Langsung 8 Aliran Data Gudang (14 Hari Terakhir):
+                    Akses Langsung 8 Aliran Data Gudang (Periode {{ $diffDays }} Hari):
                 </span>
                 <span class="text-[10px] text-slate-400">Klik untuk langsung membuka tab data</span>
             </div>
@@ -879,6 +995,63 @@
         }
         renderWarehouseFlowChart(key);
     }
+
+    // Traveloka Popover Interaction
+    function toggleTravelokaPopover() {
+        const panel = document.getElementById('travelokaPopoverPanel');
+        if (!panel) return;
+        panel.classList.toggle('hidden');
+        if (!panel.classList.contains('hidden')) {
+            lucide.createIcons();
+        }
+    }
+
+    function closeTravelokaPopover() {
+        const panel = document.getElementById('travelokaPopoverPanel');
+        if (panel) panel.classList.add('hidden');
+    }
+
+    function setTravelokaPreset(days, type) {
+        const now = new Date();
+        let start, end;
+        if (type === 'days') {
+            end = new Date();
+            start = new Date();
+            start.setDate(end.getDate() - (days - 1));
+        } else if (type === 'this_month') {
+            start = new Date(now.getFullYear(), now.getMonth(), 1);
+            end = new Date();
+        } else if (type === 'last_month') {
+            start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            end = new Date(now.getFullYear(), now.getMonth(), 0);
+        }
+        const fmt = d => {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+        const sInput = document.getElementById('travelokaStartDate');
+        const eInput = document.getElementById('travelokaEndDate');
+        if (sInput && eInput) {
+            sInput.value = fmt(start);
+            eInput.value = fmt(end);
+            document.getElementById('travelokaDateForm').submit();
+        }
+    }
+
+    document.addEventListener('click', function(e) {
+        const container = document.getElementById('travelokaDatePicker');
+        if (container && !container.contains(e.target)) {
+            closeTravelokaPopover();
+        }
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeTravelokaPopover();
+        }
+    });
 
     document.addEventListener('DOMContentLoaded', function() {
         renderWarehouseFlowChart('overview');

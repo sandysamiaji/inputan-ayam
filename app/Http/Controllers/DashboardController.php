@@ -10,6 +10,8 @@ use App\Models\FeedConsumption;
 use App\Models\Mortality;
 use App\Models\WeightSample;
 use App\Models\HealthTreatment;
+use App\Models\FarmStock;
+use App\Models\Sale;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;

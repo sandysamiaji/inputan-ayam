@@ -670,9 +670,9 @@
             @forelse($recentSales as $sale)
                 @php
                     $isTelur = strtolower($sale->category) === 'telur';
-                    $petugasName = $sale->user_name ?? ($sale->user_username ?? null);
-                    $tripInfo = $sale->driver_name ? $sale->driver_name . ($sale->trip_code ? " ({$sale->trip_code})" : '') : ($sale->trip_code ?? null);
-                    $tooltipText = "Petugas Input: " . ($petugasName ?: 'Kasir System') . ($tripInfo ? " | Perjalanan/Armada: {$tripInfo}" : '');
+                    $petugasUsername = !empty($sale->user_username) ? '@' . $sale->user_username : ($sale->user_name ?? null);
+                    $tripUsername = $sale->trip_code ?? ($sale->driver_name ?? null);
+                    $tooltipText = "Petugas Input: " . ($petugasUsername ?: 'Kasir System') . ($tripUsername ? " | Perjalanan: {$tripUsername}" : '');
                 @endphp
                 <div class="p-3.5 rounded-2xl bg-slate-50/70 border border-slate-200/70 hover:border-maroon-300 transition-all flex flex-col justify-between group relative" title="{{ $tooltipText }}">
                     <div>
@@ -687,19 +687,19 @@
                             Pembeli: <b class="text-slate-700">{{ $sale->customer_name }}</b>
                         </p>
 
-                        <!-- Info Petugas Input & Armada Perjalanan -->
+                        <!-- Info Username Petugas Input & Perjalanan Armada -->
                         <div class="flex flex-wrap items-center gap-1.5 mt-2">
-                            @if($petugasName)
-                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200/80 text-[10px] font-semibold" title="Petugas Input: {{ $petugasName }}">
+                            @if($petugasUsername)
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200/80 text-[10px] font-semibold" title="Username Petugas Input: {{ $petugasUsername }}">
                                     <i data-lucide="user-check" class="w-3 h-3 text-blue-600"></i>
-                                    <span>Input: <b>{{ $petugasName }}</b></span>
+                                    <span>Input: <b>{{ $petugasUsername }}</b></span>
                                 </span>
                             @endif
 
-                            @if($tripInfo)
-                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200/80 text-[10px] font-semibold" title="Perjalanan / Armada: {{ $tripInfo }}">
+                            @if($tripUsername)
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200/80 text-[10px] font-semibold" title="Perjalanan / Kode Trip: {{ $tripUsername }}">
                                     <i data-lucide="truck" class="w-3 h-3 text-purple-600"></i>
-                                    <span>Armada: <b>{{ $tripInfo }}</b></span>
+                                    <span>Perjalanan: <b>{{ $tripUsername }}</b></span>
                                 </span>
                             @endif
                         </div>

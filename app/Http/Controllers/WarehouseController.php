@@ -317,6 +317,8 @@ class WarehouseController extends Controller
             'obat_konsumsi' => $sumObatKonsumsi,
         ];
 
+        $dateParams = ['start_date' => $startDate, 'end_date' => $endDate];
+
         $chartDataSets = [
             'overview' => [
                 'title' => 'TREN SEMUA ALIRAN BARANG GUDANG (8 DATA STREAM)',
@@ -324,7 +326,7 @@ class WarehouseController extends Controller
                 'datasets' => [
                     [
                         'label' => 'Telur Masuk (Peti)',
-                        'tab_url' => route('warehouse.telur', ['tab' => 'masuk']),
+                        'tab_url' => route('warehouse.telur', array_merge(['tab' => 'masuk'], $dateParams)),
                         'data' => $chartEggMasuk,
                         'borderColor' => '#059669',
                         'backgroundColor' => 'rgba(5, 150, 105, 0.05)',
@@ -333,7 +335,7 @@ class WarehouseController extends Controller
                     ],
                     [
                         'label' => 'Telur Rusak (Peti)',
-                        'tab_url' => route('warehouse.telur', ['tab' => 'keluar']),
+                        'tab_url' => route('warehouse.telur', array_merge(['tab' => 'keluar'], $dateParams)),
                         'data' => $chartEggRusak,
                         'borderColor' => '#e11d48',
                         'backgroundColor' => 'rgba(225, 29, 72, 0.05)',
@@ -343,7 +345,7 @@ class WarehouseController extends Controller
                     ],
                     [
                         'label' => 'Telur Terjual (Peti)',
-                        'tab_url' => route('warehouse.telur', ['tab' => 'penjualan']),
+                        'tab_url' => route('warehouse.telur', array_merge(['tab' => 'penjualan'], $dateParams)),
                         'data' => $chartEggTerjual,
                         'borderColor' => '#d97706',
                         'backgroundColor' => 'rgba(217, 119, 6, 0.05)',
@@ -352,7 +354,7 @@ class WarehouseController extends Controller
                     ],
                     [
                         'label' => 'Pakan Masuk (Kg)',
-                        'tab_url' => route('warehouse.pakan', ['tab' => 'masuk']),
+                        'tab_url' => route('warehouse.pakan', array_merge(['tab' => 'masuk'], $dateParams)),
                         'data' => $chartFeedMasuk,
                         'borderColor' => '#0284c7',
                         'backgroundColor' => 'rgba(2, 132, 199, 0.05)',
@@ -361,7 +363,7 @@ class WarehouseController extends Controller
                     ],
                     [
                         'label' => 'Pemberian Pakan (Kg)',
-                        'tab_url' => route('warehouse.pakan', ['tab' => 'keluar']),
+                        'tab_url' => route('warehouse.pakan', array_merge(['tab' => 'keluar'], $dateParams)),
                         'data' => $chartFeedKonsumsi,
                         'borderColor' => '#7c3aed',
                         'backgroundColor' => 'rgba(124, 58, 237, 0.05)',
@@ -370,7 +372,7 @@ class WarehouseController extends Controller
                     ],
                     [
                         'label' => 'Pakan Terjual (Kg)',
-                        'tab_url' => route('warehouse.pakan', ['tab' => 'penjualan']),
+                        'tab_url' => route('warehouse.pakan', array_merge(['tab' => 'penjualan'], $dateParams)),
                         'data' => $chartFeedTerjual,
                         'borderColor' => '#ea580c',
                         'backgroundColor' => 'rgba(234, 88, 12, 0.05)',
@@ -379,7 +381,7 @@ class WarehouseController extends Controller
                     ],
                     [
                         'label' => 'Obat Masuk (Item)',
-                        'tab_url' => route('warehouse.obat', ['tab' => 'masuk']),
+                        'tab_url' => route('warehouse.obat', array_merge(['tab' => 'masuk'], $dateParams)),
                         'data' => $chartObatMasuk,
                         'borderColor' => '#0d9488',
                         'backgroundColor' => 'rgba(13, 148, 136, 0.05)',
@@ -388,7 +390,7 @@ class WarehouseController extends Controller
                     ],
                     [
                         'label' => 'Pemakaian Obat (Dosis)',
-                        'tab_url' => route('warehouse.obat', ['tab' => 'keluar']),
+                        'tab_url' => route('warehouse.obat', array_merge(['tab' => 'keluar'], $dateParams)),
                         'data' => $chartObatKonsumsi,
                         'borderColor' => '#db2777',
                         'backgroundColor' => 'rgba(219, 39, 119, 0.05)',
@@ -404,7 +406,7 @@ class WarehouseController extends Controller
                 'datasets' => [
                     [
                         'label' => 'Telur Masuk / Produksi (Peti)',
-                        'tab_url' => route('warehouse.telur', ['tab' => 'masuk']),
+                        'tab_url' => route('warehouse.telur', array_merge(['tab' => 'masuk'], $dateParams)),
                         'data' => $chartEggMasuk,
                         'borderColor' => '#059669',
                         'backgroundColor' => 'rgba(5, 150, 105, 0.08)',
@@ -413,7 +415,7 @@ class WarehouseController extends Controller
                     ],
                     [
                         'label' => 'Telur Rusak / Pecah (Peti)',
-                        'tab_url' => route('warehouse.telur', ['tab' => 'keluar']),
+                        'tab_url' => route('warehouse.telur', array_merge(['tab' => 'keluar'], $dateParams)),
                         'data' => $chartEggRusak,
                         'borderColor' => '#e11d48',
                         'backgroundColor' => 'rgba(225, 29, 72, 0.08)',
@@ -423,7 +425,7 @@ class WarehouseController extends Controller
                     ],
                     [
                         'label' => 'Telur Terjual (Peti)',
-                        'tab_url' => route('warehouse.telur', ['tab' => 'penjualan']),
+                        'tab_url' => route('warehouse.telur', array_merge(['tab' => 'penjualan'], $dateParams)),
                         'data' => $chartEggTerjual,
                         'borderColor' => '#d97706',
                         'backgroundColor' => 'rgba(217, 119, 6, 0.08)',
@@ -439,7 +441,7 @@ class WarehouseController extends Controller
                 'datasets' => [
                     [
                         'label' => 'Pakan Masuk / Beli (Kg)',
-                        'tab_url' => route('warehouse.pakan', ['tab' => 'masuk']),
+                        'tab_url' => route('warehouse.pakan', array_merge(['tab' => 'masuk'], $dateParams)),
                         'data' => $chartFeedMasuk,
                         'borderColor' => '#0284c7',
                         'backgroundColor' => 'rgba(2, 132, 199, 0.08)',
@@ -448,7 +450,7 @@ class WarehouseController extends Controller
                     ],
                     [
                         'label' => 'Pemberian Pakan Kandang (Kg)',
-                        'tab_url' => route('warehouse.pakan', ['tab' => 'keluar']),
+                        'tab_url' => route('warehouse.pakan', array_merge(['tab' => 'keluar'], $dateParams)),
                         'data' => $chartFeedKonsumsi,
                         'borderColor' => '#7c3aed',
                         'backgroundColor' => 'rgba(124, 58, 237, 0.08)',
@@ -457,7 +459,7 @@ class WarehouseController extends Controller
                     ],
                     [
                         'label' => 'Pakan Terjual (Kg)',
-                        'tab_url' => route('warehouse.pakan', ['tab' => 'penjualan']),
+                        'tab_url' => route('warehouse.pakan', array_merge(['tab' => 'penjualan'], $dateParams)),
                         'data' => $chartFeedTerjual,
                         'borderColor' => '#ea580c',
                         'backgroundColor' => 'rgba(234, 88, 12, 0.08)',
@@ -473,7 +475,7 @@ class WarehouseController extends Controller
                 'datasets' => [
                     [
                         'label' => 'Obat Masuk (Item)',
-                        'tab_url' => route('warehouse.obat', ['tab' => 'masuk']),
+                        'tab_url' => route('warehouse.obat', array_merge(['tab' => 'masuk'], $dateParams)),
                         'data' => $chartObatMasuk,
                         'borderColor' => '#0d9488',
                         'backgroundColor' => 'rgba(13, 148, 136, 0.08)',
@@ -482,7 +484,7 @@ class WarehouseController extends Controller
                     ],
                     [
                         'label' => 'Pemakaian Obat Kandang (Dosis)',
-                        'tab_url' => route('warehouse.obat', ['tab' => 'keluar']),
+                        'tab_url' => route('warehouse.obat', array_merge(['tab' => 'keluar'], $dateParams)),
                         'data' => $chartObatKonsumsi,
                         'borderColor' => '#db2777',
                         'backgroundColor' => 'rgba(219, 39, 119, 0.08)',
@@ -496,23 +498,23 @@ class WarehouseController extends Controller
         $chartTotals = [
             'overview' => [
                 'masuk' => [
-                    ['label' => 'Telur', 'val' => number_format($sumTelurMasuk, 1, ',', '.') . ' Peti', 'url' => route('warehouse.telur', ['tab' => 'masuk'])],
-                    ['label' => 'Pakan', 'val' => number_format($sumPakanMasuk, 1, ',', '.') . ' Kg', 'url' => route('warehouse.pakan', ['tab' => 'masuk'])],
-                    ['label' => 'Obat', 'val' => number_format($sumObatMasuk, 1, ',', '.') . ' Item', 'url' => route('warehouse.obat', ['tab' => 'masuk'])],
+                    ['label' => 'Telur', 'val' => number_format($sumTelurMasuk, 1, ',', '.') . ' Peti', 'url' => route('warehouse.telur', array_merge(['tab' => 'masuk'], $dateParams))],
+                    ['label' => 'Pakan', 'val' => number_format($sumPakanMasuk, 1, ',', '.') . ' Kg', 'url' => route('warehouse.pakan', array_merge(['tab' => 'masuk'], $dateParams))],
+                    ['label' => 'Obat', 'val' => number_format($sumObatMasuk, 1, ',', '.') . ' Item', 'url' => route('warehouse.obat', array_merge(['tab' => 'masuk'], $dateParams))],
                 ],
                 'digunakan' => [
-                    ['label' => 'Pakan', 'val' => number_format($sumPakanKonsumsi, 1, ',', '.') . ' Kg', 'url' => route('warehouse.pakan', ['tab' => 'keluar'])],
-                    ['label' => 'Telur Rusak', 'val' => number_format($sumTelurRusakButir, 0, ',', '.') . ' Btr', 'url' => route('warehouse.telur', ['tab' => 'keluar'])],
-                    ['label' => 'Obat', 'val' => number_format($sumObatKonsumsi, 1, ',', '.') . ' Dosis', 'url' => route('warehouse.obat', ['tab' => 'keluar'])],
+                    ['label' => 'Pakan', 'val' => number_format($sumPakanKonsumsi, 1, ',', '.') . ' Kg', 'url' => route('warehouse.pakan', array_merge(['tab' => 'keluar'], $dateParams))],
+                    ['label' => 'Telur Rusak', 'val' => number_format($sumTelurRusakButir, 0, ',', '.') . ' Btr', 'url' => route('warehouse.telur', array_merge(['tab' => 'keluar'], $dateParams))],
+                    ['label' => 'Obat', 'val' => number_format($sumObatKonsumsi, 1, ',', '.') . ' Dosis', 'url' => route('warehouse.obat', array_merge(['tab' => 'keluar'], $dateParams))],
                 ],
                 'keluar' => [
-                    ['label' => 'Telur Total', 'val' => number_format($sumTelurRusakPeti + $sumTelurTerjual, 1, ',', '.') . ' Peti', 'url' => route('warehouse.telur', ['tab' => 'semua'])],
-                    ['label' => 'Pakan Total', 'val' => number_format($sumPakanKonsumsi + $sumPakanTerjual, 1, ',', '.') . ' Kg', 'url' => route('warehouse.pakan', ['tab' => 'semua'])],
-                    ['label' => 'Obat Pakai', 'val' => number_format($sumObatKonsumsi, 1, ',', '.') . ' Dosis', 'url' => route('warehouse.obat', ['tab' => 'keluar'])],
+                    ['label' => 'Telur Total', 'val' => number_format($sumTelurRusakPeti + $sumTelurTerjual, 1, ',', '.') . ' Peti', 'url' => route('warehouse.telur', array_merge(['tab' => 'semua'], $dateParams))],
+                    ['label' => 'Pakan Total', 'val' => number_format($sumPakanKonsumsi + $sumPakanTerjual, 1, ',', '.') . ' Kg', 'url' => route('warehouse.pakan', array_merge(['tab' => 'semua'], $dateParams))],
+                    ['label' => 'Obat Pakai', 'val' => number_format($sumObatKonsumsi, 1, ',', '.') . ' Dosis', 'url' => route('warehouse.obat', array_merge(['tab' => 'keluar'], $dateParams))],
                 ],
                 'terjual' => [
-                    ['label' => 'Telur Terjual', 'val' => number_format($sumTelurTerjual, 1, ',', '.') . ' Peti', 'url' => route('warehouse.telur', ['tab' => 'penjualan'])],
-                    ['label' => 'Pakan Terjual', 'val' => number_format($sumPakanTerjual, 1, ',', '.') . ' Kg', 'url' => route('warehouse.pakan', ['tab' => 'penjualan'])],
+                    ['label' => 'Telur Terjual', 'val' => number_format($sumTelurTerjual, 1, ',', '.') . ' Peti', 'url' => route('warehouse.telur', array_merge(['tab' => 'penjualan'], $dateParams))],
+                    ['label' => 'Pakan Terjual', 'val' => number_format($sumPakanTerjual, 1, ',', '.') . ' Kg', 'url' => route('warehouse.pakan', array_merge(['tab' => 'penjualan'], $dateParams))],
                 ],
             ],
             'telur' => [
@@ -535,11 +537,11 @@ class WarehouseController extends Controller
             ],
         ];
 
-        // Mutasi stok internal terbaru gabungan
-        $recentTransactions = $this->getUnifiedRecentTransactions(10);
+        // Mutasi stok internal terbaru gabungan (terfilter rentang tanggal)
+        $recentTransactions = $this->getUnifiedRecentTransactions(10, $startDate, $endDate);
 
-        // Transaksi penjualan terbaru dari nochifram
-        $recentSales = OutboundIntegrationService::getSalesTransactions(null, null, null, 6);
+        // Transaksi penjualan terbaru dari nochifram (terfilter rentang tanggal)
+        $recentSales = OutboundIntegrationService::getSalesTransactions(null, $startDate, $endDate, 10);
 
         return view('warehouse.index', compact(
             'user',
@@ -553,14 +555,18 @@ class WarehouseController extends Controller
     }
 
     /**
-     * Helper mutasi aktivitas terkini gabungan
+     * Helper mutasi aktivitas terkini gabungan (mendukung filter rentang tanggal)
      */
-    private function getUnifiedRecentTransactions($limit = 10)
+    private function getUnifiedRecentTransactions($limit = 10, $startDate = null, $endDate = null)
     {
         $transactions = collect();
 
         // 1. Dari FarmStock
-        $farmStocks = FarmStock::with('user')->orderBy('date', 'desc')->orderBy('created_at', 'desc')->take($limit)->get();
+        $fsQ = FarmStock::with('user')->orderBy('date', 'desc')->orderBy('created_at', 'desc');
+        if ($startDate && $endDate) {
+            $fsQ->whereBetween('date', [$startDate, $endDate]);
+        }
+        $farmStocks = $fsQ->take($limit)->get();
         foreach ($farmStocks as $fs) {
             $transactions->push((object) [
                 'id' => $fs->id,
@@ -578,7 +584,11 @@ class WarehouseController extends Controller
         }
 
         // 2. Dari EggProduction
-        $eggProds = EggProduction::with(['coop', 'user'])->orderBy('date', 'desc')->orderBy('created_at', 'desc')->take($limit)->get();
+        $epQ = EggProduction::with(['coop', 'user'])->orderBy('date', 'desc')->orderBy('created_at', 'desc');
+        if ($startDate && $endDate) {
+            $epQ->whereBetween('date', [$startDate, $endDate]);
+        }
+        $eggProds = $epQ->take($limit)->get();
         foreach ($eggProds as $ep) {
             $transactions->push((object) [
                 'id' => 'ep_' . $ep->id,
@@ -611,7 +621,11 @@ class WarehouseController extends Controller
         }
 
         // 3. Dari FeedConsumption
-        $feedCons = FeedConsumption::with(['coop', 'user'])->orderBy('date', 'desc')->orderBy('created_at', 'desc')->take($limit)->get();
+        $fcQ = FeedConsumption::with(['coop', 'user'])->orderBy('date', 'desc')->orderBy('created_at', 'desc');
+        if ($startDate && $endDate) {
+            $fcQ->whereBetween('date', [$startDate, $endDate]);
+        }
+        $feedCons = $fcQ->take($limit)->get();
         foreach ($feedCons as $fc) {
             $transactions->push((object) [
                 'id' => 'fc_' . $fc->id,
@@ -629,7 +643,11 @@ class WarehouseController extends Controller
         }
 
         // 4. Dari HealthTreatment
-        $healths = HealthTreatment::with(['coop', 'user'])->orderBy('date', 'desc')->orderBy('created_at', 'desc')->take($limit)->get();
+        $htQ = HealthTreatment::with(['coop', 'user'])->orderBy('date', 'desc')->orderBy('created_at', 'desc');
+        if ($startDate && $endDate) {
+            $htQ->whereBetween('date', [$startDate, $endDate]);
+        }
+        $healths = $htQ->take($limit)->get();
         foreach ($healths as $ht) {
             $v = (float) preg_replace('/[^0-9.]/', '', $ht->dosage);
             $transactions->push((object) [
@@ -659,11 +677,16 @@ class WarehouseController extends Controller
         $tab = $request->query('tab', 'semua');
         if ($tab === 'rusak') $tab = 'keluar';
         $search = $request->query('q');
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
 
         $collection = collect();
 
         // 1. Data dari FarmStock (khusus kategori telur)
         $fsQuery = FarmStock::with('user')->where('category', 'telur');
+        if ($startDate && $endDate) {
+            $fsQuery->whereBetween('date', [$startDate, $endDate]);
+        }
         if ($tab === 'masuk') {
             $fsQuery->where('type', 'masuk');
         } elseif ($tab === 'keluar') {
@@ -688,7 +711,11 @@ class WarehouseController extends Controller
         }
 
         // 2. Data dari EggProduction (produksi kandang & telur rusak)
-        $eggProductions = EggProduction::with(['coop', 'flock', 'user'])->get();
+        $epQuery = EggProduction::with(['coop', 'flock', 'user']);
+        if ($startDate && $endDate) {
+            $epQuery->whereBetween('date', [$startDate, $endDate]);
+        }
+        $eggProductions = $epQuery->get();
         foreach ($eggProductions as $ep) {
             // A. Telur Masuk (Produksi utuh/peti)
             if ($tab === 'semua' || $tab === 'masuk') {
@@ -756,14 +783,15 @@ class WarehouseController extends Controller
         );
 
         // Ringkasan Telur Terintegrasi Penjualan nochifram
-        $eggSummary = OutboundIntegrationService::getEggOutboundSummary();
+        $eggSummaryAllTime = OutboundIntegrationService::getEggOutboundSummary();
+        $eggSummary = OutboundIntegrationService::getEggOutboundSummary($startDate, $endDate);
         $totalMasuk = $eggSummary['total_produced_crates'];
         $totalMasukKg = $eggSummary['total_produced_kg'];
         $totalKeluar = $eggSummary['total_keluar_peti'];
         $totalKeluarKg = $eggSummary['total_keluar_kg'];
-        $stokSaatIni = $eggSummary['current_stock_peti'];
-        $stokSaatIniKg = $eggSummary['current_stock_kg_total'];
-        $stokSaatIniButir = $eggSummary['current_stock_eggs'];
+        $stokSaatIni = $eggSummaryAllTime['current_stock_peti'];
+        $stokSaatIniKg = $eggSummaryAllTime['current_stock_kg_total'];
+        $stokSaatIniButir = $eggSummaryAllTime['current_stock_eggs'];
         $petiSold = $eggSummary['peti_sold'];
         $kgSold = $eggSummary['kg_sold'];
         $totalRevenue = $eggSummary['total_revenue'];
@@ -771,13 +799,13 @@ class WarehouseController extends Controller
         $totalEggsCount = $eggSummary['total_produced_eggs'];
 
         // Data Penjualan Telur dari aplikasi nochifram
-        $salesList = OutboundIntegrationService::getSalesTransactions('telur', null, null, 30);
+        $salesList = OutboundIntegrationService::getSalesTransactions('telur', $startDate, $endDate, 50);
         $tripList = OutboundIntegrationService::getTripOutbounds('telur', 10);
 
         $coops = Coop::where('is_active', true)->get();
 
         return view('warehouse.telur', compact(
-            'user', 'items', 'tab', 'search', 
+            'user', 'items', 'tab', 'search', 'startDate', 'endDate',
             'totalMasuk', 'totalMasukKg', 'totalKeluar', 'totalKeluarKg', 'stokSaatIni', 'stokSaatIniKg', 'stokSaatIniButir',
             'petiSold', 'kgSold', 'totalRevenue', 'transactionCount', 'totalEggsCount',
             'salesList', 'tripList', 'coops'
@@ -793,11 +821,16 @@ class WarehouseController extends Controller
         $tab = $request->query('tab', 'semua');
         if ($tab === 'pemberian') $tab = 'keluar';
         $search = $request->query('q');
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
 
         $collection = collect();
 
         // 1. Data Pembelian & Mutasi Pakan dari FarmStock
         $fsQuery = FarmStock::with('user')->where('category', 'pakan');
+        if ($startDate && $endDate) {
+            $fsQuery->whereBetween('date', [$startDate, $endDate]);
+        }
         if ($tab === 'masuk') {
             $fsQuery->where('type', 'masuk');
         } elseif ($tab === 'keluar') {
@@ -831,7 +864,11 @@ class WarehouseController extends Controller
 
         // 2. Data Pemberian Pakan Harian dari FeedConsumption
         if ($tab === 'semua' || $tab === 'keluar') {
-            $feedConsumptions = FeedConsumption::with(['coop', 'flock', 'user'])->get();
+            $fcQuery = FeedConsumption::with(['coop', 'flock', 'user']);
+            if ($startDate && $endDate) {
+                $fcQuery->whereBetween('date', [$startDate, $endDate]);
+            }
+            $feedConsumptions = $fcQuery->get();
             foreach ($feedConsumptions as $fc) {
                 $collection->push((object) [
                     'id' => 'fc_' . $fc->id,
@@ -878,11 +915,12 @@ class WarehouseController extends Controller
         );
 
         // Ringkasan Pakan Terintegrasi Konsumsi Kandang & Penjualan Luar nochifram
-        $feedSummary = OutboundIntegrationService::getFeedOutboundSummary();
+        $feedSummaryAllTime = OutboundIntegrationService::getFeedOutboundSummary();
+        $feedSummary = OutboundIntegrationService::getFeedOutboundSummary($startDate, $endDate);
         $totalMasuk = $feedSummary['purchased_kg'];
         $totalKeluar = $feedSummary['total_keluar_kg'];
-        $stokSaatIni = $feedSummary['current_stock_kg'];
-        $currentStockKarung = $feedSummary['current_stock_karung'];
+        $stokSaatIni = $feedSummaryAllTime['current_stock_kg'];
+        $currentStockKarung = $feedSummaryAllTime['current_stock_karung'];
         $karungSold = $feedSummary['karung_sold'];
         $kgSold = $feedSummary['kg_sold'];
         $soldRevenue = $feedSummary['total_revenue'];
@@ -891,13 +929,13 @@ class WarehouseController extends Controller
         $purchasedKarung = $feedSummary['purchased_karung'];
 
         // Data Penjualan Pakan & Trip Pakan dari nochifram
-        $salesList = OutboundIntegrationService::getSalesTransactions('pakan', null, null, 20);
+        $salesList = OutboundIntegrationService::getSalesTransactions('pakan', $startDate, $endDate, 50);
         $tripList = OutboundIntegrationService::getTripOutbounds('pakan', 10);
 
         $coops = Coop::where('is_active', true)->get();
 
         return view('warehouse.pakan', compact(
-            'user', 'items', 'tab', 'search', 
+            'user', 'items', 'tab', 'search', 'startDate', 'endDate',
             'totalMasuk', 'totalKeluar', 'stokSaatIni', 'currentStockKarung',
             'karungSold', 'kgSold', 'soldRevenue', 'consumptionKg', 'consumptionKarung', 'purchasedKarung',
             'salesList', 'tripList', 'coops'
@@ -912,11 +950,16 @@ class WarehouseController extends Controller
         $user = Auth::user() ?? User::first();
         $tab = $request->query('tab', 'semua');
         $search = $request->query('q');
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
 
         $collection = collect();
 
         // 1. Data Pembelian & Stok Obat/Vaksin/Vitamin dari FarmStock
         $fsQuery = FarmStock::with('user')->whereIn('category', ['obat', 'vaksin', 'vitamin']);
+        if ($startDate && $endDate) {
+            $fsQuery->whereBetween('date', [$startDate, $endDate]);
+        }
         if ($tab === 'masuk') {
             $fsQuery->where('type', 'masuk');
         } elseif ($tab === 'keluar') {
@@ -944,7 +987,11 @@ class WarehouseController extends Controller
 
         // 2. Data Pemakaian Obat/Vaksin/Vitamin dari HealthTreatment
         if ($tab === 'semua' || $tab === 'keluar') {
-            $healthTreatments = HealthTreatment::with(['coop', 'flock', 'user'])->get();
+            $htQuery = HealthTreatment::with(['coop', 'flock', 'user']);
+            if ($startDate && $endDate) {
+                $htQuery->whereBetween('date', [$startDate, $endDate]);
+            }
+            $healthTreatments = $htQuery->get();
             foreach ($healthTreatments as $ht) {
                 $val = (float) preg_replace('/[^0-9.]/', '', $ht->dosage);
                 if ($val <= 0) $val = 1;
@@ -995,25 +1042,41 @@ class WarehouseController extends Controller
             ['path' => LengthAwarePaginator::resolveCurrentPath(), 'query' => $request->query()]
         );
 
-        // Ringkasan Obat, Vaksin & Vitamin
-        $totalMasuk = (float) FarmStock::whereIn('category', ['obat', 'vaksin', 'vitamin'])->where('type', 'masuk')->sum('quantity');
-        $totalKeluarManual = (float) FarmStock::whereIn('category', ['obat', 'vaksin', 'vitamin'])->where('type', 'keluar')->sum('quantity');
+        // Ringkasan Obat, Vaksin & Vitamin (Sesuai Periode Tanggal)
+        $fsMasukQ = FarmStock::whereIn('category', ['obat', 'vaksin', 'vitamin'])->where('type', 'masuk');
+        $fsKeluarQ = FarmStock::whereIn('category', ['obat', 'vaksin', 'vitamin'])->where('type', 'keluar');
+        $htSummaryQ = HealthTreatment::query();
+        if ($startDate && $endDate) {
+            $fsMasukQ->whereBetween('date', [$startDate, $endDate]);
+            $fsKeluarQ->whereBetween('date', [$startDate, $endDate]);
+            $htSummaryQ->whereBetween('date', [$startDate, $endDate]);
+        }
+        $totalMasuk = (float) $fsMasukQ->sum('quantity');
+        $totalKeluarManual = (float) $fsKeluarQ->sum('quantity');
         
-        $healthTreatments = HealthTreatment::all();
         $obatKeluarKandang = 0;
-        foreach ($healthTreatments as $ht) {
+        foreach ($htSummaryQ->get() as $ht) {
             $val = (float) preg_replace('/[^0-9.]/', '', $ht->dosage);
             if ($val == 0) $val = 1;
             $obatKeluarKandang += $val;
         }
         
         $totalKeluar = $totalKeluarManual + $obatKeluarKandang;
-        $stokSaatIni = round($totalMasuk - $totalKeluar, 1);
+
+        $totalObatMasukAllTime = (float) FarmStock::whereIn('category', ['obat', 'vaksin', 'vitamin'])->where('type', 'masuk')->sum('quantity');
+        $totalObatKeluarManualAllTime = (float) FarmStock::whereIn('category', ['obat', 'vaksin', 'vitamin'])->where('type', 'keluar')->sum('quantity');
+        $totalObatKeluarKandangAllTime = 0;
+        foreach (HealthTreatment::all() as $ht) {
+            $val = (float) preg_replace('/[^0-9.]/', '', $ht->dosage);
+            if ($val == 0) $val = 1;
+            $totalObatKeluarKandangAllTime += $val;
+        }
+        $stokSaatIni = round($totalObatMasukAllTime - ($totalObatKeluarManualAllTime + $totalObatKeluarKandangAllTime), 1);
 
         $coops = Coop::where('is_active', true)->get();
 
         return view('warehouse.obat', compact(
-            'user', 'items', 'tab', 'search', 'totalMasuk', 'totalKeluar', 'stokSaatIni', 'coops'
+            'user', 'items', 'tab', 'search', 'startDate', 'endDate', 'totalMasuk', 'totalKeluar', 'stokSaatIni', 'coops'
         ));
     }
 

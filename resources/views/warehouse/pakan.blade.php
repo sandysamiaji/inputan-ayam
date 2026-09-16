@@ -6,12 +6,21 @@
     <!-- Top Navigation Back & Title Bar (Sesuai Gambar Mockup 2 Layar 3) -->
     <div class="flex items-center justify-between gap-3">
         <div class="flex items-center gap-2.5">
-            <a href="{{ route('warehouse.index') }}" class="w-9 h-9 rounded-xl bg-white border border-slate-200 text-slate-700 hover:text-maroon-800 hover:border-maroon-300 flex items-center justify-center shadow-sm transition-all active:scale-95">
+            <a href="{{ route('warehouse.index', array_filter(['start_date' => $startDate ?? null, 'end_date' => $endDate ?? null])) }}" class="w-9 h-9 rounded-xl bg-white border border-slate-200 text-slate-700 hover:text-maroon-800 hover:border-maroon-300 flex items-center justify-center shadow-sm transition-all active:scale-95">
                 <i data-lucide="arrow-left" class="w-5 h-5"></i>
             </a>
             <div>
                 <h1 class="text-lg sm:text-xl font-extrabold text-slate-800 tracking-tight">Gudang Pakan</h1>
-                <p class="text-xs text-slate-400">Manajemen stok & konsumsi pakan ayam</p>
+                <div class="flex flex-wrap items-center gap-1.5 mt-0.5">
+                    <p class="text-xs text-slate-400">Manajemen stok & konsumsi pakan ayam</p>
+                    @if(!empty($startDate) && !empty($endDate))
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-[10px] font-extrabold text-emerald-800">
+                            <i data-lucide="calendar" class="w-3 h-3"></i>
+                            Periode: {{ \Carbon\Carbon::parse($startDate)->translatedFormat('d M Y') }} – {{ \Carbon\Carbon::parse($endDate)->translatedFormat('d M Y') }}
+                            <a href="{{ route('warehouse.pakan', ['tab' => $tab, 'q' => $search]) }}" class="hover:text-emerald-600 ml-0.5" title="Hapus Filter Tanggal">×</a>
+                        </span>
+                    @endif
+                </div>
             </div>
         </div>
 
@@ -58,7 +67,7 @@
             </div>
         </div>
         <div class="flex items-center gap-2 self-end sm:self-center">
-            <a href="{{ route('warehouse.pakan', ['tab' => 'penjualan']) }}" class="px-3 py-1.5 rounded-xl bg-white border border-rose-200 text-maroon-800 hover:bg-rose-50 text-xs font-bold transition-all shadow-xs flex items-center gap-1.5">
+            <a href="{{ route('warehouse.pakan', array_filter(['tab' => 'penjualan', 'start_date' => $startDate ?? null, 'end_date' => $endDate ?? null])) }}" class="px-3 py-1.5 rounded-xl bg-white border border-rose-200 text-maroon-800 hover:bg-rose-50 text-xs font-bold transition-all shadow-xs flex items-center gap-1.5">
                 <i data-lucide="receipt" class="w-3.5 h-3.5"></i>
                 <span>Lihat Penjualan Pakan</span>
             </a>
@@ -69,6 +78,8 @@
     <div class="flex items-center gap-2 sm:gap-3">
         <form method="GET" action="{{ route('warehouse.pakan') }}" class="flex-1 relative">
             <input type="hidden" name="tab" value="{{ $tab }}">
+            @if(!empty($startDate)) <input type="hidden" name="start_date" value="{{ $startDate }}"> @endif
+            @if(!empty($endDate)) <input type="hidden" name="end_date" value="{{ $endDate }}"> @endif
             <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
             <input 
                 type="text" 
@@ -78,7 +89,7 @@
                 class="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white border border-slate-200 text-xs sm:text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-maroon-800/20 focus:border-maroon-800 shadow-sm transition-all"
             >
             @if($search)
-                <a href="{{ route('warehouse.pakan', ['tab' => $tab]) }}" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                <a href="{{ route('warehouse.pakan', array_filter(['tab' => $tab, 'start_date' => $startDate ?? null, 'end_date' => $endDate ?? null])) }}" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
                     <i data-lucide="x" class="w-4 h-4"></i>
                 </a>
             @endif
@@ -92,25 +103,25 @@
 
     <!-- Filter Tabs: Semua | Masuk | Keluar | Penjualan -->
     <div class="flex items-center border-b border-slate-200 gap-4 sm:gap-8 px-1 overflow-x-auto">
-        <a href="{{ route('warehouse.pakan', ['tab' => 'semua', 'q' => $search]) }}" class="pb-3 text-xs sm:text-sm font-bold transition-all relative shrink-0 {{ $tab === 'semua' ? 'text-maroon-800' : 'text-slate-400 hover:text-slate-600' }}">
+        <a href="{{ route('warehouse.pakan', array_filter(['tab' => 'semua', 'q' => $search, 'start_date' => $startDate ?? null, 'end_date' => $endDate ?? null])) }}" class="pb-3 text-xs sm:text-sm font-bold transition-all relative shrink-0 {{ $tab === 'semua' ? 'text-maroon-800' : 'text-slate-400 hover:text-slate-600' }}">
             Semua Data
             @if($tab === 'semua')
                 <span class="absolute bottom-0 left-0 right-0 h-0.5 bg-maroon-800 rounded-full"></span>
             @endif
         </a>
-        <a href="{{ route('warehouse.pakan', ['tab' => 'masuk', 'q' => $search]) }}" class="pb-3 text-xs sm:text-sm font-bold transition-all relative shrink-0 {{ $tab === 'masuk' ? 'text-maroon-800' : 'text-slate-400 hover:text-slate-600' }}">
+        <a href="{{ route('warehouse.pakan', array_filter(['tab' => 'masuk', 'q' => $search, 'start_date' => $startDate ?? null, 'end_date' => $endDate ?? null])) }}" class="pb-3 text-xs sm:text-sm font-bold transition-all relative shrink-0 {{ $tab === 'masuk' ? 'text-maroon-800' : 'text-slate-400 hover:text-slate-600' }}">
             Masuk (Beli)
             @if($tab === 'masuk')
                 <span class="absolute bottom-0 left-0 right-0 h-0.5 bg-maroon-800 rounded-full"></span>
             @endif
         </a>
-        <a href="{{ route('warehouse.pakan', ['tab' => 'keluar', 'q' => $search]) }}" class="pb-3 text-xs sm:text-sm font-bold transition-all relative shrink-0 {{ $tab === 'keluar' ? 'text-maroon-800' : 'text-slate-400 hover:text-slate-600' }}">
+        <a href="{{ route('warehouse.pakan', array_filter(['tab' => 'keluar', 'q' => $search, 'start_date' => $startDate ?? null, 'end_date' => $endDate ?? null])) }}" class="pb-3 text-xs sm:text-sm font-bold transition-all relative shrink-0 {{ $tab === 'keluar' ? 'text-maroon-800' : 'text-slate-400 hover:text-slate-600' }}">
             Pemberian Pakan
             @if($tab === 'keluar')
                 <span class="absolute bottom-0 left-0 right-0 h-0.5 bg-maroon-800 rounded-full"></span>
             @endif
         </a>
-        <a href="{{ route('warehouse.pakan', ['tab' => 'penjualan', 'q' => $search]) }}" class="pb-3 text-xs sm:text-sm font-bold transition-all relative shrink-0 flex items-center gap-1.5 {{ $tab === 'penjualan' ? 'text-maroon-800' : 'text-slate-400 hover:text-slate-600' }}">
+        <a href="{{ route('warehouse.pakan', array_filter(['tab' => 'penjualan', 'q' => $search, 'start_date' => $startDate ?? null, 'end_date' => $endDate ?? null])) }}" class="pb-3 text-xs sm:text-sm font-bold transition-all relative shrink-0 flex items-center gap-1.5 {{ $tab === 'penjualan' ? 'text-maroon-800' : 'text-slate-400 hover:text-slate-600' }}">
             <span>Penjualan Pakan (nochifram)</span>
             <span class="px-1.5 py-0.2 rounded-full text-[10px] font-extrabold {{ $tab === 'penjualan' ? 'bg-maroon-800 text-white' : 'bg-slate-200 text-slate-600' }}">{{ count($salesList) }}</span>
             @if($tab === 'penjualan')

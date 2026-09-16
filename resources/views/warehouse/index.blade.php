@@ -82,29 +82,7 @@
                     </button>
                 </div>
 
-                <!-- Traveloka Quick Presets -->
-                <div class="mb-4">
-                    <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-2">Pilihan Cepat (Presets)</span>
-                    <div class="flex flex-wrap gap-1.5">
-                        <button type="button" onclick="setTravelokaPreset(7, 'days')" class="px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-200 hover:border-maroon-400 hover:bg-rose-50 hover:text-maroon-800 text-slate-600 transition-all active:scale-95 {{ $diffDays == 7 ? 'bg-rose-50 border-maroon-400 text-maroon-800 font-extrabold' : '' }}">
-                            7 Hari
-                        </button>
-                        <button type="button" onclick="setTravelokaPreset(14, 'days')" class="px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-200 hover:border-maroon-400 hover:bg-rose-50 hover:text-maroon-800 text-slate-600 transition-all active:scale-95 {{ $diffDays == 14 ? 'bg-rose-50 border-maroon-400 text-maroon-800 font-extrabold' : '' }}">
-                            14 Hari (Default)
-                        </button>
-                        <button type="button" onclick="setTravelokaPreset(30, 'days')" class="px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-200 hover:border-maroon-400 hover:bg-rose-50 hover:text-maroon-800 text-slate-600 transition-all active:scale-95 {{ $diffDays == 30 ? 'bg-rose-50 border-maroon-400 text-maroon-800 font-extrabold' : '' }}">
-                            30 Hari
-                        </button>
-                        <button type="button" onclick="setTravelokaPreset(null, 'this_month')" class="px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-200 hover:border-maroon-400 hover:bg-rose-50 hover:text-maroon-800 text-slate-600 transition-all active:scale-95">
-                            Bulan Ini
-                        </button>
-                        <button type="button" onclick="setTravelokaPreset(null, 'last_month')" class="px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-200 hover:border-maroon-400 hover:bg-rose-50 hover:text-maroon-800 text-slate-600 transition-all active:scale-95">
-                            Bulan Lalu
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Custom Date Inputs Form -->
+                <!-- Custom Date Inputs Form (Auto-submit saat tanggal dipilih) -->
                 <form id="travelokaDateForm" action="{{ route('warehouse.index') }}" method="GET" class="space-y-3.5">
                     <div class="grid grid-cols-2 gap-2.5">
                         <div>
@@ -115,7 +93,8 @@
                                    id="travelokaStartDate" 
                                    name="start_date" 
                                    value="{{ $startDate }}"
-                                   class="w-full px-3 py-2 rounded-xl text-xs font-bold border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-maroon-800 focus:ring-2 focus:ring-rose-200 transition-all outline-hidden">
+                                   onchange="checkAndAutoSubmitDateRange()"
+                                   class="w-full px-3 py-2 rounded-xl text-xs font-bold border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-maroon-800 focus:ring-2 focus:ring-rose-200 transition-all outline-hidden cursor-pointer">
                         </div>
                         <div>
                             <label class="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block mb-1">
@@ -125,7 +104,8 @@
                                    id="travelokaEndDate" 
                                    name="end_date" 
                                    value="{{ $endDate }}"
-                                   class="w-full px-3 py-2 rounded-xl text-xs font-bold border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-maroon-800 focus:ring-2 focus:ring-rose-200 transition-all outline-hidden">
+                                   onchange="checkAndAutoSubmitDateRange()"
+                                   class="w-full px-3 py-2 rounded-xl text-xs font-bold border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-maroon-800 focus:ring-2 focus:ring-rose-200 transition-all outline-hidden cursor-pointer">
                         </div>
                     </div>
 
@@ -154,7 +134,7 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
 
         <!-- 1. GUDANG TELUR -->
-        <a href="{{ route('warehouse.telur') }}" class="farm-card farm-card-interactive p-3.5 sm:p-5 block group relative overflow-hidden">
+        <a href="{{ route('warehouse.telur', ['start_date' => $startDate, 'end_date' => $endDate]) }}" class="farm-card farm-card-interactive p-3.5 sm:p-5 block group relative overflow-hidden">
             <!-- Accent stripe on top -->
             <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-400 via-rose-400 to-maroon-700"></div>
 
@@ -218,7 +198,7 @@
         </a>
 
         <!-- 2. GUDANG PAKAN -->
-        <a href="{{ route('warehouse.pakan') }}" class="farm-card farm-card-interactive p-3.5 sm:p-5 block group relative overflow-hidden">
+        <a href="{{ route('warehouse.pakan', ['start_date' => $startDate, 'end_date' => $endDate]) }}" class="farm-card farm-card-interactive p-3.5 sm:p-5 block group relative overflow-hidden">
             <!-- Accent stripe on top -->
             <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-400 via-teal-400 to-maroon-700"></div>
 
@@ -284,7 +264,7 @@
         </a>
 
         <!-- 3. GUDANG OBAT, VAKSIN & VITAMIN -->
-        <a href="{{ route('warehouse.obat') }}" class="farm-card farm-card-interactive p-4 sm:p-6 block group relative overflow-hidden">
+        <a href="{{ route('warehouse.obat', ['start_date' => $startDate, 'end_date' => $endDate]) }}" class="farm-card farm-card-interactive p-4 sm:p-6 block group relative overflow-hidden">
             <!-- Accent stripe on top -->
             <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-purple-400 via-rose-400 to-maroon-700"></div>
 
@@ -452,7 +432,7 @@
             </div>
             <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
                 <!-- 1. Telur Masuk -->
-                <a href="{{ route('warehouse.telur', ['tab' => 'masuk']) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-emerald-50/60 border border-slate-200/80 hover:border-emerald-300 hover:shadow-xs transition-all group block">
+                <a href="{{ route('warehouse.telur', ['tab' => 'masuk', 'start_date' => $startDate, 'end_date' => $endDate]) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-emerald-50/60 border border-slate-200/80 hover:border-emerald-300 hover:shadow-xs transition-all group block">
                     <div class="flex items-center justify-between">
                         <span class="text-[10px] font-extrabold text-slate-700 group-hover:text-emerald-800">Telur Masuk</span>
                         <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
@@ -466,7 +446,7 @@
                 </a>
 
                 <!-- 2. Telur Rusak -->
-                <a href="{{ route('warehouse.telur', ['tab' => 'keluar']) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-rose-50/60 border border-slate-200/80 hover:border-rose-300 hover:shadow-xs transition-all group block">
+                <a href="{{ route('warehouse.telur', ['tab' => 'keluar', 'start_date' => $startDate, 'end_date' => $endDate]) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-rose-50/60 border border-slate-200/80 hover:border-rose-300 hover:shadow-xs transition-all group block">
                     <div class="flex items-center justify-between">
                         <span class="text-[10px] font-extrabold text-slate-700 group-hover:text-rose-800">Telur Rusak</span>
                         <span class="w-2 h-2 rounded-full bg-rose-500 shrink-0"></span>
@@ -480,7 +460,7 @@
                 </a>
 
                 <!-- 3. Telur Penjualan -->
-                <a href="{{ route('warehouse.telur', ['tab' => 'penjualan']) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-amber-50/60 border border-slate-200/80 hover:border-amber-300 hover:shadow-xs transition-all group block">
+                <a href="{{ route('warehouse.telur', ['tab' => 'penjualan', 'start_date' => $startDate, 'end_date' => $endDate]) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-amber-50/60 border border-slate-200/80 hover:border-amber-300 hover:shadow-xs transition-all group block">
                     <div class="flex items-center justify-between">
                         <span class="text-[10px] font-extrabold text-slate-700 group-hover:text-amber-800">Telur Terjual</span>
                         <span class="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
@@ -494,7 +474,7 @@
                 </a>
 
                 <!-- 4. Pakan Masuk -->
-                <a href="{{ route('warehouse.pakan', ['tab' => 'masuk']) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-sky-50/60 border border-slate-200/80 hover:border-sky-300 hover:shadow-xs transition-all group block">
+                <a href="{{ route('warehouse.pakan', ['tab' => 'masuk', 'start_date' => $startDate, 'end_date' => $endDate]) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-sky-50/60 border border-slate-200/80 hover:border-sky-300 hover:shadow-xs transition-all group block">
                     <div class="flex items-center justify-between">
                         <span class="text-[10px] font-extrabold text-slate-700 group-hover:text-sky-800">Pakan Masuk</span>
                         <span class="w-2 h-2 rounded-full bg-sky-500 shrink-0"></span>
@@ -508,7 +488,7 @@
                 </a>
 
                 <!-- 5. Pemberian Pakan -->
-                <a href="{{ route('warehouse.pakan', ['tab' => 'keluar']) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-purple-50/60 border border-slate-200/80 hover:border-purple-300 hover:shadow-xs transition-all group block">
+                <a href="{{ route('warehouse.pakan', ['tab' => 'keluar', 'start_date' => $startDate, 'end_date' => $endDate]) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-purple-50/60 border border-slate-200/80 hover:border-purple-300 hover:shadow-xs transition-all group block">
                     <div class="flex items-center justify-between">
                         <span class="text-[10px] font-extrabold text-slate-700 group-hover:text-purple-800">Pemberian Pakan</span>
                         <span class="w-2 h-2 rounded-full bg-purple-500 shrink-0"></span>
@@ -522,7 +502,7 @@
                 </a>
 
                 <!-- 6. Pakan Terjual -->
-                <a href="{{ route('warehouse.pakan', ['tab' => 'penjualan']) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-orange-50/60 border border-slate-200/80 hover:border-orange-300 hover:shadow-xs transition-all group block">
+                <a href="{{ route('warehouse.pakan', ['tab' => 'penjualan', 'start_date' => $startDate, 'end_date' => $endDate]) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-orange-50/60 border border-slate-200/80 hover:border-orange-300 hover:shadow-xs transition-all group block">
                     <div class="flex items-center justify-between">
                         <span class="text-[10px] font-extrabold text-slate-700 group-hover:text-orange-800">Pakan Terjual</span>
                         <span class="w-2 h-2 rounded-full bg-orange-500 shrink-0"></span>
@@ -536,7 +516,7 @@
                 </a>
 
                 <!-- 7. Obat Masuk -->
-                <a href="{{ route('warehouse.obat', ['tab' => 'masuk']) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-teal-50/60 border border-slate-200/80 hover:border-teal-300 hover:shadow-xs transition-all group block">
+                <a href="{{ route('warehouse.obat', ['tab' => 'masuk', 'start_date' => $startDate, 'end_date' => $endDate]) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-teal-50/60 border border-slate-200/80 hover:border-teal-300 hover:shadow-xs transition-all group block">
                     <div class="flex items-center justify-between">
                         <span class="text-[10px] font-extrabold text-slate-700 group-hover:text-teal-800">Obat Masuk</span>
                         <span class="w-2 h-2 rounded-full bg-teal-500 shrink-0"></span>
@@ -550,7 +530,7 @@
                 </a>
 
                 <!-- 8. Pemakaian Obat -->
-                <a href="{{ route('warehouse.obat', ['tab' => 'keluar']) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-pink-50/60 border border-slate-200/80 hover:border-pink-300 hover:shadow-xs transition-all group block">
+                <a href="{{ route('warehouse.obat', ['tab' => 'keluar', 'start_date' => $startDate, 'end_date' => $endDate]) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-pink-50/60 border border-slate-200/80 hover:border-pink-300 hover:shadow-xs transition-all group block">
                     <div class="flex items-center justify-between">
                         <span class="text-[10px] font-extrabold text-slate-700 group-hover:text-pink-800">Pemakaian Obat</span>
                         <span class="w-2 h-2 rounded-full bg-pink-500 shrink-0"></span>
@@ -585,7 +565,7 @@
             </div>
             
             <div class="flex items-center gap-2">
-                <a href="{{ route('warehouse.telur') }}" class="text-xs font-bold text-maroon-700 hover:text-maroon-900 transition-colors">
+                <a href="{{ route('warehouse.telur', ['start_date' => $startDate, 'end_date' => $endDate]) }}" class="text-xs font-bold text-maroon-700 hover:text-maroon-900 transition-colors">
                     Lihat Semua →
                 </a>
             </div>
@@ -642,7 +622,7 @@
                         
                         <!-- Action Buttons -->
                         <div class="mt-2 flex items-center justify-end gap-2">
-                            <a href="{{ route('warehouse.' . $cat) }}" class="px-2 py-1 bg-white border border-slate-200 text-slate-500 rounded-md hover:text-blue-600 hover:border-blue-300 transition-colors text-[10px] font-bold flex items-center gap-1" title="Lihat/Edit di Detail">
+                            <a href="{{ route('warehouse.' . $cat, ['start_date' => $startDate, 'end_date' => $endDate]) }}" class="px-2 py-1 bg-white border border-slate-200 text-slate-500 rounded-md hover:text-blue-600 hover:border-blue-300 transition-colors text-[10px] font-bold flex items-center gap-1" title="Lihat/Edit di Detail">
                                 <i data-lucide="edit" class="w-3 h-3"></i> Edit
                             </a>
                             <form action="{{ route('warehouse.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Hapus data transaksi ini?');">
@@ -680,7 +660,7 @@
             </div>
             
             <div class="flex items-center gap-2">
-                <a href="{{ route('warehouse.telur', ['tab' => 'penjualan']) }}" class="text-xs font-bold text-maroon-700 hover:text-maroon-900 transition-colors">
+                <a href="{{ route('warehouse.telur', ['tab' => 'penjualan', 'start_date' => $startDate, 'end_date' => $endDate]) }}" class="text-xs font-bold text-maroon-700 hover:text-maroon-900 transition-colors">
                     Semua Penjualan →
                 </a>
             </div>
@@ -1011,31 +991,13 @@
         if (panel) panel.classList.add('hidden');
     }
 
-    function setTravelokaPreset(days, type) {
-        const now = new Date();
-        let start, end;
-        if (type === 'days') {
-            end = new Date();
-            start = new Date();
-            start.setDate(end.getDate() - (days - 1));
-        } else if (type === 'this_month') {
-            start = new Date(now.getFullYear(), now.getMonth(), 1);
-            end = new Date();
-        } else if (type === 'last_month') {
-            start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-            end = new Date(now.getFullYear(), now.getMonth(), 0);
-        }
-        const fmt = d => {
-            const year = d.getFullYear();
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        };
+    function checkAndAutoSubmitDateRange() {
         const sInput = document.getElementById('travelokaStartDate');
         const eInput = document.getElementById('travelokaEndDate');
-        if (sInput && eInput) {
-            sInput.value = fmt(start);
-            eInput.value = fmt(end);
+        if (sInput && eInput && sInput.value && eInput.value) {
+            if (sInput.value > eInput.value) {
+                eInput.value = sInput.value;
+            }
             document.getElementById('travelokaDateForm').submit();
         }
     }

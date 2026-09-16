@@ -302,7 +302,7 @@
                                 <span class="text-[11px] font-semibold text-slate-500">({{ $totalFarmKarungStr }})</span>
                             </div>
                             <div class="text-[11px] text-slate-500 mt-0.5">
-                                Terhitung otomatis: {{ number_format($totalActiveChickens, 0, ',', '.') }} ekor ayam × 105 g/ekor/hari • Pagi: {{ number_format($totalFarmPakanKg / 2, 1, ',', '.') }} kg • Sore: {{ number_format($totalFarmPakanKg / 2, 1, ',', '.') }} kg
+                                Terhitung otomatis dari umur ayam tiap blok • Pagi (40%): {{ number_format($totalFarmPakanKg * 0.4, 1, ',', '.') }} kg • Sore (60%): {{ number_format($totalFarmPakanKg * 0.6, 1, ',', '.') }} kg
                             </div>
                         </div>
                     </div>
@@ -322,8 +322,8 @@
                             $cKarung = floor($totalPakanCoopKg / $kPerKrg);
                             $cSisaKg = round(fmod($totalPakanCoopKg, $kPerKrg), 1);
                             $cKarungText = ($cKarung > 0 ? $cKarung . ' karung ' : '') . ($cSisaKg > 0 ? ($cKarung > 0 ? '+ ' : '') . $cSisaKg . ' kg' : ($cKarung == 0 ? '0 kg' : ''));
-                            $pagiKg = round($totalPakanCoopKg / 2, 1);
-                            $soreKg = round($totalPakanCoopKg / 2, 1);
+                            $pagiKg = round($totalPakanCoopKg * 0.4, 1);
+                            $soreKg = round($totalPakanCoopKg * 0.6, 1);
                             $coopHd = $coopHdData[$coop->id] ?? null;
                             $flockHd = $flockHdData[$coop->flock_id] ?? null;
                             $todayEgg = $coopEggTodayData[$coop->id] ?? 0;
@@ -389,7 +389,7 @@
                                     </div>
                                     <div class="flex justify-between items-center text-[10px] text-slate-400">
                                         <span>Kloter: <b>{{ $coop->flock ? $coop->flock->name : 'Klotter' }} (HD: {{ $flockHd !== null ? number_format($flockHd, 1, ',', '.') . '%' : 'Belum Input' }})</b></span>
-                                        <span>Target HD Master: <b>92% – 95%</b></span>
+                                        <span>Target HD Master: <b>{{ $cStd['hd_target'] }}%</b></span>
                                     </div>
                                 </div>
 
@@ -409,7 +409,7 @@
                                     </div>
                                     <!-- Versi Pendek (Default Singkat Sesuai Request) -->
                                     <p id="coopShortText_{{ $coop->id }}" class="text-[10.5px] text-emerald-800 mt-0.5 leading-snug">
-                                        Umur <b>{{ $coop->chicken_age_weeks }} mgg</b>: {{ $cStd['keterangan'] }} (Target HD 92–95%)...
+                                        Umur <b>{{ $coop->chicken_age_weeks }} mgg</b>: {{ $cStd['keterangan'] }} (Target HD {{ $cStd['hd_target'] }}%)...
                                     </p>
                                     <!-- Versi Panjang (Expand Otomatis Saat Klik Detail) -->
                                     <div id="coopFullText_{{ $coop->id }}" class="hidden text-[10.5px] text-emerald-800 mt-1.5 leading-relaxed border-t border-emerald-200/60 pt-1.5 space-y-1">
@@ -417,7 +417,7 @@
                                             Umur <b>{{ $coop->chicken_age_weeks }} mgg</b> masuk fase <b>{{ $cStd['fase'] }}</b> (rentang 21–25 mgg). Oviduk matang, masa subur & lonjakan bertelur pesat menuju puncak.
                                         </p>
                                         <div class="text-[10px] text-emerald-950 font-medium bg-white/70 p-1.5 rounded border border-emerald-200/50">
-                                            <div>• Target Standar HD: <b>92% – 95%</b> (Acuan Master Umur 21 Mgg)</div>
+                                            <div>• Target Standar HD: <b>{{ $cStd['hd_target'] }}%</b> (Acuan Master Umur {{ $coop->chicken_age_weeks }} Mgg)</div>
                                             <div>• HD Aktual Hari Ini: <b>{{ $coopHd !== null ? number_format($coopHd, 1, ',', '.') . '% (' . number_format($todayEgg, 0, ',', '.') . ' butir)' : 'Belum Diinput (Klik tombol input di bawah)' }}</b></div>
                                             <div>• Kebutuhan Pakan: <b>{{ $cStd['gram_pakan'] }} g/ekor</b> ({{ number_format($totalPakanCoopKg, 1, ',', '.') }} kg/hari)</div>
                                         </div>
@@ -434,12 +434,12 @@
                                     <div class="bg-slate-50 p-2 rounded-lg border border-slate-100">
                                         <span class="text-slate-400 block text-[10px] font-medium">Acuan Telur</span>
                                         <b class="text-slate-800 font-bold text-xs">{{ $cStd['berat_telur'] !== '-' ? $cStd['berat_telur'] : 'Grower' }}</b>
-                                        <span class="text-[9px] text-slate-400 block mt-0.5">Target: 60g/butir</span>
+                                        <span class="text-[9px] text-slate-400 block mt-0.5">Target: {{ $cStd['berat_telur'] }}</span>
                                     </div>
                                     <div class="bg-slate-50 p-2 rounded-lg border border-slate-100">
                                         <span class="text-slate-400 block text-[10px] font-medium">Standar Pakan</span>
                                         <b class="text-slate-800 font-bold text-xs">{{ $cStd['gram_pakan'] }} g/ekor</b>
-                                        <span class="text-[9px] text-slate-400 block mt-0.5">Pagi 52,5g • Sore 52,5g</span>
+                                        <span class="text-[9px] text-slate-400 block mt-0.5">Pagi {{ $cStd['pagi_gram'] }}g • Sore {{ $cStd['sore_gram'] }}g</span>
                                     </div>
                                 </div>
 
@@ -461,17 +461,13 @@
                                         </span>
                                     </div>
                                     <div class="mt-1.5 pt-1.5 border-t border-amber-200/60 flex justify-between text-[10px] text-slate-600 font-medium">
-                                        <span>Jadwal Pagi (50%): <b class="text-slate-800">{{ number_format($pagiKg, 1, ',', '.') }} kg</b></span>
-                                        <span>Sore (50%): <b class="text-slate-800">{{ number_format($soreKg, 1, ',', '.') }} kg</b></span>
+                                        <span>Jadwal Pagi (40%): <b class="text-slate-800">{{ number_format($pagiKg, 1, ',', '.') }} kg</b></span>
+                                        <span>Sore (60%): <b class="text-slate-800">{{ number_format($soreKg, 1, ',', '.') }} kg</b></span>
                                     </div>
                                 </div>
                             </div>
 
-                            <button onclick="openModalForCoop('modalProduksi', {{ $coop->id }})" 
-                                    class="w-full mt-3 py-2 rounded-xl bg-slate-50 hover:bg-maroon-50 text-slate-700 hover:text-maroon-800 font-bold text-xs border border-slate-200 hover:border-maroon-200 transition-all flex items-center justify-center gap-1.5 shadow-2xs">
-                                <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                                <span>Input Telur Blok Ini</span>
-                            </button>
+
                         </div>
                     @endforeach
                 </div>

@@ -66,7 +66,17 @@ class WarehouseController extends Controller
 
         // 3. Gudang Obat, Vaksin & Vitamin (Satuan: Item / Botol) - Bisa minus jika keluar melebihi masuk
         $obatMasuk = (float) FarmStock::whereIn('category', ['obat', 'vaksin', 'vitamin'])->where('type', 'masuk')->sum('quantity');
-        $obatKeluar = (float) FarmStock::whereIn('category', ['obat', 'vaksin', 'vitamin'])->where('type', 'keluar')->sum('quantity');
+        $obatKeluarManual = (float) FarmStock::whereIn('category', ['obat', 'vaksin', 'vitamin'])->where('type', 'keluar')->sum('quantity');
+        
+        $healthTreatments = \App\Models\HealthTreatment::all();
+        $obatKeluarKandang = 0;
+        foreach ($healthTreatments as $ht) {
+            $val = (float) preg_replace('/[^0-9.]/', '', $ht->dosage);
+            if ($val == 0) $val = 1;
+            $obatKeluarKandang += $val;
+        }
+        
+        $obatKeluar = $obatKeluarManual + $obatKeluarKandang;
         $obatStok = round($obatMasuk - $obatKeluar, 1);
 
         // Mutasi stok internal terbaru
@@ -228,7 +238,17 @@ class WarehouseController extends Controller
 
         // Ringkasan Obat, Vaksin & Vitamin
         $totalMasuk = (float) FarmStock::whereIn('category', ['obat', 'vaksin', 'vitamin'])->where('type', 'masuk')->sum('quantity');
-        $totalKeluar = (float) FarmStock::whereIn('category', ['obat', 'vaksin', 'vitamin'])->where('type', 'keluar')->sum('quantity');
+        $totalKeluarManual = (float) FarmStock::whereIn('category', ['obat', 'vaksin', 'vitamin'])->where('type', 'keluar')->sum('quantity');
+        
+        $healthTreatments = \App\Models\HealthTreatment::all();
+        $obatKeluarKandang = 0;
+        foreach ($healthTreatments as $ht) {
+            $val = (float) preg_replace('/[^0-9.]/', '', $ht->dosage);
+            if ($val == 0) $val = 1;
+            $obatKeluarKandang += $val;
+        }
+        
+        $totalKeluar = $totalKeluarManual + $obatKeluarKandang;
         $stokSaatIni = round($totalMasuk - $totalKeluar, 1);
 
         $coops = Coop::where('is_active', true)->get();

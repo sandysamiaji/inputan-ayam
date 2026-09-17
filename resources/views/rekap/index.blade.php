@@ -318,15 +318,23 @@
         </div>
 
         <!-- Period Selector Row (Click to open date modal) -->
+        @if(!auth()->check() || auth()->user()->canAccess('rekap_filter_tanggal'))
         <div class="period-row" id="travelokaDatePicker" title="Klik untuk ganti rentang tanggal">
             <span>📅</span>
             <b>{{ $formattedRange }}</b>
             <span class="chev">⌄</span>
         </div>
+        @else
+        <div class="period-row" style="background:#f8fafc; cursor:not-allowed; opacity:0.8;">
+            <span>📅</span>
+            <b>{{ $formattedRange }}</b>
+        </div>
+        @endif
 
 
 
         <!-- Filter Kloter Dropdown -->
+        @if(!auth()->check() || auth()->user()->canAccess('rekap_filter'))
         <div class="period-row" style="margin-top:9px; position:relative; background:#fff;">
             <span>🐔</span>
             <select onchange="filterKloter(this.value)" style="flex:1; border:none; background:transparent; font-size:11.5px; font-weight:800; color:#1e293b; outline:none; cursor:pointer;">
@@ -341,6 +349,7 @@
             </select>
             <span class="chev" style="pointer-events:none;">⌄</span>
         </div>
+        @endif
     </section>
 
     <!-- 2. PILIH REKAP (4 TABS) -->

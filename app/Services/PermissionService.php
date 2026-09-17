@@ -54,7 +54,12 @@ class PermissionService
                 'items' => [
                     'dash_filter' => [
                         'label' => 'Filter Klotter & Pemilih Tanggal',
-                        'desc' => 'Widget pemilih klotter aktif dan kalender filter tanggal dashboard',
+                        'desc' => 'Widget pemilih klotter aktif di dashboard',
+                        'default' => true,
+                    ],
+                    'dash_filter_tanggal' => [
+                        'label' => 'Pemilih Tanggal Dashboard',
+                        'desc' => 'Akses untuk mengubah tanggal (Pilih Tanggal) di dashboard',
                         'default' => true,
                     ],
                     'dash_card_egg' => [
@@ -151,39 +156,6 @@ class PermissionService
                 ],
             ],
 
-            // 5. AKSI CEPAT INPUT KANDANG
-            'quick_actions' => [
-                'label' => '5. Aksi Cepat Input Kandang (Tombol Pop-up)',
-                'icon' => 'zap',
-                'items' => [
-                    'feature_quick_egg' => [
-                        'label' => 'Aksi Cepat: Catat Produksi Telur',
-                        'desc' => 'Tombol dan modal pop-up pencatatan panen telur (Peti & Kg)',
-                        'default' => true,
-                    ],
-                    'feature_quick_feed' => [
-                        'label' => 'Aksi Cepat: Catat Pemakaian Pakan',
-                        'desc' => 'Tombol dan modal pop-up pencatatan pakan harian blok',
-                        'default' => true,
-                    ],
-                    'feature_quick_mortality' => [
-                        'label' => 'Aksi Cepat: Catat Kematian / Afkir',
-                        'desc' => 'Tombol dan modal pop-up pencatatan ayam mati atau afkir',
-                        'default' => true,
-                    ],
-                    'feature_quick_weight' => [
-                        'label' => 'Aksi Cepat: Catat Bobot Ayam',
-                        'desc' => 'Tombol dan modal pop-up sampling timbangan bobot ayam',
-                        'default' => true,
-                    ],
-                    'feature_quick_health' => [
-                        'label' => 'Aksi Cepat: Catat Vaksin & Obat',
-                        'desc' => 'Tombol dan modal pop-up perlakuan medis, vitamin, dan obat',
-                        'default' => true,
-                    ],
-                ],
-            ],
-
             // 6. GUDANG: RINGKASAN STOK & TAB KATEGORI
             'warehouse_summary' => [
                 'label' => '6. Gudang: Ringkasan Stok & Tab Kategori',
@@ -192,6 +164,11 @@ class PermissionService
                     'warehouse_card_summary' => [
                         'label' => 'Kartu Ringkasan Stok Barang',
                         'desc' => 'Tiga kartu ringkasan stok telur, pakan, dan obat di bagian atas halaman gudang',
+                        'default' => true,
+                    ],
+                    'warehouse_filter_tanggal' => [
+                        'label' => 'Pemilih Tanggal Gudang',
+                        'desc' => 'Akses untuk memilih rentang tanggal di halaman Gudang',
                         'default' => true,
                     ],
                     'feature_warehouse_telur' => [
@@ -260,9 +237,14 @@ class PermissionService
 
             // 9. MODUL INPUT MOBILE
             'input_forms' => [
-                'label' => '9. Modul Input Mobile: Form Transaksi Kandang',
+                'label' => '9. Modul Input Transaksi (Mobile)',
                 'icon' => 'edit-3',
                 'items' => [
+                    'input_filter_tanggal' => [
+                        'label' => 'Ubah Tanggal Input',
+                        'desc' => 'Akses untuk mengubah tanggal transaksi pada halaman Input',
+                        'default' => true,
+                    ],
                     'input_form_egg' => [
                         'label' => 'Pilihan Transaksi: Produksi Telur',
                         'desc' => 'Kartu dan formulir input panen telur di halaman input mobile',
@@ -276,6 +258,11 @@ class PermissionService
                     'input_form_mortality' => [
                         'label' => 'Pilihan Transaksi: Mortalitas Ayam',
                         'desc' => 'Kartu dan formulir input kematian/afkir di halaman input mobile',
+                        'default' => true,
+                    ],
+                    'input_form_weight' => [
+                        'label' => 'Pilihan Transaksi: Bobot Ayam',
+                        'desc' => 'Kartu dan formulir input bobot timbangan di halaman input mobile',
                         'default' => true,
                     ],
                     'input_form_health' => [
@@ -292,8 +279,13 @@ class PermissionService
                 'icon' => 'clipboard-list',
                 'items' => [
                     'rekap_filter' => [
-                        'label' => 'Filter Periode & Blok Rekap',
-                        'desc' => 'Widget pemilihan rentang tanggal dan filter kandang di modul rekap',
+                        'label' => 'Filter Blok Rekap',
+                        'desc' => 'Widget filter kandang di modul rekap',
+                        'default' => true,
+                    ],
+                    'rekap_filter_tanggal' => [
+                        'label' => 'Filter Tanggal Rekap',
+                        'desc' => 'Akses untuk mengubah rentang tanggal di halaman Rekap',
                         'default' => true,
                     ],
                     'feature_rekap_view' => [

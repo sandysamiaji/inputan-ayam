@@ -48,8 +48,13 @@
 
                 <div class="flex flex-col gap-1">
                     <label class="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Pilih Tanggal</label>
+                    @if(!auth()->check() || auth()->user()->canAccess('dash_filter_tanggal'))
                     <input type="date" value="{{ $selectedDate }}" onchange="window.location.href='?date=' + this.value" 
                            class="text-xs sm:text-sm text-maroon-800 font-bold bg-white border border-rose-200 rounded-xl px-3 py-2 outline-none cursor-pointer hover:border-maroon-700 shadow-sm transition-all">
+                    @else
+                    <input type="date" value="{{ $selectedDate }}" readonly disabled
+                           class="text-xs sm:text-sm text-maroon-800 font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none cursor-not-allowed text-slate-500 shadow-sm">
+                    @endif
                 </div>
             </div>
 

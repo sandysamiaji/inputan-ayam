@@ -529,14 +529,18 @@
         <p id="heroSubtitle">Satu kali input. Sistem otomatis meneruskan transaksi ke gudang, populasi, rekap dan dashboard.</p>
         <div class="date-bar">
             <span>Tanggal Input</span>
+            @if(!auth()->check() || auth()->user()->canAccess('input_filter_tanggal'))
             <input type="date" id="inputTxDate" value="{{ $date }}" onchange="window.location.href='?date=' + this.value + '&type=' + currentType">
+            @else
+            <input type="date" id="inputTxDate" value="{{ $date }}" readonly disabled style="opacity: 0.7; cursor: not-allowed;">
+            @endif
         </div>
     </section>
 
     <!-- Section: Pilih Transaksi -->
     <div class="section-title">PILIH TRANSAKSI</div>
     <section class="types">
-        @if(!auth()->check() || auth()->user()->canAccess('feature_quick_egg'))
+        @if(!auth()->check() || auth()->user()->canAccess('input_form_egg'))
         <!-- 1. Produksi Telur -->
         <div class="type-card {{ $type === 'produksi' ? 'active' : '' }}" onclick="switchType('produksi')" id="btnTypeProduksi">
             <div class="icon-box">🥚</div>
@@ -545,7 +549,7 @@
         </div>
         @endif
 
-        @if(!auth()->check() || auth()->user()->canAccess('feature_quick_feed'))
+        @if(!auth()->check() || auth()->user()->canAccess('input_form_feed'))
         <!-- 2. Pemakaian Pakan -->
         <div class="type-card {{ $type === 'pakan' ? 'active' : '' }}" onclick="switchType('pakan')" id="btnTypePakan">
             <div class="icon-box" style="background:#ecfff8;">🌾</div>
@@ -554,7 +558,7 @@
         </div>
         @endif
 
-        @if(!auth()->check() || auth()->user()->canAccess('feature_quick_mortality'))
+        @if(!auth()->check() || auth()->user()->canAccess('input_form_mortality'))
         <!-- 3. Mortalitas -->
         <div class="type-card {{ $type === 'mortalitas' ? 'active' : '' }}" onclick="switchType('mortalitas')" id="btnTypeMortalitas">
             <div class="icon-box">🐔</div>
@@ -563,7 +567,7 @@
         </div>
         @endif
 
-        @if(!auth()->check() || auth()->user()->canAccess('feature_quick_health'))
+        @if(!auth()->check() || auth()->user()->canAccess('input_form_health'))
         <!-- 4. Vaksin & Obat -->
         <div class="type-card {{ $type === 'obat' ? 'active' : '' }}" onclick="switchType('obat')" id="btnTypeObat">
             <div class="icon-box">💊</div>

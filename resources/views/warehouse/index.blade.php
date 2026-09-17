@@ -18,6 +18,7 @@
         </div>
 
         <!-- Traveloka Style Date Range Selector -->
+        @if(!auth()->check() || auth()->user()->canAccess('warehouse_filter_tanggal'))
         <div class="relative" id="travelokaDatePicker">
             <!-- Traveloka Search Capsule Trigger -->
             <div onclick="toggleTravelokaPopover()" 
@@ -128,6 +129,40 @@
 
             </div>
         </div>
+        @else
+        <div class="relative">
+            <div class="cursor-not-allowed bg-slate-50 border border-slate-200 rounded-2xl p-1.5 sm:p-2 flex items-center gap-1.5 sm:gap-2.5 select-none opacity-80">
+                <div class="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-white">
+                    <div class="w-7 h-7 rounded-lg bg-slate-100 text-slate-400 flex items-center justify-center shrink-0">
+                        <i data-lucide="calendar" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <div class="text-[9px] font-extrabold uppercase tracking-wider text-slate-400">Dari Tanggal</div>
+                        <div class="text-xs sm:text-sm font-black text-slate-600 whitespace-nowrap">
+                            {{ $formattedStartDate }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 text-[10px] font-extrabold shrink-0 border border-slate-200">
+                    <span>{{ $diffDays }} Hari</span>
+                    <i data-lucide="arrow-right" class="w-3 h-3 text-slate-400"></i>
+                </div>
+
+                <div class="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-white">
+                    <div class="w-7 h-7 rounded-lg bg-slate-100 text-slate-400 flex items-center justify-center shrink-0">
+                        <i data-lucide="calendar-check-2" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <div class="text-[9px] font-extrabold uppercase tracking-wider text-slate-400">Sampai Tanggal</div>
+                        <div class="text-xs sm:text-sm font-black text-slate-600 whitespace-nowrap">
+                            {{ $formattedEndDate }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
     </div>
 
     <!-- 3 KARTU UTAMA GUDANG (Sesuai Gambar Mockup 1: Telur, Pakan, Obat) -->

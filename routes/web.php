@@ -36,26 +36,26 @@ Route::middleware(['auth'])->group(function () {
         ->name('input.index')
         ->middleware('permission:menu_input');
 
-    // Endpoint Input Aksi Cepat Kandang
+    // Endpoint Input Transaksi
     Route::post('/production/store', [DashboardController::class, 'storeEggProduction'])
         ->name('production.store')
-        ->middleware('permission:feature_quick_egg');
+        ->middleware('permission:input_form_egg');
 
     Route::post('/feed/store', [DashboardController::class, 'storeFeedConsumption'])
         ->name('feed.store')
-        ->middleware('permission:feature_quick_feed');
+        ->middleware('permission:input_form_feed');
 
     Route::post('/mortality/store', [DashboardController::class, 'storeMortality'])
         ->name('mortality.store')
-        ->middleware('permission:feature_quick_mortality');
+        ->middleware('permission:input_form_mortality');
 
     Route::post('/weight/store', [DashboardController::class, 'storeWeightSample'])
         ->name('weight.store')
-        ->middleware('permission:feature_quick_weight');
+        ->middleware('permission:input_form_weight');
 
     Route::post('/health/store', [DashboardController::class, 'storeHealthTreatment'])
         ->name('health.store')
-        ->middleware('permission:feature_quick_health');
+        ->middleware('permission:input_form_health');
 
     // 3. Modul Gudang (Warehouse)
     Route::prefix('gudang')->name('warehouse.')->middleware('permission:menu_warehouse')->group(function () {

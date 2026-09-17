@@ -84,12 +84,20 @@
                 <div class="mt-3">
                     <p class="text-xs font-semibold text-slate-500">Produksi Telur</p>
                     @php
-                        $cratesStr = number_format($totalEggCrates, 0, ',', '.') . ' Peti';
-                        $kgVal = round($totalEggKg, 2);
-                        $kgStr = $kgVal > 0 ? ($kgVal == floor($kgVal) ? number_format($kgVal, 0, ',', '.') : number_format($kgVal, 1, ',', '.')) . ' kg' : '';
-                        if ($totalEggCrates > 0 && $kgVal > 0) {
+                        $cNormPeti = (int) round($totalEggCrates);
+                        $cNormKg = (float) $totalEggKg;
+                        if ($cNormKg >= 10) {
+                            $extraP = (int) floor($cNormKg / 10);
+                            $cNormPeti += $extraP;
+                            $cNormKg = round($cNormKg - ($extraP * 10), 1);
+                        } else {
+                            $cNormKg = round($cNormKg, 1);
+                        }
+                        $cratesStr = number_format($cNormPeti, 0, ',', '.') . ' Peti';
+                        $kgStr = $cNormKg > 0 ? ($cNormKg == floor($cNormKg) ? number_format($cNormKg, 0, ',', '.') : number_format($cNormKg, 1, ',', '.')) . ' kg' : '';
+                        if ($cNormPeti > 0 && $cNormKg > 0) {
                             $prodTelurDisplay = $cratesStr . ' + ' . $kgStr;
-                        } elseif ($kgVal > 0) {
+                        } elseif ($cNormKg > 0) {
                             $prodTelurDisplay = $kgStr;
                         } else {
                             $prodTelurDisplay = $cratesStr;
@@ -339,6 +347,83 @@
                                     </div>
                                 </div>
 
+                                <!-- ESTIMASI TELUR DARI ACUAN & ADU DATA REALISASI INPUT KARYAWAN -->
+                                @php
+                                    $eggGram = (!empty($cStd['berat_telur_val']) && $cStd['berat_telur_val'] > 0) ? (float) $cStd['berat_telur_val'] : 60.0;
+                                    $estKg = $todayEgg > 0 ? round(($todayEgg * $eggGram) / 1000, 1) : 0;
+                                    $estPeti = (int) floor($estKg / 10);
+                                    $estSisaKg = round($estKg - ($estPeti * 10), 1);
+                                    $estPetiText = ($estPeti > 0 ? $estPeti . ' Peti ' : '') . ($estSisaKg > 0 ? ($estPeti > 0 ? '+ ' : '') . number_format($estSisaKg, 1, ',', '.') . ' kg' : ($estPeti == 0 ? '0 kg' : ''));
+
+                                    $actPeti = (int) ($coopEggCratesData[$coop->id] ?? 0);
+                                    $actKg = (float) ($coopEggKgData[$coop->id] ?? 0);
+                                    $actTotalKg = round(($actPeti * 10) + $actKg, 1);
+                                    $normActPeti = (int) floor($actTotalKg / 10);
+                                    $normActKg = round($actTotalKg - ($normActPeti * 10), 1);
+                                    $actPetiText = ($normActPeti > 0 ? $normActPeti . ' Peti ' : '') . ($normActKg > 0 ? ($normActPeti > 0 ? '+ ' : '') . number_format($normActKg, 1, ',', '.') . ' kg' : ($normActPeti == 0 ? '0 kg' : ''));
+
+                                    $eggDiffKg = round($actTotalKg - $estKg, 1);
+                                    $hasEggInput = ($todayEgg > 0 || $actTotalKg > 0);
+                                    $isEggMatch = ($hasEggInput && $actTotalKg >= $estKg && $estKg > 0);
+                                @endphp
+                                <div class="mt-2.5 p-2.5 rounded-lg text-xs {{ !$hasEggInput ? 'bg-slate-50 border border-slate-200' : ($isEggMatch ? 'bg-emerald-50/80 border border-emerald-200' : 'bg-rose-50/80 border border-rose-200') }}">
+                                    <!-- Header Realisasi vs Acuan -->
+                                    <div class="flex items-center justify-between font-bold text-[11px]">
+                                        <span class="flex items-center gap-1.5 {{ !$hasEggInput ? 'text-slate-700' : ($isEggMatch ? 'text-emerald-900' : 'text-rose-900') }}">
+                                            <span class="text-sm">🥚</span>
+                                            <span>Realisasi Panen Telur:</span>
+                                        </span>
+                                        @if(!$hasEggInput)
+                                            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-200/80 text-slate-600 border border-slate-300/60">
+                                                Belum Input
+                                            </span>
+                                        @elseif($isEggMatch)
+                                            <span class="text-[10px] font-black px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 shadow-2xs">
+                                                <i data-lucide="check-circle-2" class="w-3 h-3 text-emerald-600"></i>
+                                                {{ $eggDiffKg > 0 ? 'Lebih ' . number_format($eggDiffKg, 1, ',', '.') . ' kg' : 'Sesuai Hitungan' }}
+                                            </span>
+                                        @else
+                                            <span class="text-[10px] font-black px-2 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-300 flex items-center gap-1 shadow-2xs">
+                                                <i data-lucide="alert-circle" class="w-3 h-3 text-rose-600"></i>
+                                                Kurang {{ number_format(abs($eggDiffKg), 1, ',', '.') }} kg
+                                            </span>
+                                        @endif
+                                    </div>
+
+                                    <!-- Angka Realisasi vs Perkiraan -->
+                                    <div class="mt-1 flex items-baseline justify-between text-[11px]">
+                                        <div>
+                                            <span class="text-sm font-black {{ !$hasEggInput ? 'text-slate-500' : ($isEggMatch ? 'text-emerald-800' : 'text-rose-800') }}">
+                                                {{ $hasEggInput ? $actPetiText : '0 Peti' }}
+                                            </span>
+                                            @if($actTotalKg > 0)
+                                                <span class="text-[10px] text-slate-500 font-medium ml-1">({{ number_format($actTotalKg, 1, ',', '.') }} kg)</span>
+                                            @endif
+                                        </div>
+                                        <div class="text-[10.5px] text-slate-500 font-medium text-right">
+                                            Perkiraan: <b class="text-slate-800">{{ $estPetiText }}</b>
+                                            @if($estKg > 0)
+                                                <span class="text-[10px] text-slate-400">({{ number_format($estKg, 1, ',', '.') }} kg)</span>
+                                            @endif
+                                        </div>
+                                    </div>
+
+                                    <!-- Keterangan Status -->
+                                    @if($hasEggInput)
+                                        <div class="mt-1.5 pt-1.5 border-t {{ $isEggMatch ? 'border-emerald-200/60 text-emerald-800' : 'border-rose-200/60 text-rose-900' }} text-[10.5px] leading-snug font-medium">
+                                            @if($isEggMatch)
+                                                ✔ <b>Input telur karyawan sesuai / melebihi estimasi aplikasi</b> (acuan {{ number_format($todayEgg, 0, ',', '.') }} butir × {{ $cStd['berat_telur'] }} = {{ number_format($estKg, 1, ',', '.') }} kg).
+                                            @else
+                                                ⚠️ <b>Input telur karyawan belum sesuai hitungan aplikasi</b> (masih kurang {{ number_format(abs($eggDiffKg), 1, ',', '.') }} kg dari estimasi {{ $estPetiText }} / {{ number_format($estKg, 1, ',', '.') }} kg).
+                                            @endif
+                                        </div>
+                                    @else
+                                        <div class="mt-1 text-[10px] text-slate-400">
+                                            Belum ada pencatatan panen telur untuk {{ $coop->name }} hari ini.
+                                        </div>
+                                    @endif
+                                </div>
+
                                 <!-- TOTAL KEBUTUHAN PAKAN BLOK INI (ACUAN HITUNGAN STANDAR) -->
                                 <div class="mt-2 p-2.5 rounded-lg bg-amber-50/70 border border-amber-200/80 text-slate-800">
                                     <div class="flex items-center justify-between">
@@ -452,13 +537,18 @@
                     <!-- Gudang Telur -->
                     <div class="p-3 rounded-xl bg-amber-50/50 border border-amber-100">
                         @php
-                            $stokCratesFormatted = number_format($currentEggStockCrates, 0, ',', '.') . ' Peti';
-                            $stokKgFormatted = ($currentEggStockKg != 0) ? '& ' . ($currentEggStockKg == floor($currentEggStockKg) ? number_format($currentEggStockKg, 0, ',', '.') : number_format($currentEggStockKg, 1, ',', '.')) . ' Kg' : '';
+                            $stokCratesFormatted = number_format((int) $currentEggStockCrates, 0, ',', '.') . ' Peti';
+                            $absStokKg = abs($currentEggStockKg);
+                            $stokKgFormatted = ($absStokKg > 0) ? '& ' . ($absStokKg == floor($absStokKg) ? number_format($absStokKg, 0, ',', '.') : number_format($absStokKg, 1, ',', '.')) . ' Kg' : '';
                             $stokTelurDisplay = trim($stokCratesFormatted . ' ' . $stokKgFormatted);
 
-                            $masukCratesFormatted = number_format($totalEggProducedAllTime, 0, ',', '.') . ' Peti';
+                            $masukCratesFormatted = number_format((int) $totalEggProducedAllTime, 0, ',', '.') . ' Peti';
                             $masukKgFormatted = ($totalEggProducedKgAllTime > 0) ? '& ' . ($totalEggProducedKgAllTime == floor($totalEggProducedKgAllTime) ? number_format($totalEggProducedKgAllTime, 0, ',', '.') : number_format($totalEggProducedKgAllTime, 1, ',', '.')) . ' Kg' : '';
                             $masukTelurDisplay = trim($masukCratesFormatted . ' ' . $masukKgFormatted);
+
+                            $keluarCratesFormatted = number_format((int) $totalEggSoldAllTime, 0, ',', '.') . ' Peti';
+                            $keluarKgFormatted = ($eggKgSold > 0) ? ' & ' . ($eggKgSold == floor($eggKgSold) ? number_format($eggKgSold, 0, ',', '.') : number_format($eggKgSold, 1, ',', '.')) . ' Kg' : '';
+                            $keluarTelurDisplay = $keluarCratesFormatted . $keluarKgFormatted . ' Terjual';
                         @endphp
                         <div class="flex items-center justify-between text-xs font-bold text-slate-800 mb-1">
                             <span class="flex items-center gap-1.5">
@@ -468,7 +558,7 @@
                         </div>
                         <div class="flex flex-col sm:flex-row sm:justify-between text-[11px] text-slate-500 pt-1.5 border-t border-amber-100/60 gap-1">
                             <span>Masuk: <b class="text-slate-700">{{ $masukTelurDisplay }}</b></span>
-                            <span>Keluar: <b class="text-maroon-800 font-bold">{{ number_format($totalEggSoldAllTime, 0, ',', '.') }} Peti & {{ number_format($eggKgSold, 0, ',', '.') }} Kg Terjual</b></span>
+                            <span>Keluar: <b class="text-maroon-800 font-bold">{{ $keluarTelurDisplay }}</b></span>
                         </div>
                     </div>
 
@@ -656,7 +746,7 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1.5">Jumlah Peti (Opsional)</label>
                     <div class="relative">
-                        <input type="number" step="0.01" name="crates_count" id="prodCratesCount" value="0" placeholder="0"
+                        <input type="number" step="1" name="crates_count" id="prodCratesCount" value="0" placeholder="0"
                                class="w-full text-sm font-bold text-maroon-800 px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-maroon-800 focus:ring-1 focus:ring-maroon-800 outline-none bg-slate-50">
                         <span class="absolute right-3.5 top-2.5 text-xs font-semibold text-slate-400">Peti</span>
                     </div>
@@ -665,7 +755,9 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1.5">Jumlah kg (Opsional)</label>
                     <div class="relative">
-                        <input type="number" step="0.01" name="weight_kg" id="prodWeightKg" value="0" placeholder="0"
+                        <input type="number" step="0.1" name="weight_kg" id="prodWeightKg" value="0" placeholder="0"
+                               onchange="autoConvertEggKg('prodWeightKg', 'prodCratesCount')"
+                               onblur="autoConvertEggKg('prodWeightKg', 'prodCratesCount')"
                                class="w-full text-sm font-bold text-amber-800 px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-maroon-800 focus:ring-1 focus:ring-maroon-800 outline-none bg-slate-50">
                         <span class="absolute right-3.5 top-2.5 text-xs font-semibold text-slate-400">Kg</span>
                     </div>
@@ -1257,6 +1349,22 @@
                 hdElem.textContent = '0%';
                 hdElem.className = "px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-black text-xs sm:text-sm";
             }
+        }
+    }
+
+    // Konversi otomatis: setiap 10 kg menjadi 1 Peti (Peti selalu bulat tanpa koma)
+    function autoConvertEggKg(kgInputId, petiInputId) {
+        const kgEl = document.getElementById(kgInputId);
+        const petiEl = document.getElementById(petiInputId);
+        if (!kgEl || !petiEl) return;
+        
+        let kgVal = parseFloat(kgEl.value) || 0;
+        if (kgVal >= 10) {
+            const extraPeti = Math.floor(kgVal / 10);
+            const currentPeti = parseInt(petiEl.value || 0, 10);
+            petiEl.value = currentPeti + extraPeti;
+            const remainderKg = Math.round((kgVal - (extraPeti * 10)) * 10) / 10;
+            kgEl.value = remainderKg > 0 ? remainderKg : '';
         }
     }
 </script>

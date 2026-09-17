@@ -617,11 +617,11 @@
                 <div class="row-fields">
                     <div class="field">
                         <label>Jumlah Peti (Opsional)</label>
-                        <input type="number" step="0.01" name="crates_count" id="prodPeti" value="0" min="0" placeholder="0">
+                        <input type="number" step="1" name="crates_count" id="prodPeti" value="0" min="0" placeholder="0">
                     </div>
                     <div class="field">
                         <label>Jumlah kg (Opsional)</label>
-                        <input type="number" step="0.01" name="weight_kg" id="prodKg" value="0" min="0" placeholder="0">
+                        <input type="number" step="0.1" name="weight_kg" id="prodKg" value="0" min="0" placeholder="0" onchange="autoConvertEggKg('prodKg', 'prodPeti')" onblur="autoConvertEggKg('prodKg', 'prodPeti')">
                     </div>
                 </div>
 
@@ -1091,6 +1091,22 @@ function calcProduksi() {
     const total = baik + retakPecah;
 
     document.getElementById('prodTotalTelur').value = total + ' butir';
+}
+
+// Konversi otomatis: setiap 10 kg menjadi 1 Peti (Peti selalu bulat tanpa koma)
+function autoConvertEggKg(kgInputId, petiInputId) {
+    const kgEl = document.getElementById(kgInputId);
+    const petiEl = document.getElementById(petiInputId);
+    if (!kgEl || !petiEl) return;
+    
+    let kgVal = parseFloat(kgEl.value) || 0;
+    if (kgVal >= 10) {
+        const extraPeti = Math.floor(kgVal / 10);
+        const currentPeti = parseInt(petiEl.value || 0, 10);
+        petiEl.value = currentPeti + extraPeti;
+        const remainderKg = Math.round((kgVal - (extraPeti * 10)) * 10) / 10;
+        kgEl.value = remainderKg > 0 ? remainderKg : '';
+    }
 }
 
 // 5. Calculations for Pemakaian Pakan

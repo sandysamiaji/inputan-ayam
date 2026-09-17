@@ -76,18 +76,61 @@ class OutboundIntegrationService
         $farmStockMasukPeti = (float) $farmStockMasukPetiQuery->sum('quantity');
         $farmStockMasukKg = (float) $farmStockMasukKgQuery->sum('quantity');
 
-        // Total telur masuk bersih (Peti & Kg)
-        $totalMasukPeti = $totalProducedCrates + $farmStockMasukPeti;
-        $totalMasukKg = $totalProducedWeightKg + $farmStockMasukKg;
+        // Normalisasi Penjualan (10 kg = 1 Peti, Peti bilangan bulat)
+        if ($kgSold >= 10) {
+            $extraSoldPeti = (int) floor($kgSold / 10);
+            $petiSold = (int) round($petiSold + $extraSoldPeti);
+            $kgSold = round($kgSold - ($extraSoldPeti * 10), 1);
+        } else {
+            $petiSold = (int) round($petiSold);
+            $kgSold = round($kgSold, 1);
+        }
 
-        // Total telur keluar bersih (Peti & Kg)
-        $totalKeluarPeti = $petiSold + $manualKeluarPeti;
-        $totalKeluarKg = $kgSold + $manualKeluarKg;
+        // Normalisasi Manual Keluar
+        if ($manualKeluarKg >= 10) {
+            $extraManKeluarPeti = (int) floor($manualKeluarKg / 10);
+            $manualKeluarPeti = (int) round($manualKeluarPeti + $extraManKeluarPeti);
+            $manualKeluarKg = round($manualKeluarKg - ($extraManKeluarPeti * 10), 1);
+        } else {
+            $manualKeluarPeti = (int) round($manualKeluarPeti);
+            $manualKeluarKg = round($manualKeluarKg, 1);
+        }
+
+        // Total telur masuk bersih (10 kg = 1 Peti, Peti bilangan bulat)
+        $rawMasukPeti = (float) ($totalProducedCrates + $farmStockMasukPeti);
+        $rawMasukKg = (float) ($totalProducedWeightKg + $farmStockMasukKg);
+        if ($rawMasukKg >= 10) {
+            $extraMasukPeti = (int) floor($rawMasukKg / 10);
+            $totalMasukPeti = (int) round($rawMasukPeti + $extraMasukPeti);
+            $totalMasukKg = round($rawMasukKg - ($extraMasukPeti * 10), 1);
+        } else {
+            $totalMasukPeti = (int) round($rawMasukPeti);
+            $totalMasukKg = round($rawMasukKg, 1);
+        }
+
+        // Total telur keluar bersih (10 kg = 1 Peti, Peti bilangan bulat)
+        $rawKeluarPeti = (float) ($petiSold + $manualKeluarPeti);
+        $rawKeluarKg = (float) ($kgSold + $manualKeluarKg);
+        if ($rawKeluarKg >= 10) {
+            $extraKeluarPeti = (int) floor($rawKeluarKg / 10);
+            $totalKeluarPeti = (int) round($rawKeluarPeti + $extraKeluarPeti);
+            $totalKeluarKg = round($rawKeluarKg - ($extraKeluarPeti * 10), 1);
+        } else {
+            $totalKeluarPeti = (int) round($rawKeluarPeti);
+            $totalKeluarKg = round($rawKeluarKg, 1);
+        }
         $totalKeluarEggs = 0;
 
-        // Stok saat ini (Peti & Kg terpisah secara presisi, tanpa double-counting atau butir)
-        $currentStockPeti = round($totalMasukPeti - $totalKeluarPeti, 1);
-        $currentStockKgTotal = round($totalMasukKg - $totalKeluarKg, 1);
+        // Stok saat ini (Peti selalu integer, konversi 10 kg = 1 Peti)
+        $netTotalKg = round((($totalMasukPeti * 10) + $totalMasukKg) - (($totalKeluarPeti * 10) + $totalKeluarKg), 1);
+        if ($netTotalKg >= 0) {
+            $currentStockPeti = (int) floor($netTotalKg / 10);
+            $currentStockKgTotal = round($netTotalKg - ($currentStockPeti * 10), 1);
+        } else {
+            $absNetKg = abs($netTotalKg);
+            $currentStockPeti = - (int) floor($absNetKg / 10);
+            $currentStockKgTotal = - round($absNetKg - (abs($currentStockPeti) * 10), 1);
+        }
         $currentStockEggs = 0;
 
         return [

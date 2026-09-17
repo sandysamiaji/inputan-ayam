@@ -1181,7 +1181,21 @@ class WarehouseController extends Controller
             $abnormalVal = isset($ep->abnormal_eggs) ? (int) $ep->abnormal_eggs : 0;
             $ep->total_eggs = (int) ($ep->good_eggs + $ep->broken_eggs + $abnormalVal);
             if ($ep->crates_count <= 0 && empty($ep->weight_kg)) {
-                $ep->crates_count = round($ep->total_eggs / 25, 2);
+                $ep->crates_count = round($ep->total_eggs / 25, 0);
+            }
+
+            // Normalisasi 10 kg = 1 Peti & Peti selalu bilangan bulat (tanpa koma)
+            $ep->crates_count = (int) round($ep->crates_count);
+            if ($ep->weight_kg !== null && $ep->weight_kg >= 10) {
+                $extraP = (int) floor($ep->weight_kg / 10);
+                $ep->crates_count += $extraP;
+                $remKg = round($ep->weight_kg - ($extraP * 10), 1);
+                $ep->weight_kg = $remKg > 0 ? $remKg : null;
+            } elseif ($ep->weight_kg !== null) {
+                $ep->weight_kg = round($ep->weight_kg, 1);
+                if ($ep->weight_kg <= 0) {
+                    $ep->weight_kg = null;
+                }
             }
 
             if ($request->has('notes')) $ep->notes = $request->notes;

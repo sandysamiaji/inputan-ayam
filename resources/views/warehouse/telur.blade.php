@@ -28,13 +28,17 @@
         <div class="flex flex-wrap items-center gap-2 sm:gap-4 bg-white px-4 py-2.5 rounded-2xl border border-slate-100 shadow-sm">
             <div class="text-left sm:text-right">
                 <span class="text-[10px] uppercase font-bold text-slate-400 block">Sisa Stok</span>
-                <span class="text-sm sm:text-base font-extrabold {{ $stokSaatIni < 0 || $stokSaatIniKg < 0 ? 'text-rose-600' : 'text-emerald-600' }}">{{ number_format($stokSaatIni, 0, ',', '.') }} Peti & {{ number_format($stokSaatIniKg, 0, ',', '.') }} Kg</span>
+                <span class="text-sm sm:text-base font-extrabold {{ $stokSaatIni < 0 || $stokSaatIniKg < 0 ? 'text-rose-600' : 'text-emerald-600' }}">
+                    {{ number_format((int) $stokSaatIni, 0, ',', '.') }} Peti{{ abs($stokSaatIniKg) > 0 ? ' & ' . (abs($stokSaatIniKg) == floor(abs($stokSaatIniKg)) ? number_format(abs($stokSaatIniKg), 0, ',', '.') : number_format(abs($stokSaatIniKg), 1, ',', '.')) . ' Kg' : '' }}
+                </span>
                 <span class="text-[10px] block font-medium {{ $stokSaatIni < 0 || $stokSaatIniKg < 0 ? 'text-rose-500' : 'text-slate-400' }}">{{ $stokSaatIni < 0 || $stokSaatIniKg < 0 ? 'Defisit Stok' : 'Stok Tersedia' }}</span>
             </div>
             <div class="hidden sm:block h-7 w-px bg-slate-200"></div>
             <div class="text-left sm:text-right">
                 <span class="text-[10px] uppercase font-bold text-slate-400 block">Total Masuk</span>
-                <span class="text-xs sm:text-sm font-bold text-slate-700">{{ number_format($totalMasuk, 0, ',', '.') }} Peti & {{ number_format($totalMasukKg, 0, ',', '.') }} Kg</span>
+                <span class="text-xs sm:text-sm font-bold text-slate-700">
+                    {{ number_format((int) $totalMasuk, 0, ',', '.') }} Peti{{ $totalMasukKg > 0 ? ' & ' . ($totalMasukKg == floor($totalMasukKg) ? number_format($totalMasukKg, 0, ',', '.') : number_format($totalMasukKg, 1, ',', '.')) . ' Kg' : '' }}
+                </span>
                 <span class="text-[10px] block text-slate-400 font-medium">Produksi Kandang</span>
             </div>
             <div class="hidden sm:block h-7 w-px bg-slate-200"></div>
@@ -42,7 +46,9 @@
                 <span class="text-[10px] uppercase font-bold text-maroon-800 block flex items-center gap-1">
                     <i data-lucide="shopping-cart" class="w-3 h-3"></i> Terjual (nochifram)
                 </span>
-                <span class="text-xs sm:text-sm font-extrabold text-maroon-800">{{ number_format($petiSold, 0, ',', '.') }} Peti & {{ number_format($kgSold, 0, ',', '.') }} Kg</span>
+                <span class="text-xs sm:text-sm font-extrabold text-maroon-800">
+                    {{ number_format((int) $petiSold, 0, ',', '.') }} Peti{{ $kgSold > 0 ? ' & ' . ($kgSold == floor($kgSold) ? number_format($kgSold, 0, ',', '.') : number_format($kgSold, 1, ',', '.')) . ' Kg' : '' }}
+                </span>
             </div>
         </div>
     </div>
@@ -246,7 +252,7 @@
 
                         <!-- Jumlah Peti / Butir -->
                         <p class="text-xs font-extrabold text-slate-800">
-                            {{ number_format($item->quantity, $item->unit === 'Peti' ? 1 : 0, ',', '.') }} {{ $item->unit }}
+                            {{ number_format($item->quantity, 0, ',', '.') }} {{ $item->unit }}
                             @if(str_contains(strtolower($item->notes ?? ''), 'butir'))
                                 <span class="text-slate-400 font-normal text-[11px]">
                                     ({{ Str::after($item->notes, '(') ? Str::before(Str::after($item->notes, '('), ')') : '' }})
@@ -652,11 +658,11 @@
             <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Jumlah Peti (Opsional)</label>
-                    <input type="number" step="0.01" name="crates_count" id="editPeti" min="0" placeholder="0" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm font-extrabold text-slate-800">
+                    <input type="number" step="1" name="crates_count" id="editPeti" min="0" placeholder="0" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm font-extrabold text-slate-800">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Jumlah kg (Opsional)</label>
-                    <input type="number" step="0.01" name="weight_kg" id="editWeightKg" min="0" placeholder="0" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm font-extrabold text-slate-800">
+                    <input type="number" step="0.1" name="weight_kg" id="editWeightKg" min="0" placeholder="0" onchange="autoConvertEggKg('editWeightKg', 'editPeti')" onblur="autoConvertEggKg('editWeightKg', 'editPeti')" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm font-extrabold text-slate-800">
                 </div>
             </div>
 
@@ -874,6 +880,22 @@
         const content = modal.querySelector('div');
         modal.classList.remove('modal-active');
         content.classList.remove('modal-content-active');
+    }
+
+    // Konversi otomatis: setiap 10 kg menjadi 1 Peti (Peti selalu bulat tanpa koma)
+    function autoConvertEggKg(kgInputId, petiInputId) {
+        const kgEl = document.getElementById(kgInputId);
+        const petiEl = document.getElementById(petiInputId);
+        if (!kgEl || !petiEl) return;
+        
+        let kgVal = parseFloat(kgEl.value) || 0;
+        if (kgVal >= 10) {
+            const extraPeti = Math.floor(kgVal / 10);
+            const currentPeti = parseInt(petiEl.value || 0, 10);
+            petiEl.value = currentPeti + extraPeti;
+            const remainderKg = Math.round((kgVal - (extraPeti * 10)) * 10) / 10;
+            kgEl.value = remainderKg > 0 ? remainderKg : '';
+        }
     }
 </script>
 @endpush

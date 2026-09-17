@@ -163,8 +163,10 @@
                 <div class="space-y-0.5 min-w-0">
                     <div class="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider">Masuk</div>
                     <div class="text-xs sm:text-sm font-bold text-slate-800 leading-tight">
-                        <div>{{ number_format($telurMasuk, 0, ',', '.') }} <span class="text-[10px] font-normal text-slate-500">Peti</span></div>
-                        <div class="text-[11px] sm:text-xs text-slate-600 font-semibold">& {{ number_format($telurMasukKg, 0, ',', '.') }} <span class="text-[9px] font-normal text-slate-500">Kg</span></div>
+                        <div>{{ number_format((int) $telurMasuk, 0, ',', '.') }} <span class="text-[10px] font-normal text-slate-500">Peti</span></div>
+                        @if($telurMasukKg > 0)
+                            <div class="text-[11px] sm:text-xs text-slate-600 font-semibold">& {{ $telurMasukKg == floor($telurMasukKg) ? number_format($telurMasukKg, 0, ',', '.') : number_format($telurMasukKg, 1, ',', '.') }} <span class="text-[9px] font-normal text-slate-500">Kg</span></div>
+                        @endif
                     </div>
                     <div class="text-[9px] sm:text-[10px] font-medium text-slate-400 truncate">
                         Produksi Kandang
@@ -175,11 +177,13 @@
                 <div class="space-y-0.5 min-w-0 border-x border-slate-200 px-1.5 sm:px-2">
                     <div class="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider">Keluar</div>
                     <div class="text-xs sm:text-sm font-bold text-slate-800 leading-tight">
-                        <div>{{ number_format($telurKeluar, 0, ',', '.') }} <span class="text-[10px] font-normal text-slate-500">Peti</span></div>
-                        <div class="text-[11px] sm:text-xs text-slate-600 font-semibold">& {{ number_format($telurKgSold, 0, ',', '.') }} <span class="text-[9px] font-normal text-slate-500">Kg</span></div>
+                        <div>{{ number_format((int) $telurKeluar, 0, ',', '.') }} <span class="text-[10px] font-normal text-slate-500">Peti</span></div>
+                        @if($telurKeluarKg > 0)
+                            <div class="text-[11px] sm:text-xs text-slate-600 font-semibold">& {{ $telurKeluarKg == floor($telurKeluarKg) ? number_format($telurKeluarKg, 0, ',', '.') : number_format($telurKeluarKg, 1, ',', '.') }} <span class="text-[9px] font-normal text-slate-500">Kg</span></div>
+                        @endif
                     </div>
-                    <div class="text-[9px] sm:text-[10px] font-medium text-slate-400 truncate" title="{{ number_format($telurPetiSold, 0, ',', '.') }} Peti • {{ number_format($telurKgSold, 0, ',', '.') }} Kg Terjual">
-                        {{ number_format($telurPetiSold, 0, ',', '.') }} Peti Terjual
+                    <div class="text-[9px] sm:text-[10px] font-medium text-slate-400 truncate" title="{{ number_format((int) $telurPetiSold, 0, ',', '.') }} Peti • {{ $telurKgSold == floor($telurKgSold) ? number_format($telurKgSold, 0, ',', '.') : number_format($telurKgSold, 1, ',', '.') }} Kg Terjual">
+                        {{ number_format((int) $telurPetiSold, 0, ',', '.') }} Peti Terjual
                     </div>
                 </div>
 
@@ -187,8 +191,11 @@
                 <div class="text-right space-y-0.5 min-w-0">
                     <div class="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider">Sisa Stok</div>
                     <div class="text-xs sm:text-sm font-black leading-tight {{ $telurStok < 0 || $telurStokKgTotal < 0 ? 'text-rose-600' : 'text-emerald-600' }}">
-                        <div>{{ number_format($telurStok, 0, ',', '.') }} <span class="text-[10px] font-bold {{ $telurStok < 0 ? 'text-rose-600' : 'text-emerald-700' }}">Peti</span></div>
-                        <div class="text-[11px] sm:text-xs font-bold {{ $telurStokKgTotal < 0 ? 'text-rose-600' : 'text-emerald-600' }}">& {{ number_format($telurStokKgTotal, 0, ',', '.') }} <span class="text-[9px] font-normal text-slate-500">Kg</span></div>
+                        <div>{{ number_format((int) $telurStok, 0, ',', '.') }} <span class="text-[10px] font-bold {{ $telurStok < 0 ? 'text-rose-600' : 'text-emerald-700' }}">Peti</span></div>
+                        @if($telurStokKgTotal != 0)
+                            @php $absStokKg = abs($telurStokKgTotal); @endphp
+                            <div class="text-[11px] sm:text-xs font-bold {{ $telurStokKgTotal < 0 ? 'text-rose-600' : 'text-emerald-600' }}">& {{ $absStokKg == floor($absStokKg) ? number_format($absStokKg, 0, ',', '.') : number_format($absStokKg, 1, ',', '.') }} <span class="text-[9px] font-normal text-slate-500">Kg</span></div>
+                        @endif
                     </div>
                     <div class="text-[9px] sm:text-[10px] font-semibold truncate {{ $telurStok < 0 || $telurStokKgTotal < 0 ? 'text-rose-600' : 'text-emerald-600' }}">
                         {{ $telurStok < 0 || $telurStokKgTotal < 0 ? 'Defisit Stok' : 'Tersedia' }}

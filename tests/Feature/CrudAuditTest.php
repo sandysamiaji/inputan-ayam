@@ -100,7 +100,7 @@ class CrudAuditTest extends TestCase
     {
         $coop = Coop::where('is_active', true)->first();
 
-        // 1. Create standard with crates_count and weight_kg
+        // 1. Create standard with crates_count and weight_kg (15.5 kg -> 1 Peti + 5.5 kg)
         $response = $this->post(route('production.store'), [
             'coop_id' => $coop->id,
             'good_eggs' => 300,
@@ -117,9 +117,10 @@ class CrudAuditTest extends TestCase
         $this->assertNotNull($ep);
         $this->assertEquals(300, $ep->good_eggs);
         $this->assertEquals(320, $ep->total_eggs);
-        $this->assertEquals(15.5, (float) $ep->weight_kg);
+        $this->assertEquals(11, $ep->crates_count); // 10 + 1 dari 15.5 kg
+        $this->assertEquals(5.5, (float) $ep->weight_kg);
 
-        // 2. Create via Master Flocks modal payload (total_eggs without good_eggs, with weight_kg)
+        // 2. Create via Master Flocks modal payload (24.0 kg -> 2 Peti + 4.0 kg)
         $responseFlockModal = $this->post(route('production.store'), [
             'coop_id' => $coop->id,
             'total_eggs' => 500,
@@ -133,7 +134,8 @@ class CrudAuditTest extends TestCase
         $epFlock = EggProduction::latest('id')->first();
         $this->assertEquals(480, $epFlock->good_eggs);
         $this->assertEquals(500, $epFlock->total_eggs);
-        $this->assertEquals(24.0, (float) $epFlock->weight_kg);
+        $this->assertEquals(18, $epFlock->crates_count); // 16 + 2 dari 24 kg
+        $this->assertEquals(4.0, (float) $epFlock->weight_kg);
 
         // 3. Update via Rekap
         $updateResp = $this->put(route('rekap.data.production.update', $ep->id), [
@@ -145,7 +147,7 @@ class CrudAuditTest extends TestCase
         $this->assertEquals(350, $ep->total_eggs);
         $this->assertEquals(340, $ep->good_eggs);
 
-        // 4. Update via Warehouse including weight_kg
+        // 4. Update via Warehouse including weight_kg (18.25 kg -> 1 Peti + 8.3 kg)
         $whUpdateResp = $this->put(route('warehouse.update', "ep_{$ep->id}"), [
             'good_eggs' => 360,
             'broken_eggs' => 10,
@@ -156,7 +158,8 @@ class CrudAuditTest extends TestCase
         $whUpdateResp->assertSessionHas('success');
         $ep->refresh();
         $this->assertEquals(360, $ep->good_eggs);
-        $this->assertEquals(18.25, (float) $ep->weight_kg);
+        $this->assertEquals(13, $ep->crates_count); // 12 + 1 dari 18.25 kg
+        $this->assertEquals(8.3, (float) $ep->weight_kg);
 
         // Verify views contain new fields
         $inputPage = $this->get('/input');
@@ -509,5 +512,43 @@ class CrudAuditTest extends TestCase
 
         $trayVal = DB::table('settings')->where('key', 'isi_tray')->value('value');
         $this->assertStringContainsString('30', $trayVal);
+    }
+
+    /**
+     * Test 10: Aturan Konversi Telur (10 kg = 1 Peti, Peti Bulat Tanpa Koma, Adu Data Perkiraan Telur vs Input Karyawan)
+     */
+    public function test_ten_kg_equals_one_crate_rule_and_comparison(): void
+    {
+        $coop = Coop::where('is_active', true)->first();
+
+        // 1. Kasus User: 8 Peti dan 10 Kg otomatis menjadi 9 Peti (0 Kg)
+        $response = $this->post(route('production.store'), [
+            'coop_id' => $coop->id,
+            'good_eggs' => 582,
+            'broken_eggs' => 0,
+            'crates_count' => 8,
+            'weight_kg' => 10,
+            'date' => '2026-09-17',
+        ]);
+        $response->assertSessionHas('success');
+
+        $ep = EggProduction::latest('id')->first();
+        $this->assertEquals(9, $ep->crates_count);
+        $this->assertNull($ep->weight_kg);
+
+        // 2. Verifikasi Dashboard menampilkan 9 Peti (tanpa koma), dan box Realisasi Panen Telur
+        $dashResponse = $this->get('/?date=2026-09-17');
+        $dashResponse->assertStatus(200);
+        $dashResponse->assertSee('Realisasi Panen Telur:');
+        $dashResponse->assertSee('Perkiraan:');
+        $dashResponse->assertSee('Peti');
+
+        // 3. Verifikasi Gudang Telur menampilkan Peti bilangan bulat
+        $gudangResponse = $this->get('/gudang/telur');
+        $gudangResponse->assertStatus(200);
+        $gudangResponse->assertSee('Peti');
+
+        // Clean up
+        $ep->delete();
     }
 }

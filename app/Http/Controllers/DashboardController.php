@@ -496,6 +496,8 @@ class DashboardController extends Controller
         $coopHdData = [];
         $coopEggTodayData = [];
         $coopFeedTodayData = [];
+        $coopEggCratesData = [];
+        $coopEggKgData = [];
 
         foreach ($coops as $c) {
             $todayEgg = (int) $eggProdRecords->where('coop_id', $c->id)->sum('total_eggs');
@@ -506,6 +508,20 @@ class DashboardController extends Controller
                 $coopHdData[$c->id] = null; // Belum diinput oleh user
             }
             $coopFeedTodayData[$c->id] = (float) $feedConsRecords->where('coop_id', $c->id)->sum('quantity_kg');
+
+            // Hitung realisasi Peti & Kg per blok (10 kg = 1 Peti, Peti integer)
+            $coopProds = $eggProdRecords->where('coop_id', $c->id);
+            $cKgRaw = (float) $coopProds->sum('weight_kg');
+            $cPetiRaw = (int) round($coopProds->sum('crates_count'));
+            if ($cKgRaw >= 10) {
+                $extraP = (int) floor($cKgRaw / 10);
+                $cPetiRaw += $extraP;
+                $cKgRaw = round($cKgRaw - ($extraP * 10), 1);
+            } else {
+                $cKgRaw = round($cKgRaw, 1);
+            }
+            $coopEggCratesData[$c->id] = $cPetiRaw;
+            $coopEggKgData[$c->id] = $cKgRaw;
         }
 
         $flockHdData = [];
@@ -566,7 +582,9 @@ class DashboardController extends Controller
             'coopHdData',
             'flockHdData',
             'coopEggTodayData',
-            'coopFeedTodayData'
+            'coopFeedTodayData',
+            'coopEggCratesData',
+            'coopEggKgData'
         ));
     }
 
@@ -616,7 +634,23 @@ class DashboardController extends Controller
         } elseif ($weightKg !== null) {
             $cratesCount = 0;
         } else {
-            $cratesCount = round($totalEggs / 25, 2);
+            $cratesCount = round($totalEggs / 25, 0);
+        }
+
+        // Aturan Konversi: Peti selalu bulat (tanpa koma), setiap 10 kg otomatis menjadi 1 Peti
+        $cratesCount = (int) round($cratesCount);
+        if ($weightKg !== null && $weightKg >= 10) {
+            $extraPeti = (int) floor($weightKg / 10);
+            $cratesCount += $extraPeti;
+            $weightKg = round($weightKg - ($extraPeti * 10), 1);
+            if ($weightKg <= 0) {
+                $weightKg = null;
+            }
+        } elseif ($weightKg !== null) {
+            $weightKg = round($weightKg, 1);
+            if ($weightKg <= 0) {
+                $weightKg = null;
+            }
         }
 
         $dataToInsert = [

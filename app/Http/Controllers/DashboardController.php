@@ -67,6 +67,7 @@ class DashboardController extends Controller
         // 1. Ringkasan Produksi Telur Hari Ini
         $eggProdRecords = EggProduction::with(['coop', 'user'])->whereDate('date', $selectedDate)->get();
         $totalEggCrates = (float) $eggProdRecords->sum('crates_count');
+        $totalEggKg = (float) $eggProdRecords->sum('weight_kg');
         $totalEggCount = (int) $eggProdRecords->sum('total_eggs');
         $brokenEggCount = (int) $eggProdRecords->sum('broken_eggs');
         $goodEggCount = (int) $eggProdRecords->sum('good_eggs');
@@ -125,6 +126,16 @@ class DashboardController extends Controller
         foreach ($eggProdRecords as $item) {
             $coopName = $item->coop ? $item->coop->name : 'Kandang';
             $timeStr = $item->time ? substr($item->time, 0, 5) : ($item->created_at ? $item->created_at->format('H:i') : '00:00');
+            $valParts = [];
+            if ($item->crates_count > 0) {
+                $valParts[] = number_format($item->crates_count, 0, ',', '.') . ' Peti';
+            }
+            if ($item->weight_kg > 0) {
+                $kgFormatted = $item->weight_kg == floor($item->weight_kg) ? number_format($item->weight_kg, 0, ',', '.') : number_format($item->weight_kg, 1, ',', '.');
+                $valParts[] = $kgFormatted . ' Kg';
+            }
+            $valStr = !empty($valParts) ? '+' . implode(' & ', $valParts) : '+' . number_format($item->crates_count, 0, ',', '.') . ' Peti';
+
             $activities->push([
                 'id' => 'egg_' . $item->id,
                 'category' => 'egg',
@@ -132,7 +143,7 @@ class DashboardController extends Controller
                 'subtitle' => $coopName . ($item->notes ? ' • ' . $item->notes : ''),
                 'datetime' => $carbonDate->format('d/m/Y') . ' ' . $timeStr,
                 'time' => $timeStr,
-                'value' => '+' . number_format($item->crates_count, 0, ',', '.') . ' Peti',
+                'value' => $valStr,
                 'subvalue' => number_format($item->total_eggs, 0, ',', '.') . ' Butir',
                 'user_username' => $getUserName($item->user),
                 'trip_username' => null,
@@ -270,6 +281,16 @@ class DashboardController extends Controller
                 $coopName = $item->coop ? $item->coop->name : 'Kandang';
                 $timeStr = $item->time ? substr($item->time, 0, 5) : ($item->created_at ? $item->created_at->format('H:i') : '00:00');
                 $iDate = $item->date ? Carbon::parse($item->date)->format('d/m/Y') : '';
+                $valParts = [];
+                if ($item->crates_count > 0) {
+                    $valParts[] = number_format($item->crates_count, 0, ',', '.') . ' Peti';
+                }
+                if ($item->weight_kg > 0) {
+                    $kgFormatted = $item->weight_kg == floor($item->weight_kg) ? number_format($item->weight_kg, 0, ',', '.') : number_format($item->weight_kg, 1, ',', '.');
+                    $valParts[] = $kgFormatted . ' Kg';
+                }
+                $valStr = !empty($valParts) ? '+' . implode(' & ', $valParts) : '+' . number_format($item->crates_count, 0, ',', '.') . ' Peti';
+
                 $activities->push([
                     'id' => 'egg_' . $item->id,
                     'category' => 'egg',
@@ -277,7 +298,7 @@ class DashboardController extends Controller
                     'subtitle' => $coopName . ($item->notes ? ' • ' . $item->notes : ''),
                     'datetime' => $iDate . ' ' . $timeStr,
                     'time' => $timeStr,
-                    'value' => '+' . number_format($item->crates_count, 0, ',', '.') . ' Peti',
+                    'value' => $valStr,
                     'subvalue' => number_format($item->total_eggs, 0, ',', '.') . ' Butir',
                     'user_username' => $getUserName($item->user),
                     'trip_username' => null,
@@ -401,9 +422,11 @@ class DashboardController extends Controller
         $feedSummary = \App\Services\OutboundIntegrationService::getFeedOutboundSummary();
 
         $totalEggProducedAllTime = $eggSummary['total_produced_crates'];
+        $totalEggProducedKgAllTime = (float) $eggSummary['total_produced_kg'];
         $totalEggSoldAllTime = $eggSummary['peti_sold'];
         $eggKgSold = $eggSummary['kg_sold'];
         $currentEggStockCrates = $eggSummary['current_stock_peti'];
+        $currentEggStockKg = (float) $eggSummary['current_stock_kg_total'];
 
         $totalFeedPurchased = $feedSummary['purchased_kg'];
         $totalFeedUsedAllTime = $feedSummary['consumption_kg'];
@@ -506,6 +529,7 @@ class DashboardController extends Controller
             'formattedDate',
             'carbonDate',
             'totalEggCrates',
+            'totalEggKg',
             'totalEggCount',
             'brokenEggCount',
             'goodEggCount',
@@ -517,9 +541,11 @@ class DashboardController extends Controller
             'flocks',
             'coops',
             'totalEggProducedAllTime',
+            'totalEggProducedKgAllTime',
             'totalEggSoldAllTime',
             'eggKgSold',
             'currentEggStockCrates',
+            'currentEggStockKg',
             'currentFeedStockKg',
             'totalFeedPurchased',
             'totalFeedUsedAllTime',
@@ -549,12 +575,23 @@ class DashboardController extends Controller
      */
     public function storeEggProduction(Request $request)
     {
+        // Jika good_eggs tidak dikirim tetapi total_eggs dikirim (misal modal panen cepat di flocks)
+        if (!$request->has('good_eggs') && $request->has('total_eggs')) {
+            $tot = (int) $request->input('total_eggs', 0);
+            $brk = (int) $request->input('broken_eggs', 0);
+            $abn = (int) $request->input('abnormal_eggs', 0);
+            $request->merge([
+                'good_eggs' => max(0, $tot - $brk - $abn)
+            ]);
+        }
+
         $validated = $request->validate([
             'coop_id' => 'required|exists:coops,id',
             'good_eggs' => 'required|numeric|min:0',
             'broken_eggs' => 'nullable|numeric|min:0',
             'abnormal_eggs' => 'nullable|numeric|min:0',
             'crates_count' => 'nullable|numeric|min:0',
+            'weight_kg' => 'nullable|numeric|min:0',
             'date' => 'nullable|date',
             'time' => 'nullable',
             'notes' => 'nullable|string',
@@ -566,10 +603,21 @@ class DashboardController extends Controller
         $abnormalEggs = (int) ($validated['abnormal_eggs'] ?? 0);
         $totalEggs = $goodEggs + $brokenEggs + $abnormalEggs;
 
-        // Jika peti tidak diisi, estimasikan
-        $cratesCount = isset($validated['crates_count']) && $validated['crates_count'] > 0
-            ? (float) $validated['crates_count']
-            : round($totalEggs / 25, 2);
+        $weightKg = isset($validated['weight_kg']) && (float) $validated['weight_kg'] > 0
+            ? (float) $validated['weight_kg']
+            : null;
+
+        // Jika peti diisi > 0 gunakan nilai tersebut
+        // Jika tidak diisi atau 0:
+        // - jika weight_kg diisi, biarkan peti 0
+        // - jika weight_kg juga tidak diisi, estimasikan otomatis
+        if (isset($validated['crates_count']) && (float) $validated['crates_count'] > 0) {
+            $cratesCount = (float) $validated['crates_count'];
+        } elseif ($weightKg !== null) {
+            $cratesCount = 0;
+        } else {
+            $cratesCount = round($totalEggs / 25, 2);
+        }
 
         $dataToInsert = [
             'flock_id' => $coop->flock_id,
@@ -581,6 +629,7 @@ class DashboardController extends Controller
             'broken_eggs' => $brokenEggs,
             'good_eggs' => $goodEggs,
             'crates_count' => $cratesCount,
+            'weight_kg' => $weightKg,
             'notes' => $validated['notes'] ?? null,
         ];
 

@@ -210,6 +210,20 @@
                 <span class="font-medium">{{ session('error') }}</span>
             </div>
         @endif
+
+        @if($errors->any())
+            <div class="bg-rose-50 border border-rose-200 text-rose-800 px-4 py-3 rounded-xl text-sm shadow-sm space-y-1 mt-2">
+                <div class="flex items-center gap-2 font-bold text-rose-900">
+                    <i data-lucide="alert-triangle" class="w-5 h-5 text-rose-600 shrink-0"></i>
+                    <span>Terdapat kesalahan pada input:</span>
+                </div>
+                <ul class="list-disc list-inside pl-7 text-xs text-rose-700 font-medium">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
     </div>
 
     <!-- Main Content Slot (Expands smoothly on desktop) -->

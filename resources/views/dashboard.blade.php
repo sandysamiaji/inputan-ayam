@@ -83,8 +83,20 @@
                 </div>
                 <div class="mt-3">
                     <p class="text-xs font-semibold text-slate-500">Produksi Telur</p>
+                    @php
+                        $cratesStr = number_format($totalEggCrates, 0, ',', '.') . ' Peti';
+                        $kgVal = round($totalEggKg, 2);
+                        $kgStr = $kgVal > 0 ? ($kgVal == floor($kgVal) ? number_format($kgVal, 0, ',', '.') : number_format($kgVal, 1, ',', '.')) . ' kg' : '';
+                        if ($totalEggCrates > 0 && $kgVal > 0) {
+                            $prodTelurDisplay = $cratesStr . ' + ' . $kgStr;
+                        } elseif ($kgVal > 0) {
+                            $prodTelurDisplay = $kgStr;
+                        } else {
+                            $prodTelurDisplay = $cratesStr;
+                        }
+                    @endphp
                     <p class="text-lg sm:text-xl font-black text-slate-900 tracking-tight leading-tight mt-0.5">
-                        {{ number_format($totalEggCrates, 0, ',', '.') }} <span class="text-xs font-bold text-slate-500">Peti</span>
+                        {{ $prodTelurDisplay }}
                     </p>
                     <p class="text-[11px] text-slate-500 font-medium mt-0.5">
                         ({{ number_format($totalEggCount, 0, ',', '.') }} Butir)
@@ -439,14 +451,23 @@
                 <div class="space-y-3">
                     <!-- Gudang Telur -->
                     <div class="p-3 rounded-xl bg-amber-50/50 border border-amber-100">
+                        @php
+                            $stokCratesFormatted = number_format($currentEggStockCrates, 0, ',', '.') . ' Peti';
+                            $stokKgFormatted = ($currentEggStockKg != 0) ? '& ' . ($currentEggStockKg == floor($currentEggStockKg) ? number_format($currentEggStockKg, 0, ',', '.') : number_format($currentEggStockKg, 1, ',', '.')) . ' Kg' : '';
+                            $stokTelurDisplay = trim($stokCratesFormatted . ' ' . $stokKgFormatted);
+
+                            $masukCratesFormatted = number_format($totalEggProducedAllTime, 0, ',', '.') . ' Peti';
+                            $masukKgFormatted = ($totalEggProducedKgAllTime > 0) ? '& ' . ($totalEggProducedKgAllTime == floor($totalEggProducedKgAllTime) ? number_format($totalEggProducedKgAllTime, 0, ',', '.') : number_format($totalEggProducedKgAllTime, 1, ',', '.')) . ' Kg' : '';
+                            $masukTelurDisplay = trim($masukCratesFormatted . ' ' . $masukKgFormatted);
+                        @endphp
                         <div class="flex items-center justify-between text-xs font-bold text-slate-800 mb-1">
                             <span class="flex items-center gap-1.5">
                                 <span class="w-2 h-2 rounded-full bg-amber-500"></span> Stok Telur Saat Ini
                             </span>
-                            <span class="text-maroon-800 font-black text-sm">{{ number_format($currentEggStockCrates, 0, ',', '.') }} Peti</span>
+                            <span class="text-maroon-800 font-black text-sm">{{ $stokTelurDisplay }}</span>
                         </div>
                         <div class="flex flex-col sm:flex-row sm:justify-between text-[11px] text-slate-500 pt-1.5 border-t border-amber-100/60 gap-1">
-                            <span>Masuk: <b class="text-slate-700">{{ number_format($totalEggProducedAllTime, 0, ',', '.') }} Peti</b></span>
+                            <span>Masuk: <b class="text-slate-700">{{ $masukTelurDisplay }}</b></span>
                             <span>Keluar: <b class="text-maroon-800 font-bold">{{ number_format($totalEggSoldAllTime, 0, ',', '.') }} Peti & {{ number_format($eggKgSold, 0, ',', '.') }} Kg Terjual</b></span>
                         </div>
                     </div>
@@ -607,12 +628,12 @@
                 </div>
             </div>
 
-            <!-- 2. Grid Telur Baik, Retak & Rusak -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <!-- 2. Grid Telur Baik & Retak/Pecah -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1.5">Telur Baik (Butir)</label>
                     <div class="relative">
-                        <input type="number" name="good_eggs" id="prodGoodEggs" required placeholder="Contoh: 2150"
+                        <input type="number" name="good_eggs" id="prodGoodEggs" required placeholder="0"
                                oninput="calculateEggEstimates()"
                                class="w-full text-sm font-bold text-slate-900 px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-maroon-800 focus:ring-1 focus:ring-maroon-800 outline-none bg-slate-50">
                         <span class="absolute right-3.5 top-2.5 text-xs font-semibold text-slate-400">Butir</span>
@@ -620,7 +641,7 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Retak/Pecah</label>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Retak/Pecah (Butir)</label>
                     <div class="relative">
                         <input type="number" name="broken_eggs" id="prodBrokenEggs" value="0" placeholder="0"
                                oninput="calculateEggEstimates()"
@@ -628,20 +649,31 @@
                         <span class="absolute right-3.5 top-2.5 text-xs font-semibold text-slate-400">Butir</span>
                     </div>
                 </div>
+            </div>
+
+            <!-- 3. Grid Jumlah Peti & Jumlah Kg (Opsional) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Jumlah Peti (Opsional)</label>
+                    <div class="relative">
+                        <input type="number" step="0.01" name="crates_count" id="prodCratesCount" value="0" placeholder="0"
+                               class="w-full text-sm font-bold text-maroon-800 px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-maroon-800 focus:ring-1 focus:ring-maroon-800 outline-none bg-slate-50">
+                        <span class="absolute right-3.5 top-2.5 text-xs font-semibold text-slate-400">Peti</span>
+                    </div>
+                </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Telur Rusak</label>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Jumlah kg (Opsional)</label>
                     <div class="relative">
-                        <input type="number" name="abnormal_eggs" id="prodAbnormalEggs" value="0" placeholder="0"
-                               oninput="calculateEggEstimates()"
-                               class="w-full text-sm font-bold text-amber-700 px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-maroon-800 focus:ring-1 focus:ring-maroon-800 outline-none bg-slate-50">
-                        <span class="absolute right-3.5 top-2.5 text-xs font-semibold text-slate-400">Butir</span>
+                        <input type="number" step="0.01" name="weight_kg" id="prodWeightKg" value="0" placeholder="0"
+                               class="w-full text-sm font-bold text-amber-800 px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-maroon-800 focus:ring-1 focus:ring-maroon-800 outline-none bg-slate-50">
+                        <span class="absolute right-3.5 top-2.5 text-xs font-semibold text-slate-400">Kg</span>
                     </div>
                 </div>
             </div>
 
-            <!-- 3. Estimasi Hasil & Input Peti -->
-            <div class="p-3.5 bg-amber-50/80 border border-amber-200 rounded-xl space-y-3 mt-3">
+            <!-- 4. Estimasi Hasil & Info Hen-Day -->
+            <div class="p-3.5 bg-amber-50/80 border border-amber-200 rounded-xl space-y-2 mt-3">
                 <div class="flex justify-between items-center text-slate-700 font-medium text-xs sm:text-sm">
                     <span>Produktivitas Hen-Day (HD):</span>
                     <span id="dashCalcHD" class="px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 font-black text-xs sm:text-sm">0%</span>
@@ -649,16 +681,6 @@
                 <div class="flex justify-between text-slate-600 font-medium text-xs sm:text-sm">
                     <span>Total Telur (Semua):</span>
                     <b id="calcTotalEggs" class="text-slate-900 font-bold">0 Butir</b>
-                </div>
-                
-                <div class="pt-2 border-t border-amber-200/50">
-                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Jumlah Peti yang didapat</label>
-                    <div class="relative">
-                        <input type="number" step="0.01" name="crates_count" id="prodCratesCount" value="0" placeholder="0"
-                               class="w-full text-sm font-bold text-maroon-800 px-3.5 py-2 rounded-xl border border-amber-200 focus:border-maroon-800 focus:ring-1 focus:ring-maroon-800 outline-none bg-white">
-                        <span class="absolute right-3.5 top-2 text-xs font-semibold text-slate-400">Peti</span>
-                    </div>
-                    <p class="text-[10px] text-amber-700 mt-1" id="calcCratesHint">Estimasi sistem: 0 Peti</p>
                 </div>
             </div>
 
@@ -1214,18 +1236,9 @@
     function calculateEggEstimates() {
         const good = parseInt(document.getElementById('prodGoodEggs').value) || 0;
         const broken = parseInt(document.getElementById('prodBrokenEggs').value) || 0;
-        const abnormal = parseInt(document.getElementById('prodAbnormalEggs').value) || 0;
-        const total = good + broken + abnormal;
-
-        const crates = Math.round((total / 25) * 100) / 100;
+        const total = good + broken;
 
         document.getElementById('calcTotalEggs').textContent = total.toLocaleString('id-ID') + ' Butir';
-        
-        // Update hint text for crates
-        const hintElem = document.getElementById('calcCratesHint');
-        if(hintElem) {
-            hintElem.textContent = 'Estimasi sistem: ' + crates.toLocaleString('id-ID') + ' Peti';
-        }
 
         // Hitung Hen-Day (HD %)
         const hdElem = document.getElementById('dashCalcHD');

@@ -214,7 +214,13 @@
                     'time' => $item->created_at ? $item->created_at->format('H:i') : '06:30',
                     'petugas' => $item->user ? $item->user->name : 'Petugas01',
                     'source' => $item->source ?? 'A1, A2, A3',
-                    'is_nonaktif' => $isNonaktif
+                    'is_nonaktif' => $isNonaktif,
+                    'good_eggs' => $item->good_eggs ?? null,
+                    'broken_eggs' => $item->broken_eggs ?? null,
+                    'crates_count' => $item->crates_count ?? null,
+                    'weight_kg' => $item->weight_kg ?? null,
+                    'coop_id' => $item->coop_id ?? null,
+                    'flock_id' => $item->flock_id ?? null,
                 ]) }})">
                     
                     <!-- Egg Icon -->
@@ -277,7 +283,13 @@
                             'time' => $item->created_at ? $item->created_at->format('H:i') : '06:30',
                             'petugas' => $item->user ? $item->user->name : 'Petugas01',
                             'source' => $item->source ?? 'A1, A2, A3',
-                            'is_nonaktif' => $isNonaktif
+                            'is_nonaktif' => $isNonaktif,
+                            'good_eggs' => $item->good_eggs ?? null,
+                            'broken_eggs' => $item->broken_eggs ?? null,
+                            'crates_count' => $item->crates_count ?? null,
+                            'weight_kg' => $item->weight_kg ?? null,
+                            'coop_id' => $item->coop_id ?? null,
+                            'flock_id' => $item->flock_id ?? null,
                         ]) }})" class="w-full px-3.5 py-2 text-left hover:bg-slate-50 flex items-center gap-2">
                             <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-500"></i>
                             <span>Lihat Detail</span>
@@ -294,8 +306,8 @@
                             'time' => $item->created_at ? $item->created_at->format('H:i') : '06:30',
                             'good_eggs' => $item->good_eggs ?? null,
                             'broken_eggs' => $item->broken_eggs ?? null,
-                            'abnormal_eggs' => $item->abnormal_eggs ?? null,
                             'crates_count' => $item->crates_count ?? null,
+                            'weight_kg' => $item->weight_kg ?? null,
                             'coop_id' => $item->coop_id ?? null,
                             'flock_id' => $item->flock_id ?? null,
                         ]) }})" class="w-full px-3.5 py-2 text-left hover:bg-slate-50 flex items-center gap-2">
@@ -636,15 +648,15 @@
                 </div>
             </div>
 
-            <!-- Row 3: Telur Rusak & Jumlah Peti -->
+            <!-- Row 3: Jumlah Peti & Jumlah kg -->
             <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Telur Rusak (Butir)</label>
-                    <input type="number" name="abnormal_eggs" id="editRusak" min="0" oninput="calcEditProduksi()" placeholder="0" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm font-bold text-rose-700 focus:ring-2 focus:ring-rose-600/20 focus:border-rose-600">
-                </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Jumlah Peti (Opsional)</label>
                     <input type="number" step="0.01" name="crates_count" id="editPeti" min="0" placeholder="0" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm font-extrabold text-slate-800">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Jumlah kg (Opsional)</label>
+                    <input type="number" step="0.01" name="weight_kg" id="editWeightKg" min="0" placeholder="0" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm font-extrabold text-slate-800">
                 </div>
             </div>
 
@@ -816,19 +828,9 @@
     function calcEditProduksi() {
         const baik = parseInt(document.getElementById('editTelurBaik').value) || 0;
         const retak = parseInt(document.getElementById('editRetakPecah').value) || 0;
-        const rusak = parseInt(document.getElementById('editRusak').value) || 0;
-        const total = baik + retak + rusak;
+        const total = baik + retak;
         document.getElementById('editTotalTelur').value = new Intl.NumberFormat('id-ID').format(total) + ' butir';
-        
-        const petiElem = document.getElementById('editPeti');
-        if (!petiElem.dataset.manual) {
-            petiElem.value = (total / 25).toFixed(2);
-        }
     }
-
-    document.getElementById('editPeti').addEventListener('input', function() {
-        this.dataset.manual = 'true';
-    });
 
     function openEditModal(data) {
         const modal = document.getElementById('modalEditTelur');
@@ -849,14 +851,13 @@
 
         const goodEggs = data.good_eggs !== undefined && data.good_eggs !== null ? data.good_eggs : (data.type === 'masuk' ? Math.round((data.raw_quantity || data.quantity) * 25) : 0);
         const brokenEggs = data.broken_eggs !== undefined && data.broken_eggs !== null ? data.broken_eggs : (data.type === 'keluar' ? (data.raw_quantity || data.quantity) : 0);
-        const abnormalEggs = data.abnormal_eggs || 0;
-        const cratesCount = data.crates_count !== undefined && data.crates_count !== null ? data.crates_count : (data.unit === 'Peti' ? (data.raw_quantity || data.quantity) : (goodEggs / 25).toFixed(2));
+        const cratesCount = data.crates_count !== undefined && data.crates_count !== null ? data.crates_count : (data.unit === 'Peti' ? (data.raw_quantity || data.quantity) : 0);
+        const weightKg = data.weight_kg !== undefined && data.weight_kg !== null ? data.weight_kg : 0;
 
         document.getElementById('editTelurBaik').value = goodEggs;
         document.getElementById('editRetakPecah').value = brokenEggs;
-        document.getElementById('editRusak').value = abnormalEggs;
         document.getElementById('editPeti').value = cratesCount;
-        delete document.getElementById('editPeti').dataset.manual;
+        document.getElementById('editWeightKg').value = weightKg;
 
         document.getElementById('editDate').value = data.raw_date || data.date;
         document.getElementById('editTime').value = data.time || '06:30';

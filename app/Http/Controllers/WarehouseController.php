@@ -726,6 +726,7 @@ class WarehouseController extends Controller
                     'broken_eggs' => $ep->broken_eggs,
                     'abnormal_eggs' => $ep->abnormal_eggs ?? 0,
                     'crates_count' => (float) $ep->crates_count,
+                    'weight_kg' => $ep->weight_kg,
                     'coop_id' => $ep->coop_id,
                     'flock_id' => $ep->flock_id,
                 ]);
@@ -751,6 +752,7 @@ class WarehouseController extends Controller
                     'broken_eggs' => $ep->broken_eggs,
                     'abnormal_eggs' => $ep->abnormal_eggs ?? 0,
                     'crates_count' => (float) $ep->crates_count,
+                    'weight_kg' => $ep->weight_kg,
                     'coop_id' => $ep->coop_id,
                     'flock_id' => $ep->flock_id,
                 ]);
@@ -1164,13 +1166,21 @@ class WarehouseController extends Controller
                 }
             }
 
-            if ($request->has('crates_count') && (float) $request->crates_count > 0) {
+            if ($request->has('crates_count')) {
                 $ep->crates_count = (float) $request->crates_count;
+            }
+
+            if ($request->has('weight_kg')) {
+                $ep->weight_kg = (float) $request->weight_kg > 0 ? (float) $request->weight_kg : null;
+            }
+
+            if ($request->has('time')) {
+                $ep->time = $request->time;
             }
 
             $abnormalVal = isset($ep->abnormal_eggs) ? (int) $ep->abnormal_eggs : 0;
             $ep->total_eggs = (int) ($ep->good_eggs + $ep->broken_eggs + $abnormalVal);
-            if ($ep->crates_count <= 0) {
+            if ($ep->crates_count <= 0 && empty($ep->weight_kg)) {
                 $ep->crates_count = round($ep->total_eggs / 25, 2);
             }
 
@@ -1206,8 +1216,15 @@ class WarehouseController extends Controller
             if ($request->has('type')) $ht->type = $request->type;
             elseif ($request->has('category')) $ht->type = $request->category;
 
-            if ($request->has('dosage')) $ht->dosage = $request->dosage;
-            elseif ($request->has('quantity')) $ht->dosage = $request->quantity . ($request->has('unit') ? ' ' . $request->unit : '');
+            if ($request->has('dosage')) {
+                $dosageVal = (string) $request->dosage;
+                if ($request->has('unit') && !empty($request->unit) && !str_contains(strtolower($dosageVal), strtolower($request->unit))) {
+                    $dosageVal .= ' ' . $request->unit;
+                }
+                $ht->dosage = $dosageVal;
+            } elseif ($request->has('quantity')) {
+                $ht->dosage = $request->quantity . ($request->has('unit') ? ' ' . $request->unit : '');
+            }
 
             if ($request->has('application_method')) $ht->application_method = $request->application_method;
             if ($request->has('coop_id')) {

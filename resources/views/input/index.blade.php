@@ -606,22 +606,22 @@
                 <div class="row-fields">
                     <div class="field">
                         <label>Telur Baik (Butir)</label>
-                        <input type="number" name="good_eggs" id="prodTelurBaik" value="" min="0" oninput="calcProduksi()" required placeholder="0">
+                        <input type="number" name="good_eggs" id="prodTelurBaik" value="0" min="0" oninput="calcProduksi()" required placeholder="0">
                     </div>
                     <div class="field">
                         <label>Retak/Pecah (Butir)</label>
-                        <input type="number" name="broken_eggs" id="prodRetakPecah" value="0" min="0" oninput="calcProduksi()">
+                        <input type="number" name="broken_eggs" id="prodRetakPecah" value="0" min="0" oninput="calcProduksi()" placeholder="0">
                     </div>
                 </div>
 
                 <div class="row-fields">
                     <div class="field">
-                        <label>Telur Rusak (Butir)</label>
-                        <input type="number" name="abnormal_eggs" id="prodRusak" value="0" min="0" oninput="calcProduksi()">
+                        <label>Jumlah Peti (Opsional)</label>
+                        <input type="number" step="0.01" name="crates_count" id="prodPeti" value="0" min="0" placeholder="0">
                     </div>
                     <div class="field">
-                        <label>Jumlah Peti (Opsional)</label>
-                        <input type="number" step="0.01" name="crates_count" id="prodPeti" value="0" min="0">
+                        <label>Jumlah kg (Opsional)</label>
+                        <input type="number" step="0.01" name="weight_kg" id="prodKg" value="0" min="0" placeholder="0">
                     </div>
                 </div>
 
@@ -1088,8 +1088,7 @@ function updateCoopPop(prefix) {
 function calcProduksi() {
     const baik = parseInt(document.getElementById('prodTelurBaik').value) || 0;
     const retakPecah = parseInt(document.getElementById('prodRetakPecah').value) || 0;
-    const rusak = parseInt(document.getElementById('prodRusak').value) || 0;
-    const total = baik + retakPecah + rusak;
+    const total = baik + retakPecah;
 
     document.getElementById('prodTotalTelur').value = total + ' butir';
 }

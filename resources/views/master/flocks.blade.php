@@ -32,6 +32,35 @@
         </div>
     </div>
 
+    <!-- Alert Notifications Flash -->
+    @if(session('success'))
+        <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center gap-3 text-xs sm:text-sm font-bold shadow-xs animate-fade-in">
+            <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-600 shrink-0"></i>
+            <span>{{ session('success') }}</span>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center gap-3 text-xs sm:text-sm font-bold shadow-xs animate-fade-in">
+            <i data-lucide="alert-triangle" class="w-5 h-5 text-rose-600 shrink-0"></i>
+            <span>{{ session('error') }}</span>
+        </div>
+    @endif
+
+    @if($errors->any())
+        <div class="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 space-y-1 text-xs sm:text-sm font-bold shadow-xs animate-fade-in">
+            <div class="flex items-center gap-2 text-rose-900 font-black">
+                <i data-lucide="alert-circle" class="w-4 h-4 text-rose-600 shrink-0"></i>
+                <span>Terdapat kesalahan pada pengisian data:</span>
+            </div>
+            <ul class="list-disc list-inside font-normal pl-2 text-rose-700">
+                @foreach($errors->all() as $err)
+                    <li>{{ $err }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     <!-- Summary Metrics Card -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <div class="farm-card p-4 bg-white border border-slate-200">
@@ -625,6 +654,7 @@
                 </div>
             </div>
             <input type="hidden" name="crates_count" id="panenCratesCount" value="0">
+            <input type="hidden" name="good_eggs" id="panenGoodEggsInput" value="0">
 
             <div>
                 <label class="block text-xs font-bold text-slate-700 mb-1">Catatan Panen (Opsional)</label>
@@ -780,6 +810,8 @@
         const goodEggs = Math.max(0, totalEggs - brokenEggs);
 
         document.getElementById('calcPanenGoodEggs').innerText = `${goodEggs.toLocaleString('id-ID')} Butir`;
+        const goodEggsInput = document.getElementById('panenGoodEggsInput');
+        if (goodEggsInput) goodEggsInput.value = goodEggs;
 
         // 1 Peti estimasi ~ 250 butir (atau ~15kg)
         const crates = (totalEggs / 250).toFixed(1);

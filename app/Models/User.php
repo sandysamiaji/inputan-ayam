@@ -49,4 +49,17 @@ class User extends Authenticatable
     {
         return $this->hasMany(Mortality::class);
     }
+
+    public function permissionsList()
+    {
+        return $this->hasMany(UserPermission::class);
+    }
+
+    /**
+     * Helper untuk memeriksa hak akses fitur/menu user
+     */
+    public function canAccess(string $permissionKey): bool
+    {
+        return \App\Services\PermissionService::canAccess($this, $permissionKey);
+    }
 }

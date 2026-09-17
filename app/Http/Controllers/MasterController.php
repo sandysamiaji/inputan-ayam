@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Flock;
 use App\Models\Coop;
 use App\Models\WeeklyStandard;
+use App\Models\User;
+use App\Models\UserPermission;
 use App\Services\ProductionStandardService;
 use Carbon\Carbon;
 
@@ -535,5 +537,237 @@ class MasterController extends Controller
         }
 
         return redirect()->back()->with('success', 'Parameter Pengaturan Sistem berhasil diperbarui!');
+    }
+
+    /**
+     * Tampilkan Halaman Manajemen Hak Akses Pengguna & Toggle Menu/Fitur
+     */
+    public function permissions(Request $request)
+    {
+        if (auth()->check() && auth()->user()->role !== 'admin') {
+            return redirect()->route('dashboard')->with('error', 'Akses Ditolak: Halaman Hak Akses hanya dapat dikelola oleh Administrator.');
+        }
+
+        $users = User::orderBy('role', 'asc')->orderBy('name', 'asc')->get();
+
+        $selectedUserId = $request->query('user_id');
+        if (!$selectedUserId) {
+            $defaultNonAdmin = $users->firstWhere('role', '!=', 'admin');
+            $selectedUser = $defaultNonAdmin ?: $users->first();
+        } else {
+            $selectedUser = User::find($selectedUserId) ?: $users->first();
+        }
+
+        $allPermissions = \App\Services\PermissionService::getAllPermissions();
+        $userPermissionsMap = [];
+
+        if ($selectedUser) {
+            $existingPerms = \App\Models\UserPermission::where('user_id', $selectedUser->id)
+                ->pluck('is_enabled', 'permission_key')
+                ->toArray();
+
+            foreach ($allPermissions as $catKey => $cat) {
+                foreach ($cat['items'] as $itemKey => $item) {
+                    if (isset($existingPerms[$itemKey])) {
+                        $userPermissionsMap[$itemKey] = (bool) $existingPerms[$itemKey];
+                    } else {
+                        $userPermissionsMap[$itemKey] = (bool) $item['default'];
+                    }
+                }
+            }
+        }
+
+        return view('master.permissions', compact('users', 'selectedUser', 'allPermissions', 'userPermissionsMap'));
+    }
+
+    /**
+     * AJAX Toggle Switch Hak Akses Fitur Per User
+     */
+    public function togglePermission(Request $request, $userId)
+    {
+        if (auth()->check() && auth()->user()->role !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Hanya Administrator yang berhak mengubah hak akses.'], 403);
+        }
+
+        $user = User::findOrFail($userId);
+        $permissionKey = $request->input('permission_key');
+        $isEnabled = $request->boolean('is_enabled');
+
+        if ($user->role === 'admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akun Administrator memiliki akses penuh dan tidak dapat dibatasi.',
+                'is_admin' => true,
+            ], 422);
+        }
+
+        \App\Models\UserPermission::updateOrCreate(
+            ['user_id' => $user->id, 'permission_key' => $permissionKey],
+            ['is_enabled' => $isEnabled]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Hak akses fitur berhasil diperbarui.',
+            'permission_key' => $permissionKey,
+            'is_enabled' => $isEnabled,
+        ]);
+    }
+
+    /**
+     * Aksi Massal (Bulk) Pengaturan Izin: Aktifkan Semua, Nonaktifkan Semua, Template Presets
+     */
+    public function bulkPermission(Request $request, $userId)
+    {
+        if (auth()->check() && auth()->user()->role !== 'admin') {
+            return back()->with('error', 'Hanya Administrator yang berhak mengubah hak akses.');
+        }
+
+        $user = User::findOrFail($userId);
+        if ($user->role === 'admin') {
+            return back()->with('error', 'Akun Administrator memiliki akses penuh secara permanen.');
+        }
+
+        $action = $request->input('action');
+        $allPermissions = \App\Services\PermissionService::getAllPermissions();
+
+        if ($action === 'enable_all') {
+            foreach ($allPermissions as $cat) {
+                foreach ($cat['items'] as $key => $item) {
+                    \App\Models\UserPermission::updateOrCreate(
+                        ['user_id' => $user->id, 'permission_key' => $key],
+                        ['is_enabled' => true]
+                    );
+                }
+            }
+            return back()->with('success', "Seluruh hak akses untuk {$user->name} berhasil DIAKTIFKAN.");
+        }
+
+        if ($action === 'disable_all') {
+            foreach ($allPermissions as $cat) {
+                foreach ($cat['items'] as $key => $item) {
+                    \App\Models\UserPermission::updateOrCreate(
+                        ['user_id' => $user->id, 'permission_key' => $key],
+                        ['is_enabled' => false]
+                    );
+                }
+            }
+            return back()->with('success', "Seluruh hak akses untuk {$user->name} berhasil DINONAKTIFKAN.");
+        }
+
+        if ($action === 'template_field') {
+            // Preset Petugas Kandang (Hanya Dashboard, Input Telur/Pakan/Kematian, dan Gudang dasar)
+            $allowedKeys = [
+                'menu_dashboard', 'menu_input', 'menu_warehouse',
+                'feature_quick_egg', 'feature_quick_feed', 'feature_quick_mortality', 'feature_quick_weight', 'feature_quick_health',
+                'feature_warehouse_telur', 'feature_warehouse_pakan', 'feature_warehouse_obat',
+            ];
+            foreach ($allPermissions as $cat) {
+                foreach ($cat['items'] as $key => $item) {
+                    \App\Models\UserPermission::updateOrCreate(
+                        ['user_id' => $user->id, 'permission_key' => $key],
+                        ['is_enabled' => in_array($key, $allowedKeys)]
+                    );
+                }
+            }
+            return back()->with('success', "Preset 'Petugas Lapangan' berhasil diterapkan untuk {$user->name}.");
+        }
+
+        return back()->with('error', 'Aksi tidak dikenali.');
+    }
+
+    /**
+     * Tambah Pengguna Baru
+     */
+    public function storeUser(Request $request)
+    {
+        if (auth()->check() && auth()->user()->role !== 'admin') {
+            return back()->with('error', 'Hanya Administrator yang berhak menambah pengguna.');
+        }
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'username' => 'required|string|max:50|alpha_dash|unique:users,username',
+            'email' => 'nullable|email|max:255|unique:users,email',
+            'password' => 'required|string|min:4',
+            'role' => 'required|in:admin,user',
+        ], [
+            'username.unique' => 'Username ini sudah digunakan, silakan pilih yang lain.',
+            'email.unique' => 'Email ini sudah terdaftar.',
+            'password.min' => 'Password minimal 4 karakter.',
+        ]);
+
+        $user = User::create([
+            'name' => $validated['name'],
+            'username' => strtolower($validated['username']),
+            'email' => $validated['email'] ?: strtolower($validated['username']) . '@nochifarm.com',
+            'password' => \Illuminate\Support\Facades\Hash::make($validated['password']),
+            'role' => $validated['role'],
+            'is_active' => true,
+        ]);
+
+        return redirect()->route('master.permissions', ['user_id' => $user->id])
+            ->with('success', "Pengguna {$user->name} (@{$user->username}) berhasil ditambahkan!");
+    }
+
+    /**
+     * Update Data / Reset Password Pengguna oleh Admin
+     */
+    public function updateUser(Request $request, $id)
+    {
+        if (auth()->check() && auth()->user()->role !== 'admin') {
+            return back()->with('error', 'Hanya Administrator yang berhak mengubah data pengguna.');
+        }
+
+        $user = User::findOrFail($id);
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'username' => "required|string|max:50|alpha_dash|unique:users,username,{$user->id}",
+            'email' => "nullable|email|max:255|unique:users,email,{$user->id}",
+            'password' => 'nullable|string|min:4',
+            'role' => 'required|in:admin,user',
+            'is_active' => 'required|boolean',
+        ]);
+
+        $user->name = $validated['name'];
+        $user->username = strtolower($validated['username']);
+        if (!empty($validated['email'])) {
+            $user->email = $validated['email'];
+        }
+        $user->role = $validated['role'];
+        $user->is_active = (bool) $validated['is_active'];
+
+        if (!empty($validated['password'])) {
+            $user->password = \Illuminate\Support\Facades\Hash::make($validated['password']);
+        }
+
+        $user->save();
+
+        return redirect()->route('master.permissions', ['user_id' => $user->id])
+            ->with('success', "Data pengguna {$user->name} berhasil diperbarui!");
+    }
+
+    /**
+     * Toggle Status Aktif/Nonaktif Akun Pengguna
+     */
+    public function toggleActiveUser(Request $request, $id)
+    {
+        if (auth()->check() && auth()->user()->role !== 'admin') {
+            return back()->with('error', 'Hanya Administrator yang berhak mengubah status akun.');
+        }
+
+        $user = User::findOrFail($id);
+
+        if ($user->id === auth()->id()) {
+            return back()->with('error', 'Anda tidak dapat menonaktifkan akun sendiri yang sedang aktif digunakan.');
+        }
+
+        $user->is_active = !$user->is_active;
+        $user->save();
+
+        $statusStr = $user->is_active ? 'diaktifkan' : 'dinonaktifkan';
+        return redirect()->route('master.permissions', ['user_id' => $user->id])
+            ->with('success', "Akun {$user->name} berhasil {$statusStr}.");
     }
 }

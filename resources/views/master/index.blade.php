@@ -662,6 +662,14 @@
                 <span class="arr">›</span>
             </a>
 
+            <!-- 7. Hak Akses & Pengguna (Admin Only) -->
+            <a href="{{ route('master.permissions') }}" class="menu" id="menu-hak-akses" style="border: 1.5px solid #fecdd3; background: #fff8f9;">
+                <div class="ico red" style="background: #fdf2f4; color: #800020; font-size: 16px;">🛡</div>
+                <b style="color: #800020;">Hak Akses User</b>
+                <p>Toggle izin & pengguna</p>
+                <span class="arr" style="color: #800020;">›</span>
+            </a>
+
         </div>
     </div>
 

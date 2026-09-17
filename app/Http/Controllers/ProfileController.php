@@ -57,6 +57,6 @@ class ProfileController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('dashboard')->with('success', 'Anda telah berhasil keluar dari sesi.');
+        return redirect()->route('login')->with('success', 'Anda telah berhasil keluar dari sesi.');
     }
 }

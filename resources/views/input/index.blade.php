@@ -536,33 +536,41 @@
     <!-- Section: Pilih Transaksi -->
     <div class="section-title">PILIH TRANSAKSI</div>
     <section class="types">
+        @if(!auth()->check() || auth()->user()->canAccess('feature_quick_egg'))
         <!-- 1. Produksi Telur -->
         <div class="type-card {{ $type === 'produksi' ? 'active' : '' }}" onclick="switchType('produksi')" id="btnTypeProduksi">
             <div class="icon-box">🥚</div>
             <b>Produksi Telur</b>
             <small>Masuk otomatis ke Gudang Telur</small>
         </div>
+        @endif
 
+        @if(!auth()->check() || auth()->user()->canAccess('feature_quick_feed'))
         <!-- 2. Pemakaian Pakan -->
         <div class="type-card {{ $type === 'pakan' ? 'active' : '' }}" onclick="switchType('pakan')" id="btnTypePakan">
             <div class="icon-box" style="background:#ecfff8;">🌾</div>
             <b>Pemakaian Pakan</b>
             <small>Potong otomatis Gudang Pakan</small>
         </div>
+        @endif
 
+        @if(!auth()->check() || auth()->user()->canAccess('feature_quick_mortality'))
         <!-- 3. Mortalitas -->
         <div class="type-card {{ $type === 'mortalitas' ? 'active' : '' }}" onclick="switchType('mortalitas')" id="btnTypeMortalitas">
             <div class="icon-box">🐔</div>
             <b>Mortalitas</b>
             <small>Update populasi blok</small>
         </div>
+        @endif
 
+        @if(!auth()->check() || auth()->user()->canAccess('feature_quick_health'))
         <!-- 4. Vaksin & Obat -->
         <div class="type-card {{ $type === 'obat' ? 'active' : '' }}" onclick="switchType('obat')" id="btnTypeObat">
             <div class="icon-box">💊</div>
             <b>Vaksin & Obat</b>
             <small>Potong otomatis stok obat</small>
         </div>
+        @endif
     </section>
 
     <!-- FORM 1: PRODUKSI TELUR -->

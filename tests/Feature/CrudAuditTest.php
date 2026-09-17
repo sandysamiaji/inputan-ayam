@@ -21,16 +21,18 @@ class CrudAuditTest extends TestCase
     {
         parent::setUp();
         
-        // Pastikan ada setidaknya 1 User, 1 Flock, dan 1 Coop aktif
-        if (!User::first()) {
-            User::create([
-                'name' => 'Petugas Kandang Test',
-                'username' => 'petugas',
-                'email' => 'petugas@nochifarm.com',
+        $adminUser = User::where('role', 'admin')->first();
+        if (!$adminUser) {
+            $adminUser = User::create([
+                'name' => 'Admin Test',
+                'username' => 'admin_test',
+                'email' => 'admintest@nochifarm.com',
                 'password' => bcrypt('password'),
-                'role' => 'user',
+                'role' => 'admin',
+                'is_active' => true,
             ]);
         }
+        $this->actingAs($adminUser);
 
         $flock = Flock::where('is_active', true)->first();
         if (!$flock) {

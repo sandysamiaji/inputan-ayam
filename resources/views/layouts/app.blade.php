@@ -148,31 +148,54 @@
 
                 <!-- Desktop Navigation Links (Hidden on Mobile, Visible on Desktop md:) -->
                 <nav class="hidden md:flex items-center gap-1.5 bg-black/15 p-1 rounded-xl backdrop-blur-sm border border-white/10">
+                    @if(!auth()->check() || auth()->user()->canAccess('menu_dashboard'))
                     <a href="{{ route('dashboard') }}" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold {{ request()->routeIs('dashboard') ? 'bg-white text-maroon-900 shadow-sm' : 'text-rose-100 hover:text-white hover:bg-white/10' }} transition-all">
                         <i data-lucide="home" class="w-4 h-4"></i>
                         <span>Dashboard</span>
                     </a>
+                    @endif
+
+                    @if(!auth()->check() || auth()->user()->canAccess('menu_warehouse'))
                     <a href="{{ route('warehouse.index') }}" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold {{ request()->routeIs('warehouse.*') ? 'bg-white text-maroon-900 shadow-sm' : 'text-rose-100 hover:text-white hover:bg-white/10' }} transition-all">
                         <i data-lucide="warehouse" class="w-4 h-4"></i>
                         <span>Gudang</span>
                     </a>
+                    @endif
+
+                    @if(!auth()->check() || auth()->user()->canAccess('menu_input'))
                     <a href="{{ route('input.index') }}" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold {{ request()->routeIs('input.*') ? 'bg-white text-maroon-900 shadow-sm' : 'text-rose-100 hover:text-white hover:bg-white/10' }} transition-all">
                         <i data-lucide="plus-circle" class="w-4 h-4"></i>
                         <span>Input</span>
                     </a>
+                    @endif
+
+                    @if(!auth()->check() || auth()->user()->canAccess('menu_rekap'))
                     <a href="{{ route('rekap.index') }}" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold {{ request()->routeIs('rekap.*') ? 'bg-white text-maroon-900 shadow-sm' : 'text-rose-100 hover:text-white hover:bg-white/10' }} transition-all">
                         <i data-lucide="clipboard-list" class="w-4 h-4"></i>
                         <span>Rekap</span>
                     </a>
+                    @endif
+
+                    @if(!auth()->check() || auth()->user()->canAccess('menu_master'))
                     <a href="{{ route('master.index') }}" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold {{ request()->routeIs('master.*') ? 'bg-white text-maroon-900 shadow-sm' : 'text-rose-100 hover:text-white hover:bg-white/10' }} transition-all">
                         <i data-lucide="layout-grid" class="w-4 h-4"></i>
                         <span>Master</span>
                     </a>
+                    @endif
                 </nav>
 
                 <!-- Right Action Bar: Notification & User Profile -->
                 <div class="flex items-center gap-2 sm:gap-3">
                     
+                    @auth
+                        @if(auth()->user()->role === 'admin')
+                            <a href="{{ route('master.permissions') }}" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-400/20 hover:bg-amber-400/30 text-amber-200 border border-amber-300/30 text-xs font-bold transition-all" title="Kelola Hak Akses Pengguna">
+                                <i data-lucide="shield-check" class="w-3.5 h-3.5 text-amber-300"></i>
+                                <span>Hak Akses</span>
+                            </a>
+                        @endif
+                    @endauth
+
                     <!-- Notification Bell -->
                     <button onclick="toggleNotificationModal()" class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 transition-all flex items-center justify-center text-white relative border border-white/10" title="Notifikasi Kandang">
                         <i data-lucide="bell" class="w-5 h-5"></i>
@@ -185,10 +208,20 @@
                             <i data-lucide="user-check" class="w-4 h-4 text-rose-200"></i>
                         </div>
                         <div class="text-left leading-tight">
-                            <span class="text-xs font-bold text-white block">{{ isset($user) && $user ? $user->name : (auth()->user()->name ?? 'Petugas') }}</span>
-                            <span class="text-[10px] text-rose-200 font-medium block">Petugas Kandang</span>
+                            <span class="text-xs font-bold text-white block">{{ auth()->user()->name ?? 'Petugas' }}</span>
+                            <span class="text-[10px] text-rose-200 font-medium block">{{ auth()->user() && auth()->user()->role === 'admin' ? 'Administrator' : 'Petugas Kandang' }}</span>
                         </div>
                     </a>
+
+                    <!-- Logout Button -->
+                    @auth
+                        <form action="{{ route('logout') }}" method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin keluar dari sistem?');">
+                            @csrf
+                            <button type="submit" class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/10 hover:bg-rose-900/80 active:scale-95 transition-all flex items-center justify-center text-rose-200 hover:text-white border border-white/10" title="Keluar / Logout">
+                                <i data-lucide="log-out" class="w-4 h-4"></i>
+                            </button>
+                        </form>
+                    @endauth
 
                 </div>
             </div>
@@ -231,9 +264,19 @@
         @yield('content')
     </main>
 
-    <!-- Bottom Navigation Bar (Sesuai Mockup Nochi Farm: Dashboard, Gudang, Input, Rekap, Master) -->
+    <!-- Bottom Navigation Bar (Dynamic Permission-Aware) -->
+    @php
+        $showDashboard = !auth()->check() || auth()->user()->canAccess('menu_dashboard');
+        $showWarehouse = !auth()->check() || auth()->user()->canAccess('menu_warehouse');
+        $showInput = !auth()->check() || auth()->user()->canAccess('menu_input');
+        $showRekap = !auth()->check() || auth()->user()->canAccess('menu_rekap');
+        $showMaster = !auth()->check() || auth()->user()->canAccess('menu_master');
+        $navCount = ($showDashboard ? 1 : 0) + ($showWarehouse ? 1 : 0) + ($showInput ? 1 : 0) + ($showRekap ? 1 : 0) + ($showMaster ? 1 : 0);
+        if ($navCount < 1) $navCount = 1;
+    @endphp
     <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[440px] z-40 bg-white border-t border-slate-200 shadow-2xl">
-        <div class="grid grid-cols-5 py-2 px-1 text-center items-center">
+        <div class="grid grid-cols-{{ $navCount }} py-2 px-1 text-center items-center">
+            @if($showDashboard)
             <!-- 1. Dashboard -->
             <a href="{{ route('dashboard') }}" class="flex flex-col items-center justify-center py-1 {{ request()->routeIs('dashboard') ? 'text-maroon-800 font-extrabold' : 'text-slate-500 hover:text-maroon-700 font-medium' }} transition-transform active:scale-90">
                 <div class="relative">
@@ -244,7 +287,9 @@
                 </div>
                 <span class="text-[10px] mt-1 tracking-tight">Dashboard</span>
             </a>
+            @endif
 
+            @if($showWarehouse)
             <!-- 2. Gudang -->
             <a href="{{ route('warehouse.index') }}" class="flex flex-col items-center justify-center py-1 {{ request()->routeIs('warehouse.*') ? 'text-maroon-800 font-extrabold' : 'text-slate-500 hover:text-maroon-700 font-medium' }} transition-transform active:scale-90">
                 <div class="relative">
@@ -255,7 +300,9 @@
                 </div>
                 <span class="text-[10px] mt-1 tracking-tight">Gudang</span>
             </a>
+            @endif
 
+            @if($showInput)
             <!-- 3. Input (Sesuai Mockup ＋ Input Kandang) -->
             <a href="{{ route('input.index') }}" class="flex flex-col items-center justify-center py-1 {{ request()->routeIs('input.*') ? 'text-maroon-800 font-extrabold' : 'text-slate-500 hover:text-maroon-700 font-medium' }} transition-transform active:scale-90 group">
                 <div class="w-7 h-7 rounded-lg {{ request()->routeIs('input.*') ? 'bg-maroon-800 text-white shadow-md' : 'bg-rose-50 border border-rose-200 text-maroon-800' }} flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
@@ -263,7 +310,9 @@
                 </div>
                 <span class="text-[10px] mt-0.5 tracking-tight font-bold {{ request()->routeIs('input.*') ? 'text-maroon-800' : 'text-slate-600' }}">Input</span>
             </a>
+            @endif
 
+            @if($showRekap)
             <!-- 4. Rekap -->
             <a href="{{ route('rekap.index') }}" class="flex flex-col items-center justify-center py-1 {{ request()->routeIs('rekap.*') ? 'text-maroon-800 font-extrabold' : 'text-slate-500 hover:text-maroon-700 font-medium' }} transition-transform active:scale-90">
                 <div class="relative">
@@ -274,7 +323,9 @@
                 </div>
                 <span class="text-[10px] mt-1 tracking-tight">Rekap</span>
             </a>
+            @endif
 
+            @if($showMaster)
             <!-- 5. Master -->
             <a href="{{ route('master.index') }}" class="flex flex-col items-center justify-center py-1 {{ request()->routeIs('master.*') ? 'text-maroon-800 font-extrabold' : 'text-slate-500 hover:text-maroon-700 font-medium' }} transition-transform active:scale-90">
                 <div class="relative">
@@ -285,6 +336,7 @@
                 </div>
                 <span class="text-[10px] mt-1 tracking-tight">Master</span>
             </a>
+            @endif
         </div>
     </nav>
 

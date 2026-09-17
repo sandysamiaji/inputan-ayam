@@ -230,9 +230,33 @@ class DashboardController extends Controller
             $firstItemName = $firstItem ? $firstItem->item_name : '';
             $subTitleStr = ($item->customer_name ?: 'Pelanggan') . ($firstItemName ? ' • ' . $firstItemName : '');
             
-            $totalQty = $item->items->sum('quantity');
-            $unitStr = $firstItem ? ($firstItem->unit ?: 'Item') : 'Item';
-            $qtyDisplay = $totalQty > 0 ? '-' . number_format($totalQty, 0, ',', '.') . ' ' . $unitStr : '-';
+            $qtyDisplayParts = [];
+            if ($item->items->count() > 0) {
+                $groupedItems = [];
+                foreach ($item->items as $saleItem) {
+                    $unit = $saleItem->unit ?: 'Item';
+                    if (!isset($groupedItems[$unit])) {
+                        $groupedItems[$unit] = 0;
+                    }
+                    $groupedItems[$unit] += $saleItem->quantity;
+                }
+                
+                $isFirst = true;
+                foreach ($groupedItems as $unit => $qty) {
+                    $formattedQty = number_format($qty, 0, ',', '.');
+                    if ($isFirst) {
+                        $qtyDisplayParts[] = '-' . $formattedQty . ' ' . $unit;
+                        $isFirst = false;
+                    } else {
+                        // To match "-8 Peti dan 2 karung" we omit the negative sign on subsequent items,
+                        // or include it based on the first prompt "-8 Peti dan -2 karung". Let's use the latter for consistency of negative meaning deduction.
+                        // Actually, I'll just use the exact format requested: "-8 Peti dan 2 karung"
+                        $qtyDisplayParts[] = $formattedQty . ' ' . $unit;
+                    }
+                }
+            }
+            
+            $qtyDisplay = !empty($qtyDisplayParts) ? implode(' dan ', $qtyDisplayParts) : '-';
 
             $activities->push([
                 'id' => 'sale_' . $item->id,
@@ -388,9 +412,30 @@ class DashboardController extends Controller
                 $firstItemName = $firstItem ? $firstItem->item_name : '';
                 $subTitleStr = ($item->customer_name ?: 'Pelanggan') . ($firstItemName ? ' • ' . $firstItemName : '');
 
-                $totalQty = $item->items->sum('quantity');
-                $unitStr = $firstItem ? ($firstItem->unit ?: 'Item') : 'Item';
-                $qtyDisplay = $totalQty > 0 ? '-' . number_format($totalQty, 0, ',', '.') . ' ' . $unitStr : '-';
+                $qtyDisplayParts = [];
+                if ($item->items->count() > 0) {
+                    $groupedItems = [];
+                    foreach ($item->items as $saleItem) {
+                        $unit = $saleItem->unit ?: 'Item';
+                        if (!isset($groupedItems[$unit])) {
+                            $groupedItems[$unit] = 0;
+                        }
+                        $groupedItems[$unit] += $saleItem->quantity;
+                    }
+                    
+                    $isFirst = true;
+                    foreach ($groupedItems as $unit => $qty) {
+                        $formattedQty = number_format($qty, 0, ',', '.');
+                        if ($isFirst) {
+                            $qtyDisplayParts[] = '-' . $formattedQty . ' ' . $unit;
+                            $isFirst = false;
+                        } else {
+                            $qtyDisplayParts[] = $formattedQty . ' ' . $unit;
+                        }
+                    }
+                }
+                
+                $qtyDisplay = !empty($qtyDisplayParts) ? implode(' dan ', $qtyDisplayParts) : '-';
 
                 $activities->push([
                     'id' => 'sale_' . $item->id,

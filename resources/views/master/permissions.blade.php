@@ -176,22 +176,59 @@
             @endif
         </div>
 
+        <!-- Search & Filter Bar -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div class="relative w-full sm:max-w-md">
+                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                <input type="text" 
+                       id="permissionSearchInput" 
+                       oninput="filterPermissions(this.value)" 
+                       placeholder="Cari fitur, menu, kartu, tombol, atau kata kunci..." 
+                       class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-maroon-800 focus:bg-white transition-all">
+            </div>
+            <div class="text-xs text-slate-500 font-medium self-end sm:self-center">
+                Total Fitur: <span class="font-black text-maroon-800">{{ count(\App\Services\PermissionService::getAllPermissions(), COUNT_RECURSIVE) - count(\App\Services\PermissionService::getAllPermissions()) * 3 }} Item</span>
+            </div>
+        </div>
+
         <!-- Permission Categories & Feature Toggle Switches -->
-        <div class="space-y-5">
+        <div class="space-y-5" id="permissionCategoriesContainer">
             @foreach($allPermissions as $categoryKey => $category)
-                <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-                    <div class="bg-slate-50/80 px-5 py-3.5 border-b border-slate-200/70 flex items-center justify-between">
+                <div class="permission-category-card bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden" data-category="{{ $categoryKey }}">
+                    <div class="bg-slate-50/80 px-4 sm:px-5 py-3 border-b border-slate-200/70 flex flex-wrap items-center justify-between gap-2">
                         <div class="flex items-center gap-2.5">
-                            <div class="w-7 h-7 rounded-lg bg-rose-50 text-maroon-800 border border-rose-100 flex items-center justify-center">
+                            <div class="w-7 h-7 rounded-lg bg-rose-50 text-maroon-800 border border-rose-100 flex items-center justify-center shrink-0">
                                 <i data-lucide="{{ $category['icon'] ?? 'check-circle' }}" class="w-4 h-4"></i>
                             </div>
                             <h3 class="text-xs sm:text-sm font-black text-slate-800 uppercase tracking-wider">
                                 {{ $category['label'] }}
                             </h3>
                         </div>
-                        <span class="text-[11px] font-semibold text-slate-400">
-                            {{ count($category['items']) }} Fitur
-                        </span>
+                        <div class="flex items-center gap-2">
+                            @if($selectedUser->role !== 'admin')
+                                <form action="{{ route('master.permissions.bulk', $selectedUser->id) }}" method="POST" class="inline">
+                                    @csrf
+                                    <input type="hidden" name="action" value="enable_category">
+                                    <input type="hidden" name="category" value="{{ $categoryKey }}">
+                                    <button type="submit" class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-[10.5px] font-bold transition-all flex items-center gap-1" title="Aktifkan seluruh fitur di kategori ini">
+                                        <i data-lucide="check" class="w-3 h-3"></i>
+                                        <span>Aktifkan Kategori</span>
+                                    </button>
+                                </form>
+                                <form action="{{ route('master.permissions.bulk', $selectedUser->id) }}" method="POST" class="inline">
+                                    @csrf
+                                    <input type="hidden" name="action" value="disable_category">
+                                    <input type="hidden" name="category" value="{{ $categoryKey }}">
+                                    <button type="submit" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-lg text-[10.5px] font-bold transition-all flex items-center gap-1" title="Nonaktifkan seluruh fitur di kategori ini">
+                                        <i data-lucide="x" class="w-3 h-3"></i>
+                                        <span>Matikan</span>
+                                    </button>
+                                </form>
+                            @endif
+                            <span class="text-[11px] font-semibold text-slate-400 bg-white px-2 py-0.5 rounded border border-slate-200">
+                                {{ count($category['items']) }} Fitur
+                            </span>
+                        </div>
                     </div>
 
                     <div class="p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-3.5">
@@ -200,9 +237,9 @@
                                 $isEnabled = $selectedUser->role === 'admin' ? true : ($userPermissionsMap[$itemKey] ?? false);
                                 $isDisabledByAdmin = $selectedUser->role === 'admin';
                             @endphp
-                            <div class="p-3.5 rounded-xl border {{ $isEnabled ? 'bg-white border-slate-200 hover:border-maroon-300' : 'bg-slate-50/70 border-slate-200/60 opacity-80' }} transition-all flex items-center justify-between gap-3">
-                                <div class="pr-2">
-                                    <div class="flex items-center gap-2">
+                            <div class="permission-item-card p-3.5 rounded-xl border {{ $isEnabled ? 'bg-white border-slate-200 hover:border-maroon-300' : 'bg-slate-50/70 border-slate-200/60 opacity-80' }} transition-all flex items-center justify-between gap-3">
+                                <div class="pr-2 min-w-0">
+                                    <div class="flex items-center gap-2 flex-wrap">
                                         <h4 class="text-xs font-bold text-slate-800">{{ $item['label'] }}</h4>
                                         <span id="badge-{{ $itemKey }}" class="px-1.5 py-0.5 rounded text-[9px] font-bold {{ $isEnabled ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600' }}">
                                             {{ $isEnabled ? 'AKTIF' : 'NONAKTIF' }}
@@ -457,6 +494,32 @@
         const modal = document.getElementById('editUserModal');
         modal.classList.add('opacity-0', 'invisible', 'pointer-events-none');
         modal.querySelector('.transform').classList.add('scale-95');
+    }
+
+    // Client-side instant filter permissions by keyword
+    function filterPermissions(query) {
+        const q = (query || '').toLowerCase().trim();
+        const categories = document.querySelectorAll('.permission-category-card');
+
+        categories.forEach(cat => {
+            let hasVisible = false;
+            const items = cat.querySelectorAll('.permission-item-card');
+            items.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                if (!q || text.includes(q)) {
+                    item.style.display = 'flex';
+                    hasVisible = true;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            if (!q || hasVisible) {
+                cat.style.display = 'block';
+            } else {
+                cat.style.display = 'none';
+            }
+        });
     }
 </script>
 @endsection

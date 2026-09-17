@@ -4,6 +4,7 @@
 <div class="space-y-6">
 
     <!-- 1. KARTU SAMBUTAN & STATUS KANDANG (RESPONSIVE BANNER) -->
+    @if(!auth()->check() || auth()->user()->canAccess('dash_filter'))
     <div class="farm-card p-4 sm:p-6 bg-gradient-to-r from-white via-white to-rose-50/60 border border-rose-100/70 shadow-sm relative overflow-hidden">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             
@@ -54,6 +55,7 @@
 
         </div>
     </div>
+    @endif
 
     <!-- 2. RINGKASAN HARI INI (RESPONSIVE GRID: 2 COLS DI HP, 5 COLS DI LAPTOP/DESKTOP) -->
     <div>
@@ -71,6 +73,7 @@
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
 
             <!-- Card 1: Produksi Telur (Amber) -->
+            @if(!auth()->check() || auth()->user()->canAccess('dash_card_egg'))
             <div class="farm-card p-3.5 sm:p-4 border-l-4 border-l-amber-500 bg-white flex flex-col justify-between">
                 <div class="flex items-start justify-between gap-2">
                     <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100 shadow-xs">
@@ -111,8 +114,10 @@
                     </p>
                 </div>
             </div>
+            @endif
 
             <!-- Card 2: Pemakaian Pakan (Emerald) -->
+            @if(!auth()->check() || auth()->user()->canAccess('dash_card_feed'))
             <div class="farm-card p-3.5 sm:p-4 border-l-4 border-l-emerald-600 bg-white flex flex-col justify-between">
                 <div class="flex items-start justify-between gap-2">
                     <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100 shadow-xs">
@@ -130,8 +135,10 @@
                     </p>
                 </div>
             </div>
+            @endif
 
             <!-- Card 3: Mortalitas (Rose/Red) -->
+            @if(!auth()->check() || auth()->user()->canAccess('dash_card_mortality'))
             <div class="farm-card p-3.5 sm:p-4 border-l-4 border-l-rose-600 bg-white flex flex-col justify-between">
                 <div class="flex items-start justify-between gap-2">
                     <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-100 shadow-xs">
@@ -149,8 +156,10 @@
                     </p>
                 </div>
             </div>
+            @endif
 
             <!-- Card 4: Berat Badan (Sky Blue) -->
+            @if(!auth()->check() || auth()->user()->canAccess('dash_card_weight'))
             <div class="farm-card p-3.5 sm:p-4 border-l-4 border-l-sky-600 bg-white flex flex-col justify-between">
                 <div class="flex items-start justify-between gap-2">
                     <div class="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center shrink-0 border border-sky-100 shadow-xs">
@@ -168,16 +177,20 @@
                     </p>
                 </div>
             </div>
+            @endif
 
             <!-- Card 5: Vaksin / Obat (Maroon) -->
+            @if(!auth()->check() || auth()->user()->canAccess('dash_card_health'))
             <div class="col-span-2 md:col-span-1 farm-card p-3.5 sm:p-4 border-l-4 border-l-maroon-800 bg-white flex flex-col justify-between">
                 <div class="flex items-start justify-between gap-2">
                     <div class="w-10 h-10 rounded-xl bg-maroon-50 text-maroon-800 flex items-center justify-center shrink-0 border border-maroon-100 shadow-xs">
                         <i data-lucide="syringe" class="w-5 h-5 stroke-[2.2]"></i>
                     </div>
+                    @if(!auth()->check() || auth()->user()->canAccess('feature_quick_health'))
                     <button onclick="openModal('modalVaksin')" class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-maroon-50 text-maroon-800 hover:bg-maroon-100 border border-maroon-200 transition-colors">
                         + Catat
                     </button>
+                    @endif
                 </div>
                 <div class="mt-3">
                     <p class="text-xs font-semibold text-slate-500">Vaksin / Obat</p>
@@ -189,6 +202,7 @@
                     </p>
                 </div>
             </div>
+            @endif
 
         </div>
     </div>
@@ -199,14 +213,15 @@
         <!-- KOLOM KIRI (7 Kolom di Desktop): AKSI CEPAT & STATUS BLOK -->
         <div class="lg:col-span-7 xl:col-span-8 space-y-6">
 
-
             <!-- STATUS BLOK KANDANG (Info Rinci Per Blok Sesuai Mockup) -->
+            @if(!auth()->check() || auth()->user()->canAccess('dash_section_coops'))
             <div>
                 <div class="flex items-center justify-between mb-2.5 px-1">
                     <div class="flex items-center gap-2">
                         <div class="w-2.5 h-2.5 rounded-full bg-emerald-600"></div>
                         <h3 class="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-800">STATUS BLOK KANDANG AKTIF</h3>
                     </div>
+                    @if(!auth()->check() || auth()->user()->canAccess('dash_coop_fase_info'))
                     <div class="flex items-center gap-2">
                         <button type="button" onclick="openModal('modalFasePenjelasan')" class="text-xs text-emerald-800 hover:text-emerald-900 font-bold flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200 transition-colors">
                             <i data-lucide="help-circle" class="w-3.5 h-3.5 text-emerald-600"></i>
@@ -214,6 +229,7 @@
                             <span class="sm:hidden">Alasan Fase</span>
                         </button>
                     </div>
+                    @endif
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -247,17 +263,21 @@
                                     </div>
                                     <div class="flex items-center gap-1.5">
                                         <!-- BADGE HD UTAMA DI DEPAN: HANYA MUNCUL JIKA TELUR SUDAH DIINPUT -->
-                                        @if($coopHd !== null)
-                                            <span class="inline-flex items-center gap-1 text-[11px] font-black px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs" title="Hen-Day Production (HD) Blok {{ $coop->name }} Hari Ini">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
-                                                HD {{ number_format($coopHd, 1, ',', '.') }}%
-                                            </span>
-                                        @else
-                                            <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200" title="Belum ada data input telur untuk tanggal ini">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-                                                HD: Belum Input
-                                            </span>
+                                        @if(!auth()->check() || auth()->user()->canAccess('dash_coop_hd'))
+                                            @if($coopHd !== null)
+                                                <span class="inline-flex items-center gap-1 text-[11px] font-black px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs" title="Hen-Day Production (HD) Blok {{ $coop->name }} Hari Ini">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+                                                    HD {{ number_format($coopHd, 1, ',', '.') }}%
+                                                </span>
+                                            @else
+                                                <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200" title="Belum ada data input telur untuk tanggal ini">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                                                    HD: Belum Input
+                                                </span>
+                                            @endif
                                         @endif
+
+                                        @if(!auth()->check() || auth()->user()->canAccess('dash_coop_fase_info'))
                                         <button type="button" 
                                                 onclick="openModal('modalFasePenjelasan')"
                                                 title="Klik untuk melihat panduan lengkap fase {{ $cStd['pill'] }}"
@@ -265,6 +285,7 @@
                                             <span>{{ $cStd['pill'] }}</span>
                                             <i data-lucide="help-circle" class="w-3 h-3 opacity-75"></i>
                                         </button>
+                                        @endif
                                     </div>
                                 </div>
 
@@ -275,14 +296,16 @@
                                             <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-rose-50 text-maroon-800 border border-rose-100">
                                                 {{ $coop->chicken_age_weeks }} Minggu
                                             </span>
-                                            @if($coopHd !== null)
-                                                <span class="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-                                                    HD: {{ number_format($coopHd, 1, ',', '.') }}% ({{ number_format($todayEgg, 0, ',', '.') }} butir)
-                                                </span>
-                                            @else
-                                                <span class="text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-                                                    Telur: Belum Input
-                                                </span>
+                                            @if(!auth()->check() || auth()->user()->canAccess('dash_coop_hd'))
+                                                @if($coopHd !== null)
+                                                    <span class="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                                                        HD: {{ number_format($coopHd, 1, ',', '.') }}% ({{ number_format($todayEgg, 0, ',', '.') }} butir)
+                                                    </span>
+                                                @else
+                                                    <span class="text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                                                        Telur: Belum Input
+                                                    </span>
+                                                @endif
                                             @endif
                                         </div>
                                         <span class="text-xs">Kapasitas: <b class="text-slate-900 font-bold">{{ number_format($coop->active_chickens, 0, ',', '.') }} / {{ number_format($coop->capacity, 0, ',', '.') }}</b></span>
@@ -298,6 +321,7 @@
                                 </div>
 
                                 <!-- KOTAK PENJELASAN ALASAN STATUS: PENDEK DULU, BISA DI-KLIK DETAIL MEMANJANG OTOMATIS -->
+                                @if(!auth()->check() || auth()->user()->canAccess('dash_coop_fase_info'))
                                 <div class="mt-2.5 p-2 rounded-lg bg-emerald-50/70 border border-emerald-100 text-[11px] text-emerald-950 transition-all">
                                     <div class="flex items-center justify-between font-bold text-emerald-900 text-[10.5px]">
                                         <span class="flex items-center gap-1">
@@ -318,7 +342,7 @@
                                     <!-- Versi Panjang (Expand Otomatis Saat Klik Detail) -->
                                     <div id="coopFullText_{{ $coop->id }}" class="hidden text-[10.5px] text-emerald-800 mt-1.5 leading-relaxed border-t border-emerald-200/60 pt-1.5 space-y-1">
                                         <p>
-                                            Umur <b>{{ $coop->chicken_age_weeks }} mgg</b> masuk fase <b>{{ $cStd['fase'] }}</b> (rentang 21–25 mgg). Oviduk matang, masa subur & lonjakan bertelur pesat menuju puncak.
+                                             Umur <b>{{ $coop->chicken_age_weeks }} mgg</b> masuk fase <b>{{ $cStd['fase'] }}</b> (rentang 21–25 mgg). Oviduk matang, masa subur & lonjakan bertelur pesat menuju puncak.
                                         </p>
                                         <div class="text-[10px] text-emerald-950 font-medium bg-white/70 p-1.5 rounded border border-emerald-200/50">
                                             <div>• Target Standar HD: <b>{{ $cStd['hd_target'] }}%</b> (Acuan Master Umur {{ $coop->chicken_age_weeks }} Mgg)</div>
@@ -332,8 +356,10 @@
                                         </div>
                                     </div>
                                 </div>
+                                @endif
 
                                 <!-- Data Acuan Master Standar Produksi Otomatis -->
+                                @if(!auth()->check() || auth()->user()->canAccess('dash_coop_standards'))
                                 <div class="mt-2.5 pt-2.5 border-t border-slate-100 grid grid-cols-2 gap-2 text-[11px]">
                                     <div class="bg-slate-50 p-2 rounded-lg border border-slate-100">
                                         <span class="text-slate-400 block text-[10px] font-medium">Acuan Telur</span>
@@ -346,8 +372,10 @@
                                         <span class="text-[9px] text-slate-400 block mt-0.5">Pagi {{ $cStd['pagi_gram'] }}g • Sore {{ $cStd['sore_gram'] }}g</span>
                                     </div>
                                 </div>
+                                @endif
 
                                 <!-- ESTIMASI TELUR DARI ACUAN & ADU DATA REALISASI INPUT KARYAWAN -->
+                                @if(!auth()->check() || auth()->user()->canAccess('dash_coop_egg_comparison'))
                                 @php
                                     $eggGram = (!empty($cStd['berat_telur_val']) && $cStd['berat_telur_val'] > 0) ? (float) $cStd['berat_telur_val'] : 60.0;
                                     $estKg = $todayEgg > 0 ? round(($todayEgg * $eggGram) / 1000, 1) : 0;
@@ -423,8 +451,10 @@
                                         </div>
                                     @endif
                                 </div>
+                                @endif
 
-                                <!-- TOTAL KEBUTUHAN PAKAN BLOK INI (ACUAN HITUNGAN STANDAR) -->
+                                <!-- TOTAL KEBUTUHAN PAKAN BLOK INI & ADU DATA REALISASI -->
+                                @if(!auth()->check() || auth()->user()->canAccess('dash_coop_feed_comparison'))
                                 <div class="mt-2 p-2.5 rounded-lg bg-amber-50/70 border border-amber-200/80 text-slate-800">
                                     <div class="flex items-center justify-between">
                                         <span class="text-[10px] font-bold text-amber-900 uppercase tracking-wide flex items-center gap-1">
@@ -508,13 +538,14 @@
                                         </div>
                                     @endif
                                 </div>
+                                @endif
                             </div>
-
 
                         </div>
                     @endforeach
                 </div>
             </div>
+            @endif
 
         </div>
 
@@ -522,6 +553,7 @@
         <div class="lg:col-span-5 xl:col-span-4 space-y-6">
 
             <!-- KARTU INTEGRASI GUDANG NOCHIFRAM (Stok Masuk Kandang vs Keluar Penjualan) -->
+            @if(!auth()->check() || auth()->user()->canAccess('dash_section_warehouse_summary'))
             <div class="farm-card p-4 sm:p-5 bg-gradient-to-br from-white to-slate-50 border border-slate-200">
                 <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
                     <div class="flex items-center gap-2">
@@ -535,6 +567,7 @@
 
                 <div class="space-y-3">
                     <!-- Gudang Telur -->
+                    @if(!auth()->check() || auth()->user()->canAccess('dash_widget_egg_stock'))
                     <div class="p-3 rounded-xl bg-amber-50/50 border border-amber-100">
                         @php
                             $stokCratesFormatted = number_format((int) $currentEggStockCrates, 0, ',', '.') . ' Peti';
@@ -561,8 +594,10 @@
                             <span>Keluar: <b class="text-maroon-800 font-bold">{{ $keluarTelurDisplay }}</b></span>
                         </div>
                     </div>
+                    @endif
 
                     <!-- Gudang Pakan -->
+                    @if(!auth()->check() || auth()->user()->canAccess('dash_widget_feed_stock'))
                     <div class="p-3 rounded-xl bg-emerald-50/50 border border-emerald-100">
                         <div class="flex items-center justify-between text-xs font-bold text-slate-800 mb-1">
                             <span class="flex items-center gap-1.5">
@@ -575,10 +610,13 @@
                             <span>Terjual: <b class="text-emerald-800 font-bold">{{ number_format($feedKarungSold, 0, ',', '.') }} Karung ({{ number_format($feedKgSoldTotal, 0, ',', '.') }} Kg)</b></span>
                         </div>
                     </div>
+                    @endif
                 </div>
             </div>
+            @endif
 
             <!-- AKTIVITAS TERAKHIR TIMELINE -->
+            @if(!auth()->check() || auth()->user()->canAccess('dash_section_recent_activity'))
             <div>
                 <div class="flex items-center justify-between mb-3 px-1">
                     <div class="flex items-center gap-2">
@@ -664,6 +702,7 @@
                     @endforelse
                 </div>
             </div>
+            @endif
 
         </div>
 

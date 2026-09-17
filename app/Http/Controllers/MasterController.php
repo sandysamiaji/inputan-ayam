@@ -673,6 +673,22 @@ class MasterController extends Controller
             return back()->with('success', "Preset 'Petugas Lapangan' berhasil diterapkan untuk {$user->name}.");
         }
 
+        if ($action === 'enable_category' || $action === 'disable_category') {
+            $categoryKey = $request->input('category');
+            if (isset($allPermissions[$categoryKey])) {
+                $enable = ($action === 'enable_category');
+                foreach ($allPermissions[$categoryKey]['items'] as $key => $item) {
+                    \App\Models\UserPermission::updateOrCreate(
+                        ['user_id' => $user->id, 'permission_key' => $key],
+                        ['is_enabled' => $enable]
+                    );
+                }
+                $catLabel = $allPermissions[$categoryKey]['label'];
+                $statusStr = $enable ? 'DIAKTIFKAN' : 'DINONAKTIFKAN';
+                return back()->with('success', "Kategori '{$catLabel}' berhasil {$statusStr} untuk {$user->name}.");
+            }
+        }
+
         return back()->with('error', 'Aksi tidak dikenali.');
     }
 

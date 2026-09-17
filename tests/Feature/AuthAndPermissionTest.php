@@ -201,4 +201,94 @@ class AuthAndPermissionTest extends TestCase
         $response->assertRedirect('/login');
         $this->assertGuest();
     }
+
+    /**
+     * Test 9: Admin dapat mengaktifkan & menonaktifkan seluruh kategori hak akses sekaligus
+     */
+    public function test_admin_can_bulk_toggle_category_permissions(): void
+    {
+        $admin = User::where('role', 'admin')->first();
+        $user = User::firstOrCreate(
+            ['username' => 'category_bulk_user'],
+            [
+                'name' => 'Category Bulk User',
+                'email' => 'catbulk@nochifarm.com',
+                'password' => Hash::make('password123'),
+                'role' => 'user',
+                'is_active' => true,
+            ]
+        );
+
+        // Matikan seluruh kategori dashboard_cards
+        $response = $this->actingAs($admin)->post("/master/hak-akses/{$user->id}/bulk", [
+            'action' => 'disable_category',
+            'category' => 'dashboard_cards',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertFalse($user->canAccess('dash_card_egg'));
+        $this->assertFalse($user->canAccess('dash_card_feed'));
+        $this->assertFalse($user->canAccess('dash_card_mortality'));
+
+        // Aktifkan kembali kategori dashboard_cards
+        $response = $this->actingAs($admin)->post("/master/hak-akses/{$user->id}/bulk", [
+            'action' => 'enable_category',
+            'category' => 'dashboard_cards',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertTrue($user->canAccess('dash_card_egg'));
+        $this->assertTrue($user->canAccess('dash_card_feed'));
+        $this->assertTrue($user->canAccess('dash_card_mortality'));
+    }
+
+    /**
+     * Test 10: Granular element rendering on Dashboard & Warehouse based on user permissions
+     */
+    public function test_granular_dashboard_and_warehouse_rendering_respects_permissions(): void
+    {
+        $user = User::firstOrCreate(
+            ['username' => 'granular_test_user'],
+            [
+                'name' => 'Granular Test User',
+                'email' => 'granular@nochifarm.com',
+                'password' => Hash::make('password123'),
+                'role' => 'user',
+                'is_active' => true,
+            ]
+        );
+
+        // Turn OFF dash_card_mortality and dash_widget_feed_stock
+        UserPermission::updateOrCreate(
+            ['user_id' => $user->id, 'permission_key' => 'dash_card_mortality'],
+            ['is_enabled' => false]
+        );
+        UserPermission::updateOrCreate(
+            ['user_id' => $user->id, 'permission_key' => 'dash_widget_feed_stock'],
+            ['is_enabled' => false]
+        );
+        UserPermission::updateOrCreate(
+            ['user_id' => $user->id, 'permission_key' => 'dash_card_egg'],
+            ['is_enabled' => true]
+        );
+
+        $response = $this->actingAs($user)->get('/');
+        $response->assertStatus(200);
+        $response->assertSee('Produksi Telur'); // Enabled
+        $response->assertDontSee('Afkir/Mati'); // Disabled
+
+        // Turn OFF warehouse_sales_stream
+        UserPermission::updateOrCreate(
+            ['user_id' => $user->id, 'permission_key' => 'warehouse_sales_stream'],
+            ['is_enabled' => false]
+        );
+        UserPermission::updateOrCreate(
+            ['user_id' => $user->id, 'permission_key' => 'menu_warehouse'],
+            ['is_enabled' => true]
+        );
+
+        $responseWarehouse = $this->actingAs($user)->get('/gudang');
+        $responseWarehouse->assertStatus(200);
+        $responseWarehouse->assertDontSee('Barang Keluar: Penjualan Real-Time');
+    }
 }

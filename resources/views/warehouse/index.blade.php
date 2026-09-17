@@ -131,9 +131,11 @@
     </div>
 
     <!-- 3 KARTU UTAMA GUDANG (Sesuai Gambar Mockup 1: Telur, Pakan, Obat) -->
+    @if(!auth()->check() || auth()->user()->canAccess('warehouse_card_summary'))
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
 
         <!-- 1. GUDANG TELUR -->
+        @if(!auth()->check() || auth()->user()->canAccess('feature_warehouse_telur'))
         <a href="{{ route('warehouse.telur', ['start_date' => $startDate, 'end_date' => $endDate]) }}" class="farm-card farm-card-interactive p-3.5 sm:p-5 block group relative overflow-hidden">
             <!-- Accent stripe on top -->
             <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-400 via-rose-400 to-maroon-700"></div>
@@ -203,8 +205,10 @@
                 </div>
             </div>
         </a>
+        @endif
 
         <!-- 2. GUDANG PAKAN -->
+        @if(!auth()->check() || auth()->user()->canAccess('feature_warehouse_pakan'))
         <a href="{{ route('warehouse.pakan', ['start_date' => $startDate, 'end_date' => $endDate]) }}" class="farm-card farm-card-interactive p-3.5 sm:p-5 block group relative overflow-hidden">
             <!-- Accent stripe on top -->
             <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-400 via-teal-400 to-maroon-700"></div>
@@ -269,8 +273,10 @@
                 </div>
             </div>
         </a>
+        @endif
 
         <!-- 3. GUDANG OBAT, VAKSIN & VITAMIN -->
+        @if(!auth()->check() || auth()->user()->canAccess('feature_warehouse_obat'))
         <a href="{{ route('warehouse.obat', ['start_date' => $startDate, 'end_date' => $endDate]) }}" class="farm-card farm-card-interactive p-4 sm:p-6 block group relative overflow-hidden">
             <!-- Accent stripe on top -->
             <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-purple-400 via-rose-400 to-maroon-700"></div>
@@ -330,12 +336,15 @@
                 </div>
             </div>
         </a>
+        @endif
 
     </div>
+    @endif
 
     <!-- ========================================================================= -->
     <!-- GRAFIK ALIRAN BARANG GUDANG: MASUK, DIGUNAKAN, KELUAR & TERJUAL -->
     <!-- ========================================================================= -->
+    @if(!auth()->check() || auth()->user()->canAccess('warehouse_chart_trends'))
     <div class="farm-card p-5 sm:p-6 border border-slate-200/80 shadow-sm relative overflow-hidden">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
             <div class="flex items-center gap-3">
@@ -429,6 +438,7 @@
         </div>
 
         <!-- 8 Direct Links to Specific Data Streams -->
+        @if(!auth()->check() || auth()->user()->canAccess('warehouse_stream_pills'))
         <div class="mt-4 pt-3.5 border-t border-slate-100">
             <div class="flex flex-wrap items-center justify-between gap-1 mb-2">
                 <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
@@ -495,7 +505,7 @@
                 </a>
 
                 <!-- 5. Pemberian Pakan -->
-                <a href="{{ route('warehouse.pakan', ['tab' => 'keluar', 'start_date' => $startDate, 'end_date' => $endDate]) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-purple-50/60 border border-slate-200/80 hover:border-purple-300 hover:shadow-xs transition-all group block">
+                <a href="{{ route('warehouse.pakan', ['tab' => 'keluar', 'start_date' => $startDate, 'end_date' => $endDate]) }}" class="p-2 rounded-xl bg-purple-50/80 hover:bg-purple-100/60 border border-slate-200/80 hover:border-purple-300 hover:shadow-xs transition-all group block">
                     <div class="flex items-center justify-between">
                         <span class="text-[10px] font-extrabold text-slate-700 group-hover:text-purple-800">Pemberian Pakan</span>
                         <span class="w-2 h-2 rounded-full bg-purple-500 shrink-0"></span>
@@ -551,14 +561,17 @@
                 </a>
             </div>
         </div>
+        @endif
 
         <!-- Line Chart Container -->
         <div class="mt-5 relative w-full" style="height: 340px;">
             <canvas id="warehouseFlowChart"></canvas>
         </div>
     </div>
+    @endif
 
     <!-- Riwayat Aktivitas & Mutasi Terkini Gudang -->
+    @if(!auth()->check() || auth()->user()->canAccess('warehouse_recent_mutations'))
     <div class="farm-card p-5 sm:p-6">
         <div class="flex items-center justify-between pb-4 border-b border-slate-100">
             <div class="flex items-center gap-2.5">
@@ -628,6 +641,7 @@
                         @endif
                         
                         <!-- Action Buttons -->
+                        @if(!auth()->check() || auth()->user()->canAccess('warehouse_btn_manage'))
                         <div class="mt-2 flex items-center justify-end gap-2">
                             <a href="{{ route('warehouse.' . $cat, ['start_date' => $startDate, 'end_date' => $endDate]) }}" class="px-2 py-1 bg-white border border-slate-200 text-slate-500 rounded-md hover:text-blue-600 hover:border-blue-300 transition-colors text-[10px] font-bold flex items-center gap-1" title="Lihat/Edit di Detail">
                                 <i data-lucide="edit" class="w-3 h-3"></i> Edit
@@ -639,6 +653,7 @@
                                 </button>
                             </form>
                         </div>
+                        @endif
                     </div>
                 </div>
             @empty
@@ -649,8 +664,10 @@
             @endforelse
         </div>
     </div>
+    @endif
 
     <!-- TRANSAKSI PENJUALAN BARANG KELUAR (TERHUBUNG 1 DB NOCHIFRAM) -->
+    @if(!auth()->check() || auth()->user()->canAccess('warehouse_sales_stream'))
     <div class="farm-card p-5 sm:p-6 border-t-4 border-t-maroon-800">
         <div class="flex items-center justify-between pb-4 border-b border-slate-100">
             <div class="flex items-center gap-2.5">
@@ -733,6 +750,7 @@
             @endforelse
         </div>
     </div>
+    @endif
 
 </div>
 @endsection

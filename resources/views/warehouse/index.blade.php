@@ -170,8 +170,11 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
 
         <!-- 1. GUDANG TELUR -->
-        @if(!auth()->check() || auth()->user()->canAccess('feature_warehouse_telur'))
+        @if(!auth()->check() || auth()->user()->canAccess('warehouse_click_telur'))
         <a href="{{ route('warehouse.telur', ['start_date' => $startDate, 'end_date' => $endDate]) }}" class="farm-card farm-card-interactive p-3.5 sm:p-5 block group relative overflow-hidden">
+        @else
+        <div class="farm-card p-3.5 sm:p-5 block relative overflow-hidden opacity-90 cursor-not-allowed bg-slate-50">
+        @endif
             <!-- Accent stripe on top -->
             <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-400 via-rose-400 to-maroon-700"></div>
 
@@ -184,14 +187,20 @@
                         </svg>
                     </div>
                     <div>
-                        <h2 class="text-base sm:text-lg font-bold text-slate-800 group-hover:text-maroon-800 transition-colors">Gudang Telur</h2>
+                        <h2 class="text-base sm:text-lg font-bold text-slate-800 transition-colors @if(!auth()->check() || auth()->user()->canAccess('warehouse_click_telur')) group-hover:text-maroon-800 @endif">Gudang Telur</h2>
                         <span class="text-xs text-slate-400 font-medium">Stok Telur Utuh & Peti</span>
                     </div>
                 </div>
 
+                @if(!auth()->check() || auth()->user()->canAccess('warehouse_click_telur'))
                 <div class="w-8 h-8 rounded-full bg-slate-50 group-hover:bg-maroon-50 text-slate-400 group-hover:text-maroon-700 flex items-center justify-center transition-colors">
                     <i data-lucide="chevron-right" class="w-5 h-5"></i>
                 </div>
+                @else
+                <div class="w-8 h-8 rounded-full bg-slate-50 text-slate-300 flex items-center justify-center">
+                    <i data-lucide="lock" class="w-4 h-4"></i>
+                </div>
+                @endif
             </div>
 
             <!-- Angka Masuk, Keluar, dan Stok Saat Ini (Grid 3 Kolom Responsif Sempurna) -->
@@ -239,12 +248,18 @@
                     </div>
                 </div>
             </div>
+        @if(!auth()->check() || auth()->user()->canAccess('warehouse_click_telur'))
         </a>
+        @else
+        </div>
         @endif
 
         <!-- 2. GUDANG PAKAN -->
-        @if(!auth()->check() || auth()->user()->canAccess('feature_warehouse_pakan'))
+        @if(!auth()->check() || auth()->user()->canAccess('warehouse_click_pakan'))
         <a href="{{ route('warehouse.pakan', ['start_date' => $startDate, 'end_date' => $endDate]) }}" class="farm-card farm-card-interactive p-3.5 sm:p-5 block group relative overflow-hidden">
+        @else
+        <div class="farm-card p-3.5 sm:p-5 block relative overflow-hidden opacity-90 cursor-not-allowed bg-slate-50">
+        @endif
             <!-- Accent stripe on top -->
             <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-400 via-teal-400 to-maroon-700"></div>
 
@@ -257,14 +272,20 @@
                         </svg>
                     </div>
                     <div>
-                        <h2 class="text-base sm:text-lg font-bold text-slate-800 group-hover:text-maroon-800 transition-colors">Gudang Pakan</h2>
+                        <h2 class="text-base sm:text-lg font-bold text-slate-800 transition-colors @if(!auth()->check() || auth()->user()->canAccess('warehouse_click_pakan')) group-hover:text-maroon-800 @endif">Gudang Pakan</h2>
                         <span class="text-xs text-slate-400 font-medium">Pakan Starter, Grower, Layer</span>
                     </div>
                 </div>
 
+                @if(!auth()->check() || auth()->user()->canAccess('warehouse_click_pakan'))
                 <div class="w-8 h-8 rounded-full bg-slate-50 group-hover:bg-maroon-50 text-slate-400 group-hover:text-maroon-700 flex items-center justify-center transition-colors">
                     <i data-lucide="chevron-right" class="w-5 h-5"></i>
                 </div>
+                @else
+                <div class="w-8 h-8 rounded-full bg-slate-50 text-slate-300 flex items-center justify-center">
+                    <i data-lucide="lock" class="w-4 h-4"></i>
+                </div>
+                @endif
             </div>
 
             <!-- Angka Masuk, Keluar, dan Stok Saat Ini (Grid 3 Kolom Responsif Sempurna) -->
@@ -307,12 +328,18 @@
                     </div>
                 </div>
             </div>
+        @if(!auth()->check() || auth()->user()->canAccess('warehouse_click_pakan'))
         </a>
+        @else
+        </div>
         @endif
 
         <!-- 3. GUDANG OBAT, VAKSIN & VITAMIN -->
-        @if(!auth()->check() || auth()->user()->canAccess('feature_warehouse_obat'))
+        @if(!auth()->check() || auth()->user()->canAccess('warehouse_click_obat'))
         <a href="{{ route('warehouse.obat', ['start_date' => $startDate, 'end_date' => $endDate]) }}" class="farm-card farm-card-interactive p-4 sm:p-6 block group relative overflow-hidden">
+        @else
+        <div class="farm-card p-4 sm:p-6 block relative overflow-hidden opacity-90 cursor-not-allowed bg-slate-50">
+        @endif
             <!-- Accent stripe on top -->
             <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-purple-400 via-rose-400 to-maroon-700"></div>
 
@@ -325,14 +352,20 @@
                         </svg>
                     </div>
                     <div>
-                        <h2 class="text-base sm:text-lg font-bold text-slate-800 group-hover:text-maroon-800 transition-colors">Gudang Obat</h2>
+                        <h2 class="text-base sm:text-lg font-bold text-slate-800 transition-colors @if(!auth()->check() || auth()->user()->canAccess('warehouse_click_obat')) group-hover:text-maroon-800 @endif">Gudang Obat</h2>
                         <span class="text-xs text-slate-400 font-medium">Vaksin, Vitamin & Suplemen</span>
                     </div>
                 </div>
 
+                @if(!auth()->check() || auth()->user()->canAccess('warehouse_click_obat'))
                 <div class="w-8 h-8 rounded-full bg-slate-50 group-hover:bg-maroon-50 text-slate-400 group-hover:text-maroon-700 flex items-center justify-center transition-colors">
                     <i data-lucide="chevron-right" class="w-5 h-5"></i>
                 </div>
+                @else
+                <div class="w-8 h-8 rounded-full bg-slate-50 text-slate-300 flex items-center justify-center">
+                    <i data-lucide="lock" class="w-4 h-4"></i>
+                </div>
+                @endif
             </div>
 
             <!-- Angka Masuk, Keluar, dan Stok Saat Ini (Grid 3 Kolom Responsif Sempurna) -->
@@ -370,7 +403,10 @@
                     </div>
                 </div>
             </div>
+        @if(!auth()->check() || auth()->user()->canAccess('warehouse_click_obat'))
         </a>
+        @else
+        </div>
         @endif
 
     </div>

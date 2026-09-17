@@ -171,6 +171,21 @@ class PermissionService
                         'desc' => 'Akses untuk memilih rentang tanggal di halaman Gudang',
                         'default' => true,
                     ],
+                    'warehouse_click_telur' => [
+                        'label' => 'Klik Kartu Gudang Telur',
+                        'desc' => 'Akses untuk mengklik kartu Gudang Telur menuju detail',
+                        'default' => true,
+                    ],
+                    'warehouse_click_pakan' => [
+                        'label' => 'Klik Kartu Gudang Pakan',
+                        'desc' => 'Akses untuk mengklik kartu Gudang Pakan menuju detail',
+                        'default' => true,
+                    ],
+                    'warehouse_click_obat' => [
+                        'label' => 'Klik Kartu Gudang Obat',
+                        'desc' => 'Akses untuk mengklik kartu Gudang Obat menuju detail',
+                        'default' => true,
+                    ],
                     'feature_warehouse_telur' => [
                         'label' => 'Lihat Gudang Telur',
                         'desc' => 'Membuka tab dan detail data stok serta mutasi telur utuh/rusak',

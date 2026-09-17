@@ -191,11 +191,7 @@
                     <div class="w-10 h-10 rounded-xl bg-maroon-50 text-maroon-800 flex items-center justify-center shrink-0 border border-maroon-100 shadow-xs">
                         <i data-lucide="syringe" class="w-5 h-5 stroke-[2.2]"></i>
                     </div>
-                    @if(!auth()->check() || auth()->user()->canAccess('feature_quick_health'))
-                    <button onclick="openModal('modalVaksin')" class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-maroon-50 text-maroon-800 hover:bg-maroon-100 border border-maroon-200 transition-colors">
-                        + Catat
-                    </button>
-                    @endif
+                    <!-- Left intentionally blank, + Catat button removed as per user request -->
                 </div>
                 <div class="mt-3">
                     <p class="text-xs font-semibold text-slate-500">Vaksin / Obat</p>

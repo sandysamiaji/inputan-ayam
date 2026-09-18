@@ -319,12 +319,38 @@
 
                 <!-- 3. Stok Saat Ini (Mendukung Nilai Mines / Defisit) -->
                 <div class="text-right space-y-0.5 min-w-0">
-                    <div class="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider">Sisa Stok</div>
+                    <div class="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider">Sisa Stok Total</div>
                     <div class="text-xs sm:text-lg font-black leading-tight {{ $pakanStok < 0 ? 'text-rose-600' : 'text-emerald-600' }}">
                         {{ number_format($pakanStok, 0, ',', '.') }} <span class="text-[10px] sm:text-xs font-bold {{ $pakanStok < 0 ? 'text-rose-600' : 'text-emerald-700' }}">Kg</span>
                     </div>
                     <div class="text-[9px] sm:text-[10px] font-semibold truncate {{ $pakanStokKarung < 0 ? 'text-rose-600' : 'text-emerald-600' }}">
                         ({{ number_format($pakanStokKarung, 0, ',', '.') }} Krg)
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rincian Stok Per Jenis Pakan (Pakan Layer & Pakan Grower) -->
+            @php
+                $stokLayer = $feedSummary['current_stock_kg_layer'] ?? 0;
+                $stokLayerKrg = $feedSummary['current_stock_karung_layer'] ?? 0;
+                $stokGrower = $feedSummary['current_stock_kg_grower'] ?? 0;
+                $stokGrowerKrg = $feedSummary['current_stock_karung_grower'] ?? 0;
+            @endphp
+            <div class="mt-3 pt-2.5 border-t border-slate-100 grid grid-cols-2 gap-2 text-xs">
+                <div class="p-2 rounded-xl bg-emerald-50/70 border border-emerald-100 flex items-center justify-between">
+                    <div>
+                        <span class="text-[9.5px] font-extrabold text-emerald-800 uppercase block">🌾 Stok Pakan Layer</span>
+                        <span class="text-xs font-black {{ $stokLayer < 0 ? 'text-rose-600' : 'text-emerald-700' }}">
+                            {{ number_format($stokLayer, 0, ',', '.') }} kg <span class="text-[10px] font-bold">({{ number_format($stokLayerKrg, 1, ',', '.') }} krg)</span>
+                        </span>
+                    </div>
+                </div>
+                <div class="p-2 rounded-xl bg-sky-50/70 border border-sky-100 flex items-center justify-between">
+                    <div>
+                        <span class="text-[9.5px] font-extrabold text-sky-800 uppercase block">🌾 Stok Pakan Grower</span>
+                        <span class="text-xs font-black {{ $stokGrower < 0 ? 'text-rose-600' : 'text-sky-700' }}">
+                            {{ number_format($stokGrower, 0, ',', '.') }} kg <span class="text-[10px] font-bold">({{ number_format($stokGrowerKrg, 1, ',', '.') }} krg)</span>
+                        </span>
                     </div>
                 </div>
             </div>

@@ -563,6 +563,7 @@ class DashboardController extends Controller
             'dominantWeek',
             'farmStandard',
             'coopStandards',
+            'feedSummary',
             'totalFarmPakanKg',
             'totalFarmKarungStr',
             'kgPerKarung',

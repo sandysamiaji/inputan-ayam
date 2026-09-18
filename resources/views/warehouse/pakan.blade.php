@@ -50,6 +50,63 @@
         </div>
     </div>
 
+    <!-- Rincian Stok Per Jenis Pakan (Pakan Layer & Pakan Grower) -->
+    @php
+        $stokLayer = $feedSummary['current_stock_kg_layer'] ?? 0;
+        $stokLayerKrg = $feedSummary['current_stock_karung_layer'] ?? 0;
+        $stokGrower = $feedSummary['current_stock_kg_grower'] ?? 0;
+        $stokGrowerKrg = $feedSummary['current_stock_karung_grower'] ?? 0;
+
+        $consLayer = $feedSummary['consumption_kg_layer'] ?? 0;
+        $consGrower = $feedSummary['consumption_kg_grower'] ?? 0;
+
+        $soldLayerKrg = $feedSummary['karung_sold_layer'] ?? 0;
+        $soldGrowerKrg = $feedSummary['karung_sold_grower'] ?? 0;
+    @endphp
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <!-- 1. Pakan Layer Card -->
+        <div class="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-50 to-white border border-emerald-200/80 shadow-xs flex items-center justify-between">
+            <div class="space-y-0.5">
+                <span class="text-[10px] font-extrabold text-emerald-800 uppercase tracking-wider block">🌾 Stok Pakan Layer</span>
+                <div class="text-sm sm:text-base font-black {{ $stokLayer < 0 ? 'text-rose-600' : 'text-emerald-700' }}">
+                    {{ number_format($stokLayer, 0, ',', '.') }} kg <span class="text-xs font-bold">({{ number_format($stokLayerKrg, 1, ',', '.') }} Krg)</span>
+                </div>
+                <div class="text-[10px] text-slate-500 font-medium">
+                    Konsumsi: <b>{{ number_format($consLayer, 0, ',', '.') }} kg</b> • Terjual: <b>{{ number_format($soldLayerKrg, 0, ',', '.') }} Krg</b>
+                </div>
+            </div>
+            <span class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs">L</span>
+        </div>
+
+        <!-- 2. Pakan Grower Card -->
+        <div class="p-3.5 rounded-2xl bg-gradient-to-br from-sky-50 to-white border border-sky-200/80 shadow-xs flex items-center justify-between">
+            <div class="space-y-0.5">
+                <span class="text-[10px] font-extrabold text-sky-800 uppercase tracking-wider block">🌾 Stok Pakan Grower / Starter</span>
+                <div class="text-sm sm:text-base font-black {{ $stokGrower < 0 ? 'text-rose-600' : 'text-sky-700' }}">
+                    {{ number_format($stokGrower, 0, ',', '.') }} kg <span class="text-xs font-bold">({{ number_format($stokGrowerKrg, 1, ',', '.') }} Krg)</span>
+                </div>
+                <div class="text-[10px] text-slate-500 font-medium">
+                    Konsumsi: <b>{{ number_format($consGrower, 0, ',', '.') }} kg</b> • Terjual: <b>{{ number_format($soldGrowerKrg, 0, ',', '.') }} Krg</b>
+                </div>
+            </div>
+            <span class="w-8 h-8 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center font-bold text-xs">G</span>
+        </div>
+
+        <!-- 3. Total Sisa Stok Gudang -->
+        <div class="p-3.5 rounded-2xl bg-gradient-to-br from-slate-50 to-white border border-slate-200/80 shadow-xs flex items-center justify-between sm:col-span-2 lg:col-span-1">
+            <div class="space-y-0.5">
+                <span class="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">📦 Total Sisa Stok Pakan</span>
+                <div class="text-sm sm:text-base font-black {{ $stokSaatIni < 0 ? 'text-rose-600' : 'text-slate-800' }}">
+                    {{ number_format($stokSaatIni, 0, ',', '.') }} kg <span class="text-xs font-bold">({{ number_format($currentStockKarung, 1, ',', '.') }} Krg)</span>
+                </div>
+                <div class="text-[10px] text-slate-500 font-medium">
+                    Gabungan Pakan Layer & Pakan Grower
+                </div>
+            </div>
+            <span class="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-xs">Σ</span>
+        </div>
+    </div>
+
     <!-- Banner Ringkasan Integrasi Penjualan (1 DB nochifram) -->
     <div class="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-emerald-50 via-white to-rose-50 border border-emerald-200/80 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div class="flex items-center gap-3">
@@ -513,16 +570,29 @@
                 </div>
             </div>
 
-            <!-- Nama Transaksi -->
+            <!-- Jenis Pakan / Varian -->
             <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Nama Transaksi *</label>
-                <input type="text" name="item_name" required placeholder="Contoh: Pembelian Pakan, Pemakaian Pakan" list="pakanItemNames" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm focus:ring-2 focus:ring-maroon-800/20 focus:border-maroon-800">
+                <label class="block text-xs font-bold text-slate-700 mb-1">Jenis / Varian Pakan *</label>
+                <select name="feed_variant" id="modalPakanVariantSelect" onchange="autoFillPakanItemName()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white font-bold text-slate-800 focus:ring-2 focus:ring-maroon-800/20 focus:border-maroon-800">
+                    <option value="Pakan Layer">🌾 Pakan Layer (Ayam Petelur Dewasa)</option>
+                    <option value="Pakan Grower">🌾 Pakan Grower (Ayam Remaja)</option>
+                    <option value="Pakan Starter">🌾 Pakan Starter (Anak Ayam)</option>
+                    <option value="Pakan Finisher">🌾 Pakan Finisher</option>
+                    <option value="Custom">➕ Varian Pakan Baru (Input Manual)</option>
+                </select>
+            </div>
+
+            <!-- Nama Transaksi / Item -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Nama Transaksi / Item *</label>
+                <input type="text" name="item_name" id="modalPakanItemNameInput" value="Pakan Layer" required placeholder="Contoh: Pakan Layer, Pakan Grower, Pembelian Pakan" list="pakanItemNames" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm focus:ring-2 focus:ring-maroon-800/20 focus:border-maroon-800 font-semibold">
                 <datalist id="pakanItemNames">
-                    <option value="Pembelian Pakan">
-                    <option value="Pemakaian Pakan">
-                    <option value="Pakan Layer Konsentrat">
-                    <option value="Pakan Starter (Anak Ayam)">
-                    <option value="Pakan Grower (Remaja)">
+                    <option value="Pakan Layer">
+                    <option value="Pakan Grower">
+                    <option value="Pakan Starter">
+                    <option value="Pakan Finisher">
+                    <option value="Pembelian Pakan Layer">
+                    <option value="Pembelian Pakan Grower">
                     <option value="Koreksi Stok Pakan">
                 </datalist>
             </div>
@@ -904,6 +974,21 @@
         const content = modal.querySelector('div');
         modal.classList.remove('modal-active');
         content.classList.remove('modal-content-active');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300);
+    }
+
+    function autoFillPakanItemName() {
+        const sel = document.getElementById('modalPakanVariantSelect');
+        const input = document.getElementById('modalPakanItemNameInput');
+        if (!sel || !input) return;
+        if (sel.value !== 'Custom') {
+            input.value = sel.value;
+        } else {
+            input.value = '';
+            input.focus();
+        }
     }
 </script>
 @endpush

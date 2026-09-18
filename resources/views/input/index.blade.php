@@ -772,9 +772,24 @@
                     <input name="notes" placeholder="Opsional...">
                 </div>
 
-                <div class="sync green">
-                    <b>↘ Otomatis potong Gudang Pakan</b>
-                    <p>Saat disimpan, pemakaian ini menjadi transaksi keluar/pemakaian. Stok Gudang Pakan langsung berkurang dan masuk ke Rekap & Dashboard.</p>
+                @php
+                    $feedSummaryInput = \App\Services\OutboundIntegrationService::getFeedOutboundSummary();
+                    $stokLayerIn = $feedSummaryInput['current_stock_kg_layer'] ?? 0;
+                    $stokLayerKrgIn = $feedSummaryInput['current_stock_karung_layer'] ?? 0;
+                    $stokGrowerIn = $feedSummaryInput['current_stock_kg_grower'] ?? 0;
+                    $stokGrowerKrgIn = $feedSummaryInput['current_stock_karung_grower'] ?? 0;
+                @endphp
+                <div class="sync green" style="background:#ecfff8; border-color:#a7f3d0; padding:10px; border-radius:10px;">
+                    <b style="color:#047857; font-size:11px;">↘ Otomatis Potong Stok Gudang Pakan Terkait</b>
+                    <p style="color:#065f46; font-size:10px; margin-top:2px;">Ketersediaan Stok Gudang Saat Ini:</p>
+                    <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; font-size:10.5px; font-weight:700;">
+                        <span style="background:#fff; padding:4px 8px; border-radius:6px; border:1px solid #a7f3d0; color:#047857;">
+                            🌾 Stok Pakan Layer: {{ number_format($stokLayerIn, 0, ',', '.') }} kg ({{ number_format($stokLayerKrgIn, 1, ',', '.') }} krg)
+                        </span>
+                        <span style="background:#fff; padding:4px 8px; border-radius:6px; border:1px solid #bae6fd; color:#0369a1;">
+                            🌾 Stok Pakan Grower: {{ number_format($stokGrowerIn, 0, ',', '.') }} kg ({{ number_format($stokGrowerKrgIn, 1, ',', '.') }} krg)
+                        </span>
+                    </div>
                 </div>
 
                 <button type="submit" class="btn-submit">Simpan Pemakaian</button>

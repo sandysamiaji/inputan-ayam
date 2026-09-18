@@ -223,6 +223,64 @@ class OutboundIntegrationService
         $currentStockKg = round($purchasedKg - $totalKeluarKg, 1);
         $currentStockKarung = round($currentStockKg / $kgPerKarung, 1);
 
+        // 5. Breakdown Per Jenis Pakan (Pakan Layer vs Pakan Grower / Starter)
+        // A. Penjualan Grower / Starter
+        $karungSoldGrower = (float) (DB::table('sale_items')->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->where('sales.category', 'pakan')->where('sale_items.unit', 'Karung')
+            ->where(function($q){ $q->where('sale_items.item_name', 'like', '%grower%')->orWhere('sale_items.item_name', 'like', '%starter%')->orWhere('sale_items.item_name', 'like', '%pullet%'); })
+            ->when($startDate && $endDate, function($q) use ($startDate, $endDate) { $q->whereBetween('sales.date', [$startDate, $endDate]); })
+            ->sum('sale_items.quantity'));
+        $kgSoldGrower = (float) (DB::table('sale_items')->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->where('sales.category', 'pakan')->where('sale_items.unit', 'Kg')
+            ->where(function($q){ $q->where('sale_items.item_name', 'like', '%grower%')->orWhere('sale_items.item_name', 'like', '%starter%')->orWhere('sale_items.item_name', 'like', '%pullet%'); })
+            ->when($startDate && $endDate, function($q) use ($startDate, $endDate) { $q->whereBetween('sales.date', [$startDate, $endDate]); })
+            ->sum('sale_items.quantity'));
+        $soldInKgGrower = ($karungSoldGrower * $kgPerKarung) + $kgSoldGrower;
+
+        $karungSoldLayer = max(0, $karungSold - $karungSoldGrower);
+        $kgSoldLayer = max(0, $kgSold - $kgSoldGrower);
+        $soldInKgLayer = max(0, $soldInKg - $soldInKgGrower);
+
+        // B. Konsumsi Grower vs Layer
+        $consumptionKgGrower = (float) (FeedConsumption::query()
+            ->where(function($q){ $q->where('feed_name', 'like', '%grower%')->orWhere('feed_name', 'like', '%starter%')->orWhere('feed_name', 'like', '%pullet%'); })
+            ->when($startDate && $endDate, function($q) use ($startDate, $endDate) { $q->whereBetween('date', [$startDate, $endDate]); })
+            ->sum('quantity_kg'));
+        $consumptionKarungGrower = round($consumptionKgGrower / $kgPerKarung, 1);
+
+        $consumptionKgLayer = max(0, $consumptionKg - $consumptionKgGrower);
+        $consumptionKarungLayer = round($consumptionKgLayer / $kgPerKarung, 1);
+
+        // C. Pembelian / Masuk Grower vs Layer
+        $purchasedKgGrower = (float) (FarmStock::where('category', 'pakan')->where('type', 'masuk')
+            ->where(function($q){ $q->where('item_name', 'like', '%grower%')->orWhere('item_name', 'like', '%starter%')->orWhere('item_name', 'like', '%pullet%'); })
+            ->when($startDate && $endDate, function($q) use ($startDate, $endDate) { $q->whereBetween('date', [$startDate, $endDate]); })
+            ->sum('quantity'));
+        $purchasedKarungGrower = round($purchasedKgGrower / $kgPerKarung, 1);
+
+        $purchasedKgLayer = max(0, $purchasedKg - $purchasedKgGrower);
+        $purchasedKarungLayer = round($purchasedKgLayer / $kgPerKarung, 1);
+
+        // D. Manual Keluar Grower vs Layer
+        $manualKeluarKgGrower = (float) (FarmStock::where('category', 'pakan')->where('type', 'keluar')
+            ->where(function($q){ $q->whereNull('notes')->orWhere('notes', 'not like', '[AUTO-KONSUMSI]%'); })
+            ->where(function($q){ $q->where('item_name', 'like', '%grower%')->orWhere('item_name', 'like', '%starter%')->orWhere('item_name', 'like', '%pullet%'); })
+            ->when($startDate && $endDate, function($q) use ($startDate, $endDate) { $q->whereBetween('date', [$startDate, $endDate]); })
+            ->sum('quantity'));
+
+        $manualKeluarKgLayer = max(0, $manualKeluarKg - $manualKeluarKgGrower);
+
+        // E. Total Keluar & Sisa Stok Grower vs Layer
+        $totalKeluarKgGrower = $consumptionKgGrower + $soldInKgGrower + $manualKeluarKgGrower;
+        $totalKeluarKarungGrower = round($totalKeluarKgGrower / $kgPerKarung, 1);
+        $currentStockKgGrower = round($purchasedKgGrower - $totalKeluarKgGrower, 1);
+        $currentStockKarungGrower = round($currentStockKgGrower / $kgPerKarung, 1);
+
+        $totalKeluarKgLayer = $consumptionKgLayer + $soldInKgLayer + $manualKeluarKgLayer;
+        $totalKeluarKarungLayer = round($totalKeluarKgLayer / $kgPerKarung, 1);
+        $currentStockKgLayer = round($purchasedKgLayer - $totalKeluarKgLayer, 1);
+        $currentStockKarungLayer = round($currentStockKgLayer / $kgPerKarung, 1);
+
         return [
             'karung_sold' => $karungSold,
             'kg_sold' => $kgSold,
@@ -236,6 +294,32 @@ class OutboundIntegrationService
             'total_keluar_karung' => $totalKeluarKarung,
             'current_stock_kg' => $currentStockKg,
             'current_stock_karung' => $currentStockKarung,
+
+            // Layer Breakdown
+            'purchased_kg_layer' => $purchasedKgLayer,
+            'purchased_karung_layer' => $purchasedKarungLayer,
+            'consumption_kg_layer' => $consumptionKgLayer,
+            'consumption_karung_layer' => $consumptionKarungLayer,
+            'karung_sold_layer' => $karungSoldLayer,
+            'kg_sold_layer' => $kgSoldLayer,
+            'sold_in_kg_layer' => $soldInKgLayer,
+            'total_keluar_kg_layer' => $totalKeluarKgLayer,
+            'total_keluar_karung_layer' => $totalKeluarKarungLayer,
+            'current_stock_kg_layer' => $currentStockKgLayer,
+            'current_stock_karung_layer' => $currentStockKarungLayer,
+
+            // Grower / Starter Breakdown
+            'purchased_kg_grower' => $purchasedKgGrower,
+            'purchased_karung_grower' => $purchasedKarungGrower,
+            'consumption_kg_grower' => $consumptionKgGrower,
+            'consumption_karung_grower' => $consumptionKarungGrower,
+            'karung_sold_grower' => $karungSoldGrower,
+            'kg_sold_grower' => $kgSoldGrower,
+            'sold_in_kg_grower' => $soldInKgGrower,
+            'total_keluar_kg_grower' => $totalKeluarKgGrower,
+            'total_keluar_karung_grower' => $totalKeluarKarungGrower,
+            'current_stock_kg_grower' => $currentStockKgGrower,
+            'current_stock_karung_grower' => $currentStockKarungGrower,
         ];
     }
 

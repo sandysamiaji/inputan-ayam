@@ -553,7 +553,7 @@ class WarehouseController extends Controller
         return view('warehouse.index', compact(
             'user',
             'telurMasuk', 'telurMasukButir', 'telurMasukKg', 'telurKeluar', 'telurKeluarKg', 'telurKeluarEggs', 'telurStok', 'telurStokKgTotal', 'telurStokButir', 'telurPetiSold', 'telurKgSold', 'telurRevenue',
-            'pakanMasuk', 'pakanMasukKarung', 'pakanKeluar', 'pakanTotalKarungKeluar', 'pakanStok', 'pakanStokKarung', 'pakanKarungSold', 'pakanKgSold', 'pakanConsumptionKg', 'pakanConsumptionKarung', 'pakanRevenue',
+            'pakanMasuk', 'pakanMasukKarung', 'pakanKeluar', 'pakanTotalKarungKeluar', 'pakanStok', 'pakanStokKarung', 'pakanKarungSold', 'pakanKgSold', 'pakanConsumptionKg', 'pakanConsumptionKarung', 'pakanRevenue', 'feedSummary',
             'obatMasuk', 'obatKeluar', 'obatStok',
             'karantinaMasuk', 'karantinaKeluar', 'karantinaStok',
             'recentTransactions', 'recentSales',
@@ -964,7 +964,7 @@ class WarehouseController extends Controller
         return view('warehouse.pakan', compact(
             'user', 'items', 'tab', 'search', 'startDate', 'endDate',
             'totalMasuk', 'totalKeluar', 'stokSaatIni', 'currentStockKarung',
-            'karungSold', 'kgSold', 'soldRevenue', 'consumptionKg', 'consumptionKarung', 'purchasedKarung',
+            'karungSold', 'kgSold', 'soldRevenue', 'consumptionKg', 'consumptionKarung', 'purchasedKarung', 'feedSummary',
             'salesList', 'tripList', 'coops', 'flocks'
         ));
     }

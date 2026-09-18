@@ -251,11 +251,11 @@
                         <h2 class="text-xs sm:text-sm font-bold text-slate-800 truncate">{{ $item->item_name }}</h2>
 
                         <!-- Jumlah Peti / Butir -->
-                        <p class="text-xs font-extrabold text-slate-800">
-                            {{ number_format($item->quantity, 0, ',', '.') }} {{ $item->unit }}
-                            @if(str_contains(strtolower($item->notes ?? ''), 'butir'))
-                                <span class="text-slate-400 font-normal text-[11px]">
-                                    ({{ Str::after($item->notes, '(') ? Str::before(Str::after($item->notes, '('), ')') : '' }})
+                        <p class="text-xs font-extrabold text-slate-800 flex flex-wrap items-center gap-1.5">
+                            <span>{{ number_format($item->quantity, 0, ',', '.') }} {{ $item->unit }}</span>
+                            @if(isset($item->broken_eggs) && $item->broken_eggs > 0 && $item->type === 'masuk')
+                                <span class="text-rose-600 font-semibold text-[10.5px] bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">
+                                    • Rusak: {{ number_format($item->broken_eggs, 0, ',', '.') }} Btr
                                 </span>
                             @endif
                         </p>

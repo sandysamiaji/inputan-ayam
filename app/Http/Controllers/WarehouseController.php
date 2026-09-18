@@ -608,24 +608,9 @@ class WarehouseController extends Controller
                 'date' => Carbon::parse($ep->date),
                 'created_at' => $ep->created_at ? Carbon::parse($ep->created_at) : Carbon::parse($ep->date),
                 'source' => $ep->coop ? $ep->coop->name : 'Kandang',
-                'notes' => 'Panen ' . number_format($ep->total_eggs, 0, ',', '.') . ' Butir' . ($ep->notes ? ' • ' . $ep->notes : ''),
+                'notes' => 'Panen ' . number_format($ep->total_eggs, 0, ',', '.') . ' Butir' . ($ep->broken_eggs > 0 ? ' (Rusak: ' . $ep->broken_eggs . ' Btr)' : '') . ($ep->notes ? ' • ' . $ep->notes : ''),
                 'user' => $ep->user,
             ]);
-            if ($ep->broken_eggs > 0) {
-                $transactions->push((object) [
-                    'id' => 'ep_broken_' . $ep->id,
-                    'category' => 'telur',
-                    'type' => 'keluar',
-                    'item_name' => 'Telur Rusak / Pecah: ' . ($ep->coop ? $ep->coop->name : 'Kandang'),
-                    'quantity' => (float) $ep->broken_eggs,
-                    'unit' => 'Butir',
-                    'date' => Carbon::parse($ep->date),
-                    'created_at' => $ep->created_at ? Carbon::parse($ep->created_at) : Carbon::parse($ep->date),
-                    'source' => $ep->coop ? $ep->coop->name : 'Kandang',
-                    'notes' => 'Telur rusak/pecah saat pengumpulan',
-                    'user' => $ep->user,
-                ]);
-            }
         }
 
         // 3. Dari FeedConsumption
@@ -727,6 +712,7 @@ class WarehouseController extends Controller
         foreach ($eggProductions as $ep) {
             // A. Telur Masuk (Produksi utuh/peti)
             if ($tab === 'semua' || $tab === 'masuk') {
+                $brokenInfo = $ep->broken_eggs > 0 ? (' • Telur Rusak: ' . number_format($ep->broken_eggs, 0, ',', '.') . ' Butir') : '';
                 $collection->push((object) [
                     'id' => 'ep_' . $ep->id,
                     'raw_id' => $ep->id,
@@ -738,7 +724,7 @@ class WarehouseController extends Controller
                     'date' => Carbon::parse($ep->date),
                     'created_at' => $ep->created_at ? Carbon::parse($ep->created_at) : Carbon::parse($ep->date),
                     'source' => $ep->coop ? ($ep->coop->name . ($ep->flock ? ' (' . $ep->flock->name . ')' : '')) : 'Kandang',
-                    'notes' => 'Panen Telur Utuh: ' . number_format($ep->good_eggs ?? $ep->total_eggs, 0, ',', '.') . ' Butir' . ($ep->weight_kg > 0 ? ' (' . number_format($ep->weight_kg, 1, ',', '.') . ' Kg)' : '') . ($ep->notes ? ' • ' . $ep->notes : ''),
+                    'notes' => 'Panen Telur Utuh: ' . number_format($ep->good_eggs ?? $ep->total_eggs, 0, ',', '.') . ' Butir' . ($ep->weight_kg > 0 ? ' (' . number_format($ep->weight_kg, 1, ',', '.') . ' Kg)' : '') . $brokenInfo . ($ep->notes ? ' • ' . $ep->notes : ''),
                     'user' => $ep->user,
                     'is_nonaktif' => str_starts_with(trim($ep->notes ?? ''), '[NONAKTIF]'),
                     'good_eggs' => $ep->good_eggs,
@@ -751,8 +737,8 @@ class WarehouseController extends Controller
                 ]);
             }
 
-            // B. Telur Rusak / Pecah (Untuk tab keluar / data rusak & semua)
-            if (($tab === 'semua' || $tab === 'keluar') && $ep->broken_eggs > 0) {
+            // B. Telur Rusak / Pecah (Hanya untuk tab khusus 'keluar' / telur rusak)
+            if ($tab === 'keluar' && $ep->broken_eggs > 0) {
                 $collection->push((object) [
                     'id' => 'ep_broken_' . $ep->id,
                     'raw_id' => $ep->id,

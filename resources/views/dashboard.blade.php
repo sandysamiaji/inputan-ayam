@@ -782,43 +782,119 @@
                     <!-- Gudang Pakan -->
                     @if(!auth()->check() || auth()->user()->canAccess('dash_widget_feed_stock'))
                     @php
+                        $dashMasukLayer = $feedSummary['purchased_kg_layer'] ?? 0;
+                        $dashMasukLayerKrg = $feedSummary['purchased_karung_layer'] ?? 0;
+                        $dashKeluarLayer = $feedSummary['total_keluar_kg_layer'] ?? 0;
+                        $dashKeluarLayerKrg = $feedSummary['total_keluar_karung_layer'] ?? 0;
                         $dashStokLayer = $feedSummary['current_stock_kg_layer'] ?? 0;
                         $dashStokLayerKrg = $feedSummary['current_stock_karung_layer'] ?? 0;
+
+                        $dashMasukGrower = $feedSummary['purchased_kg_grower'] ?? 0;
+                        $dashMasukGrowerKrg = $feedSummary['purchased_karung_grower'] ?? 0;
+                        $dashKeluarGrower = $feedSummary['total_keluar_kg_grower'] ?? 0;
+                        $dashKeluarGrowerKrg = $feedSummary['total_keluar_karung_grower'] ?? 0;
                         $dashStokGrower = $feedSummary['current_stock_kg_grower'] ?? 0;
                         $dashStokGrowerKrg = $feedSummary['current_stock_karung_grower'] ?? 0;
+
+                        $dashMasukTotal = $feedSummary['purchased_kg'] ?? 0;
+                        $dashMasukTotalKrg = $feedSummary['purchased_karung'] ?? 0;
+                        $dashKeluarTotal = $feedSummary['total_keluar_kg'] ?? 0;
+                        $dashKeluarTotalKrg = $feedSummary['total_keluar_karung'] ?? 0;
+                        $dashStokTotalKrg = $feedSummary['current_stock_karung'] ?? 0;
+                        $dashKonsumsiKrg = $feedSummary['consumption_karung'] ?? 0;
                     @endphp
-                    <div class="p-3 rounded-xl bg-emerald-50/50 border border-emerald-100 space-y-2">
-                        <!-- Total Sisa Stok Pakan -->
-                        <div class="flex items-center justify-between text-xs font-bold text-slate-800">
-                            <span class="flex items-center gap-1.5">
-                                <span class="w-2 h-2 rounded-full bg-emerald-600"></span> Total Stok Pakan Saat Ini
+                    <div class="p-3.5 rounded-2xl bg-emerald-50/60 border border-emerald-200/80 space-y-3">
+                        <!-- Header Widget -->
+                        <div class="flex items-center justify-between">
+                            <span class="flex items-center gap-1.5 text-xs font-black text-slate-800 uppercase tracking-wide">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span> Stok Pakan Gudang Saat Ini
                             </span>
-                            <span class="text-emerald-700 font-black text-sm">{{ number_format($currentFeedStockKg, 0, ',', '.') }} Kg</span>
+                            <a href="{{ route('warehouse.pakan') }}" class="text-[10px] font-extrabold text-emerald-800 hover:text-emerald-900 bg-white px-2 py-0.5 rounded-lg border border-emerald-200 shadow-2xs hover:underline">
+                                Gudang Pakan »
+                            </a>
                         </div>
 
-                        <!-- Rincian Stok Per Jenis Pakan (Pakan Layer & Pakan Grower) -->
-                        <div class="grid grid-cols-2 gap-2 pt-1 border-t border-emerald-100/80 text-[10.5px]">
-                            <div class="p-2 rounded-xl bg-white border border-emerald-200/70 shadow-2xs">
-                                <span class="text-[9.5px] font-extrabold text-emerald-800 uppercase block">🌾 Pakan Layer</span>
-                                <div class="text-xs sm:text-sm font-black {{ $dashStokLayer < 0 ? 'text-rose-600' : 'text-emerald-700' }} leading-tight mt-0.5">
-                                    {{ number_format($dashStokLayer, 0, ',', '.') }} <span class="text-[9.5px] font-bold">kg</span>
+                        <!-- Card Grid Per Jenis Pakan (Layer vs Grower) -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                            <!-- 🌾 PAKAN LAYER -->
+                            <div class="p-2.5 rounded-xl bg-white border border-emerald-200/90 shadow-2xs space-y-1.5">
+                                <div class="flex items-center justify-between pb-1 border-b border-emerald-100">
+                                    <span class="text-[11px] font-black text-emerald-800 flex items-center gap-1">
+                                        🌾 Pakan Layer
+                                    </span>
+                                    <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                        Petelur
+                                    </span>
                                 </div>
-                                <span class="text-[9px] text-slate-400 block font-medium">({{ number_format($dashStokLayerKrg, 1, ',', '.') }} krg)</span>
+                                <div class="space-y-1 text-[10.5px]">
+                                    <div class="flex justify-between text-slate-600">
+                                        <span>Masuk:</span>
+                                        <b class="text-slate-800">{{ number_format($dashMasukLayer, 0, ',', '.') }} kg <span class="text-[9px] font-normal text-slate-400">({{ number_format($dashMasukLayerKrg, 1, ',', '.') }} krg)</span></b>
+                                    </div>
+                                    <div class="flex justify-between text-slate-600">
+                                        <span>Keluar:</span>
+                                        <b class="text-rose-700">{{ number_format($dashKeluarLayer, 0, ',', '.') }} kg <span class="text-[9px] font-normal text-slate-400">({{ number_format($dashKeluarLayerKrg, 1, ',', '.') }} krg)</span></b>
+                                    </div>
+                                    <div class="flex justify-between pt-1 border-t border-dashed border-slate-100 font-extrabold text-[11px]">
+                                        <span class="text-slate-700">Sisa Stok Layer:</span>
+                                        <span class="{{ $dashStokLayer < 0 ? 'text-rose-600 font-black' : 'text-emerald-700 font-black' }}">
+                                            {{ number_format($dashStokLayer, 0, ',', '.') }} kg <span class="text-[9px] font-bold text-slate-500">({{ number_format($dashStokLayerKrg, 1, ',', '.') }} krg)</span>
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
 
-                            <div class="p-2 rounded-xl bg-white border border-sky-200/70 shadow-2xs">
-                                <span class="text-[9.5px] font-extrabold text-sky-800 uppercase block">🌾 Pakan Grower</span>
-                                <div class="text-xs sm:text-sm font-black {{ $dashStokGrower < 0 ? 'text-rose-600' : 'text-sky-700' }} leading-tight mt-0.5">
-                                    {{ number_format($dashStokGrower, 0, ',', '.') }} <span class="text-[9.5px] font-bold">kg</span>
+                            <!-- 🌾 PAKAN GROWER -->
+                            <div class="p-2.5 rounded-xl bg-white border border-sky-200/90 shadow-2xs space-y-1.5">
+                                <div class="flex items-center justify-between pb-1 border-b border-sky-100">
+                                    <span class="text-[11px] font-black text-sky-800 flex items-center gap-1">
+                                        🌾 Pakan Grower
+                                    </span>
+                                    <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-sky-50 text-sky-700 border border-sky-200">
+                                        Remaja/Starter
+                                    </span>
                                 </div>
-                                <span class="text-[9px] text-slate-400 block font-medium">({{ number_format($dashStokGrowerKrg, 1, ',', '.') }} krg)</span>
+                                <div class="space-y-1 text-[10.5px]">
+                                    <div class="flex justify-between text-slate-600">
+                                        <span>Masuk:</span>
+                                        <b class="text-slate-800">{{ number_format($dashMasukGrower, 0, ',', '.') }} kg <span class="text-[9px] font-normal text-slate-400">({{ number_format($dashMasukGrowerKrg, 1, ',', '.') }} krg)</span></b>
+                                    </div>
+                                    <div class="flex justify-between text-slate-600">
+                                        <span>Keluar:</span>
+                                        <b class="text-rose-700">{{ number_format($dashKeluarGrower, 0, ',', '.') }} kg <span class="text-[9px] font-normal text-slate-400">({{ number_format($dashKeluarGrowerKrg, 1, ',', '.') }} krg)</span></b>
+                                    </div>
+                                    <div class="flex justify-between pt-1 border-t border-dashed border-slate-100 font-extrabold text-[11px]">
+                                        <span class="text-slate-700">Sisa Stok Grower:</span>
+                                        <span class="{{ $dashStokGrower < 0 ? 'text-rose-600 font-black' : 'text-sky-700 font-black' }}">
+                                            {{ number_format($dashStokGrower, 0, ',', '.') }} kg <span class="text-[9px] font-bold text-slate-500">({{ number_format($dashStokGrowerKrg, 1, ',', '.') }} krg)</span>
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Sub-info Kandang & Terjual -->
-                        <div class="flex flex-col sm:flex-row sm:justify-between text-[10.5px] text-slate-500 pt-1 border-t border-emerald-100/60 gap-1">
-                            <span>Kandang: <b class="text-slate-700">{{ number_format($totalFeedUsedAllTime, 0, ',', '.') }} Kg</b></span>
-                            <span>Terjual: <b class="text-emerald-800 font-bold">{{ number_format($feedKarungSold, 0, ',', '.') }} Karung ({{ number_format($feedKgSoldTotal, 0, ',', '.') }} Kg)</b></span>
+                        <!-- TOTAL SISA STOK PAKAN GUDANG SAAT INI (HASIL AKHIR / TOTALIN) -->
+                        <div class="p-2.5 rounded-xl bg-emerald-900 text-white shadow-md flex items-center justify-between">
+                            <div>
+                                <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-200 block">Total Sisa Stok Pakan Gudang Saat Ini</span>
+                                <span class="text-[10px] text-emerald-100/90 font-medium">
+                                    Total Masuk: {{ number_format($dashMasukTotal, 0, ',', '.') }} kg | Keluar: {{ number_format($dashKeluarTotal, 0, ',', '.') }} kg
+                                </span>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-base sm:text-lg font-black text-amber-300 leading-none">
+                                    {{ number_format($currentFeedStockKg, 0, ',', '.') }} <span class="text-xs font-bold text-white">Kg</span>
+                                </div>
+                                <span class="text-[9.5px] text-emerald-200 font-bold block">
+                                    ({{ number_format($dashStokTotalKrg, 1, ',', '.') }} Krg)
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Rincian Konsumsi Kandang vs Penjualan -->
+                        <div class="flex flex-col sm:flex-row sm:justify-between text-[10.5px] text-slate-600 pt-1 border-t border-emerald-200/60 gap-1 bg-white/70 p-2 rounded-lg border border-emerald-100">
+                            <span>🐔 Konsumsi Kandang: <b class="text-slate-800 font-bold">{{ number_format($totalFeedUsedAllTime, 0, ',', '.') }} Kg</b> <span class="text-slate-400 text-[9.5px]">({{ number_format($dashKonsumsiKrg, 1, ',', '.') }} Krg)</span></span>
+                            <span>🛒 Terjual Luar: <b class="text-emerald-800 font-bold">{{ number_format($feedKarungSold, 0, ',', '.') }} Krg ({{ number_format($feedKgSoldTotal, 0, ',', '.') }} Kg)</b></span>
                         </div>
                     </div>
                     @endif

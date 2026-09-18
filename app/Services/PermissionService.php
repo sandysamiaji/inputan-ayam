@@ -87,6 +87,11 @@ class PermissionService
                         'desc' => 'Menampilkan ringkasan kegiatan perlakuan medis hari ini',
                         'default' => true,
                     ],
+                    'dash_card_quarantine' => [
+                        'label' => 'Kartu Karantina Ayam Hari Ini',
+                        'desc' => 'Menampilkan metrik ayam sakit dalam masa karantina/pemulihan di dashboard',
+                        'default' => false,
+                    ],
                 ],
             ],
 
@@ -186,6 +191,11 @@ class PermissionService
                         'desc' => 'Akses untuk mengklik kartu Gudang Obat menuju detail',
                         'default' => true,
                     ],
+                    'warehouse_click_quarantine' => [
+                        'label' => 'Klik Kartu Ayam Karantina',
+                        'desc' => 'Akses untuk mengklik kartu Ayam Karantina menuju pencatatan & detail karantina',
+                        'default' => false,
+                    ],
                     'feature_warehouse_telur' => [
                         'label' => 'Lihat Gudang Telur',
                         'desc' => 'Membuka tab dan detail data stok serta mutasi telur utuh/rusak',
@@ -200,6 +210,11 @@ class PermissionService
                         'label' => 'Lihat Gudang Obat & Vaksin',
                         'desc' => 'Membuka tab dan detail data stok obat dan suplemen',
                         'default' => true,
+                    ],
+                    'warehouse_card_quarantine' => [
+                        'label' => 'Kartu Ayam Karantina di Gudang',
+                        'desc' => 'Menampilkan kartu ringkasan populasi ayam karantina (masuk sakit, keluar sembuh, sisa diisolasi) di gudang',
+                        'default' => false,
                     ],
                 ],
             ],
@@ -284,6 +299,11 @@ class PermissionService
                         'label' => 'Pilihan Transaksi: Vaksin & Obat',
                         'desc' => 'Kartu dan formulir input perlakuan obat di halaman input mobile',
                         'default' => true,
+                    ],
+                    'input_form_quarantine' => [
+                        'label' => 'Pilihan Status Karantina (Sakit/Sembuh) & No. Baterai',
+                        'desc' => 'Mengaktifkan opsi status Sakit dan Sembuh serta input nomor baterai pada formulir mortalitas',
+                        'default' => false,
                     ],
                 ],
             ],

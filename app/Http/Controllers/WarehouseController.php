@@ -9,6 +9,7 @@ use App\Models\Coop;
 use App\Models\EggProduction;
 use App\Models\FeedConsumption;
 use App\Models\HealthTreatment;
+use App\Models\Quarantine;
 use App\Services\OutboundIntegrationService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -127,6 +128,15 @@ class WarehouseController extends Controller
         
         $obatKeluar = $obatKeluarManual + $obatKeluarKandang;
         $obatStok = round($obatMasuk - $obatKeluar, 1);
+
+        // 4. Gudang Ayam Karantina (Satuan: Ekor)
+        $karantinaMasuk = (int) Quarantine::where('status', 'sakit')
+            ->whereBetween('date', [$startDate, $endDate])
+            ->sum('count');
+        $karantinaKeluar = (int) Quarantine::where('status', 'sembuh')
+            ->whereBetween('date', [$startDate, $endDate])
+            ->sum('count');
+        $karantinaStok = Quarantine::getCurrentCount();
 
         // Pre-query data aliran barang berdasarkan rentang tanggal
         $eggProdByDate = EggProduction::whereBetween('date', [$startDate, $endDate])
@@ -537,6 +547,7 @@ class WarehouseController extends Controller
             'telurMasuk', 'telurMasukButir', 'telurMasukKg', 'telurKeluar', 'telurKeluarKg', 'telurKeluarEggs', 'telurStok', 'telurStokKgTotal', 'telurStokButir', 'telurPetiSold', 'telurKgSold', 'telurRevenue',
             'pakanMasuk', 'pakanMasukKarung', 'pakanKeluar', 'pakanTotalKarungKeluar', 'pakanStok', 'pakanStokKarung', 'pakanKarungSold', 'pakanKgSold', 'pakanConsumptionKg', 'pakanConsumptionKarung', 'pakanRevenue',
             'obatMasuk', 'obatKeluar', 'obatStok',
+            'karantinaMasuk', 'karantinaKeluar', 'karantinaStok',
             'recentTransactions', 'recentSales',
             'chartLabels', 'chartDataSets', 'chartTotals', 'streamTotals',
             'startDate', 'endDate', 'defaultStartDate', 'defaultEndDate', 'diffDays', 'formattedStartDate', 'formattedEndDate'

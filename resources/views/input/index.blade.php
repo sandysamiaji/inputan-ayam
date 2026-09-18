@@ -815,21 +815,34 @@
                 </div>
 
                 <div class="field">
-                    <label>Jumlah Mati / Afkir</label>
-                    <input type="number" name="count" id="mortCount" value="2" min="1" placeholder="Masukkan jumlah ekor" oninput="calcMort()" required>
+                    <label id="mortCountLabel">Jumlah Ayam</label>
+                    <input type="number" name="count" id="mortCount" value="1" min="1" placeholder="Masukkan jumlah ekor" oninput="calcMort()" required>
                 </div>
 
                 <div class="field">
                     <label>Status / Kategori</label>
-                    <select name="type">
-                        <option value="mati">Mati</option>
-                        <option value="afkir">Afkir</option>
+                    <select name="type" id="mortType" onchange="toggleMortalityType()">
+                        <option value="mati">Mati (Kematian)</option>
+                        <option value="afkir">Afkir (Culling)</option>
+                        @if(!auth()->check() || auth()->user()->canAccess('input_form_quarantine'))
+                        <option value="sakit">Sakit (Masuk Karantina)</option>
+                        <option value="sembuh">Sembuh (Kembali ke Kandang)</option>
+                        @endif
                     </select>
                 </div>
 
+                <!-- Input Nomor Baterai (Muncul Dinamis jika Sakit / Sembuh) -->
+                <div class="field" id="mortBatteryField" style="display: none;">
+                    <label id="mortBatteryLabel">Nomor Baterai / Kandang Asal</label>
+                    <input type="text" name="battery_number" id="mortBatteryNumber" placeholder="Contoh: A-12 / B-05">
+                    <small style="font-size: 11px; color: #64748b; display: block; margin-top: 4px;" id="mortBatteryHint">
+                        Catat nomor baterai asal ayam sakit untuk riwayat isolasi karantina.
+                    </small>
+                </div>
+
                 <div class="field">
-                    <label>Penyebab</label>
-                    <select name="cause">
+                    <label id="mortCauseLabel">Penyebab / Indikasi</label>
+                    <select name="cause" id="mortCause">
                         <option value="Belum diketahui">Belum diketahui</option>
                         <option value="Sakit">Sakit</option>
                         <option value="Prolaps">Prolaps</option>
@@ -845,12 +858,12 @@
 
                 <div class="quick">
                     <div>
-                        <small>Mortalitas Hari Ini</small>
-                        <b class="red">{{ $mortalitasHariIni + 2 }} ekor</b>
+                        <small>Mati/Afkir Hari Ini</small>
+                        <b class="red">{{ $mortalitasHariIni }} ekor</b>
                     </div>
                     <div>
-                        <small>Total Mati/Afkir</small>
-                        <b>{{ $mortalitasHariIni + 2 }} ekor</b>
+                        <small>Ayam di Karantina</small>
+                        <b style="color: #d97706;">{{ $totalKarantinaSaatIni }} ekor</b>
                     </div>
                     <div>
                         <small>Populasi Farm</small>
@@ -858,14 +871,14 @@
                     </div>
                 </div>
 
-                <div class="alert-box">
-                    <b>⚠ Populasi otomatis diperbarui</b><br>
-                    Setelah disimpan, <span id="lblMortCount">2</span> ekor akan dikurangi dari populasi aktif blok terpilih. Populasi baru dipakai oleh Input Produksi dan Input Pakan berikutnya.
+                <div class="alert-box" id="mortAlertBox">
+                    <b id="mortAlertTitle">⚠ Populasi otomatis diperbarui</b><br>
+                    <span id="mortAlertDesc">Setelah disimpan, <span id="lblMortCount">1</span> ekor akan dikurangi dari populasi aktif blok terpilih. Populasi baru dipakai oleh Input Produksi dan Input Pakan berikutnya.</span>
                 </div>
 
-                <button type="submit" class="btn-submit">Simpan Mortalitas</button>
+                <button type="submit" class="btn-submit" id="mortBtnSubmit">Simpan Transaksi</button>
                 <a href="{{ route('dashboard') }}" class="btn-cancel">Batal</a>
-                <div class="info-note">Mortalitas tidak mengubah stok gudang. Transaksi ini memperbarui populasi aktif dan masuk ke Rekap serta Dashboard.</div>
+                <div class="info-note">Mortalitas & karantina tidak mengubah stok gudang umum. Transaksi ini memperbarui populasi aktif kandang dan masuk ke Rekap serta Dashboard.</div>
             </form>
         </section>
 
@@ -1165,15 +1178,65 @@ function calcPakanSisa() {
     // Fungsi tidak diperlukan lagi karena Stok Terkait dihapus
 }
 
-// 6. Calculations for Mortalitas
+// 6. Calculations for Mortalitas & Karantina
+function toggleMortalityType() {
+    const typeSelect = document.getElementById('mortType');
+    const selectedType = typeSelect ? typeSelect.value : 'mati';
+    const batteryField = document.getElementById('mortBatteryField');
+    const batteryLabel = document.getElementById('mortBatteryLabel');
+    const batteryHint = document.getElementById('mortBatteryHint');
+    const batteryInput = document.getElementById('mortBatteryNumber');
+    const alertTitle = document.getElementById('mortAlertTitle');
+    const alertDesc = document.getElementById('mortAlertDesc');
+    const btnSubmit = document.getElementById('mortBtnSubmit');
+    const countLabel = document.getElementById('mortCountLabel');
+
+    if (selectedType === 'sakit') {
+        if (batteryField) batteryField.style.display = 'block';
+        if (batteryLabel) batteryLabel.textContent = 'Nomor Baterai Asal (Kandang)';
+        if (batteryHint) batteryHint.textContent = 'Catat nomor baterai tempat ayam sakit diambil untuk dipindahkan ke karantina.';
+        if (batteryInput) batteryInput.setAttribute('placeholder', 'Contoh: A-12 / Baris 3');
+        if (countLabel) countLabel.textContent = 'Jumlah Ayam Sakit';
+        if (alertTitle) alertTitle.textContent = '⚠ Ayam dipindahkan ke Karantina';
+        if (alertDesc) alertDesc.innerHTML = 'Setelah disimpan, <span id="lblMortCount">1</span> ekor akan dikurangi dari populasi aktif blok terpilih dan bertambah di Karantina.';
+        if (btnSubmit) btnSubmit.textContent = 'Simpan ke Karantina';
+    } else if (selectedType === 'sembuh') {
+        if (batteryField) batteryField.style.display = 'block';
+        if (batteryLabel) batteryLabel.textContent = 'Nomor Baterai Tujuan (Kandang)';
+        if (batteryHint) batteryHint.textContent = 'Catat nomor baterai tempat ayam yang sembuh dikembalikan ke kandang aktif.';
+        if (batteryInput) batteryInput.setAttribute('placeholder', 'Contoh: A-12 / Baris 3');
+        if (countLabel) countLabel.textContent = 'Jumlah Ayam Sembuh';
+        if (alertTitle) alertTitle.textContent = '✅ Ayam Sembuh kembali ke Kandang';
+        if (alertDesc) alertDesc.innerHTML = 'Setelah disimpan, <span id="lblMortCount">1</span> ekor akan ditambahkan kembali ke populasi aktif blok terpilih dan berkurang di Karantina.';
+        if (btnSubmit) btnSubmit.textContent = 'Simpan Ayam Sembuh';
+    } else {
+        if (batteryField) batteryField.style.display = 'none';
+        if (countLabel) countLabel.textContent = 'Jumlah Mati / Afkir';
+        if (alertTitle) alertTitle.textContent = '⚠ Populasi otomatis diperbarui';
+        if (alertDesc) alertDesc.innerHTML = 'Setelah disimpan, <span id="lblMortCount">1</span> ekor akan dikurangi dari populasi aktif blok terpilih.';
+        if (btnSubmit) btnSubmit.textContent = 'Simpan Mortalitas';
+    }
+
+    calcMort();
+}
+
 function calcMort() {
     const popText = document.getElementById('mortPopSebelum').textContent;
     const pop = parseInt(popText) || 762;
     const count = parseInt(document.getElementById('mortCount').value) || 0;
-    const setelah = Math.max(0, pop - count);
+    const typeSelect = document.getElementById('mortType');
+    const selectedType = typeSelect ? typeSelect.value : 'mati';
+
+    let setelah = pop;
+    if (selectedType === 'sembuh') {
+        setelah = pop + count;
+    } else {
+        setelah = Math.max(0, pop - count);
+    }
 
     document.getElementById('mortPopSetelah').textContent = setelah + ' ekor';
-    document.getElementById('lblMortCount').textContent = count;
+    const lblCount = document.getElementById('lblMortCount');
+    if (lblCount) lblCount.textContent = count;
 }
 
 // 7. Details for Vaksin & Obat
@@ -1210,6 +1273,7 @@ document.addEventListener('DOMContentLoaded', function () {
     filterCoops('pakan');
     filterCoops('mort');
     filterCoops('obat');
+    toggleMortalityType();
     updateMedDetails();
 });
 </script>

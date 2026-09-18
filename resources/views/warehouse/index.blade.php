@@ -165,9 +165,9 @@
         @endif
     </div>
 
-    <!-- 3 KARTU UTAMA GUDANG (Sesuai Gambar Mockup 1: Telur, Pakan, Obat) -->
+    <!-- KARTU UTAMA GUDANG (Telur, Pakan, Obat, Karantina) -->
     @if(!auth()->check() || auth()->user()->canAccess('warehouse_card_summary'))
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
 
         <!-- 1. GUDANG TELUR -->
         @if(!auth()->check() || auth()->user()->canAccess('warehouse_click_telur'))
@@ -407,6 +407,86 @@
         </a>
         @else
         </div>
+        @endif
+
+        <!-- 4. GUDANG AYAM KARANTINA -->
+        @if(!auth()->check() || auth()->user()->canAccess('warehouse_card_quarantine'))
+            @if(!auth()->check() || auth()->user()->canAccess('warehouse_click_quarantine'))
+            <a href="{{ route('input.index', ['type' => 'mortalitas']) }}" class="farm-card farm-card-interactive p-4 sm:p-6 block group relative overflow-hidden">
+            @else
+            <div class="farm-card p-4 sm:p-6 block relative overflow-hidden opacity-90 cursor-not-allowed bg-slate-50">
+            @endif
+                <!-- Accent stripe on top -->
+                <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-400 via-orange-500 to-rose-600"></div>
+
+                <div class="flex items-start justify-between">
+                    <div class="flex items-center gap-3.5">
+                        <!-- Icon Ayam Karantina -->
+                        <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-amber-100 to-orange-50 border border-amber-200/80 flex items-center justify-center text-amber-600 shadow-inner group-hover:scale-110 transition-transform">
+                            <i data-lucide="shield-alert" class="w-7 h-7 sm:w-8 sm:h-8 stroke-[2]"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-base sm:text-lg font-bold text-slate-800 transition-colors @if(!auth()->check() || auth()->user()->canAccess('warehouse_click_quarantine')) group-hover:text-maroon-800 @endif">Ayam Karantina</h2>
+                            <span class="text-xs text-slate-400 font-medium">Isolasi & Pemulihan Ayam Sakit</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold px-2 py-0.5 rounded-full {{ $karantinaStok > 0 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800' }}">
+                            {{ $karantinaStok > 0 ? $karantinaStok . ' Ekor' : 'Nihil' }}
+                        </span>
+                        @if(!auth()->check() || auth()->user()->canAccess('warehouse_click_quarantine'))
+                        <div class="w-8 h-8 rounded-full bg-slate-50 group-hover:bg-maroon-50 text-slate-400 group-hover:text-maroon-700 flex items-center justify-center transition-colors">
+                            <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                        </div>
+                        @else
+                        <div class="w-8 h-8 rounded-full bg-slate-50 text-slate-300 flex items-center justify-center">
+                            <i data-lucide="lock" class="w-4 h-4"></i>
+                        </div>
+                        @endif
+                    </div>
+                </div>
+
+                <!-- Angka Masuk, Keluar, dan Sisa Karantina (Grid 3 Kolom Responsif Sempurna) -->
+                <div class="mt-5 pt-3.5 border-t border-slate-100 grid grid-cols-3 gap-1 sm:gap-2 items-center">
+                    <!-- 1. Masuk (Ayam Sakit) -->
+                    <div class="space-y-0.5 min-w-0 pr-1">
+                        <div class="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider">Masuk</div>
+                        <div class="text-xs sm:text-base font-bold text-slate-800 leading-tight truncate">
+                            {{ number_format($karantinaMasuk, 0, ',', '.') }} <span class="text-[10px] sm:text-xs font-normal text-slate-500">Ekor</span>
+                        </div>
+                        <div class="text-[9px] sm:text-[10px] font-medium text-slate-400 truncate">
+                            Ayam Sakit
+                        </div>
+                    </div>
+
+                    <!-- 2. Keluar (Ayam Sembuh) -->
+                    <div class="space-y-0.5 min-w-0 border-x border-slate-200/80 px-1.5 sm:px-2">
+                        <div class="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider">Keluar</div>
+                        <div class="text-xs sm:text-base font-bold text-slate-800 leading-tight truncate">
+                            {{ number_format($karantinaKeluar, 0, ',', '.') }} <span class="text-[10px] sm:text-xs font-normal text-slate-500">Ekor</span>
+                        </div>
+                        <div class="text-[9px] sm:text-[10px] font-medium text-slate-400 truncate">
+                            Sembuh Kembali
+                        </div>
+                    </div>
+
+                    <!-- 3. Sisa di Karantina -->
+                    <div class="text-right space-y-0.5 min-w-0 pl-1">
+                        <div class="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider">Sisa Karantina</div>
+                        <div class="text-xs sm:text-xl font-extrabold leading-tight truncate {{ $karantinaStok > 0 ? 'text-amber-600' : 'text-emerald-600' }}">
+                            {{ number_format($karantinaStok, 0, ',', '.') }} <span class="text-[10px] sm:text-xs font-bold {{ $karantinaStok > 0 ? 'text-amber-700' : 'text-emerald-700' }}">Ekor</span>
+                        </div>
+                        <div class="text-[9px] sm:text-[10px] font-semibold truncate {{ $karantinaStok > 0 ? 'text-amber-600' : 'text-emerald-600' }}">
+                            {{ $karantinaStok > 0 ? 'Diisolasi' : 'Nihil / Sehat' }}
+                        </div>
+                    </div>
+                </div>
+            @if(!auth()->check() || auth()->user()->canAccess('warehouse_click_quarantine'))
+            </a>
+            @else
+            </div>
+            @endif
         @endif
 
     </div>

@@ -13,6 +13,7 @@ use App\Models\HealthTreatment;
 use App\Models\FarmStock;
 use App\Models\Sale;
 use App\Models\User;
+use App\Models\Quarantine;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -78,7 +79,13 @@ class DashboardController extends Controller
 
         // 3. Ringkasan Mortalitas Hari Ini
         $mortalityRecords = Mortality::with(['coop', 'user'])->whereDate('date', $selectedDate)->get();
-        $totalMortalityCount = (int) $mortalityRecords->sum('count');
+        $totalMortalityCount = (int) $mortalityRecords->whereIn('type', ['mati', 'afkir'])->sum('count');
+
+        // 3b. Ringkasan Karantina Hari Ini & Total Saat Ini
+        $currentQuarantineCount = Quarantine::getCurrentCount();
+        $quarantineRecords = Quarantine::with(['coop', 'user'])->whereDate('date', $selectedDate)->get();
+        $todaySickCount = (int) $quarantineRecords->where('status', 'sakit')->sum('count');
+        $todayRecoveredCount = (int) $quarantineRecords->where('status', 'sembuh')->sum('count');
 
         // 4. Ringkasan Berat Badan Terkini
         $latestWeight = WeightSample::whereDate('date', '<=', $selectedDate)
@@ -205,6 +212,26 @@ class DashboardController extends Controller
             ]);
         }
 
+        foreach ($quarantineRecords as $item) {
+            $coopName = $item->coop ? $item->coop->name : 'Kandang';
+            $timeStr = $item->time ? substr($item->time, 0, 5) : ($item->created_at ? $item->created_at->format('H:i') : '00:00');
+            $isSakit = $item->status === 'sakit';
+            $batteryInfo = $item->battery_number ? ' • Baterai ' . $item->battery_number : '';
+            $activities->push([
+                'id' => 'quarantine_' . $item->id,
+                'category' => 'quarantine',
+                'title' => $isSakit ? 'Karantina (Ayam Sakit)' : 'Karantina (Ayam Sembuh)',
+                'subtitle' => $coopName . $batteryInfo . ($item->cause ? ' • ' . $item->cause : ''),
+                'datetime' => $carbonDate->format('d/m/Y') . ' ' . $timeStr,
+                'time' => $timeStr,
+                'value' => ($isSakit ? '+' : '-') . $item->count . ' Ekor',
+                'subvalue' => $isSakit ? 'Masuk Isolasi' : 'Kembali ke Kandang',
+                'user_username' => $getUserName($item->user),
+                'trip_username' => null,
+                'raw_timestamp' => $item->created_at ? $item->created_at->timestamp : strtotime($item->date . ' ' . ($item->time ?: '00:00:00')),
+            ]);
+        }
+
         foreach ($farmStockRecords as $item) {
             $timeStr = $item->created_at ? $item->created_at->format('H:i') : '00:00';
             $itemDateStr = $item->date ? $item->date->format('d/m/Y') : $carbonDate->format('d/m/Y');
@@ -273,186 +300,7 @@ class DashboardController extends Controller
             ]);
         }
 
-        // Jika pada tanggal yang dipilih belum ada aktivitas sama sekali, ambil riwayat aktivitas terbaru dari seluruh tanggal
-        if ($activities->count() === 0) {
-            $recentEggs = EggProduction::with(['coop', 'user'])->latest('date')->latest('id')->take(5)->get();
-            $recentFeeds = FeedConsumption::with(['coop', 'user'])->latest('date')->latest('id')->take(5)->get();
-            $recentMort = Mortality::with(['coop', 'user'])->latest('date')->latest('id')->take(5)->get();
-            $recentHealth = HealthTreatment::with(['coop', 'user'])->latest('date')->latest('id')->take(5)->get();
-            $recentStock = FarmStock::with('user')->latest('date')->latest('id')->take(5)->get();
-            $recentSales = \App\Models\Sale::with(['items', 'user'])->latest('date')->latest('id')->take(5)->get();
-
-            $recentTripIds = $recentSales->pluck('trip_id')->filter()->unique();
-            $recentTripUsersMap = collect();
-            if ($recentTripIds->isNotEmpty() && \Illuminate\Support\Facades\Schema::hasTable('trips')) {
-                if (\Illuminate\Support\Facades\Schema::hasTable('users')) {
-                    $recentTripUsersMap = DB::table('trips')
-                        ->leftJoin('users', 'trips.user_id', '=', 'users.id')
-                        ->whereIn('trips.id', $recentTripIds)
-                        ->select('trips.id as trip_id', DB::raw("COALESCE(users.username, users.name) as uname"))
-                        ->pluck('uname', 'trip_id');
-                }
-            }
-
-            $getRecentTripUserName = function($tripId) use ($recentTripUsersMap) {
-                if (!$tripId || !isset($recentTripUsersMap[$tripId])) return null;
-                $uname = $recentTripUsersMap[$tripId];
-                if (!$uname) return null;
-                return str_starts_with($uname, '@') ? $uname : '@' . $uname;
-            };
-
-            foreach ($recentEggs as $item) {
-                $coopName = $item->coop ? $item->coop->name : 'Kandang';
-                $timeStr = $item->time ? substr($item->time, 0, 5) : ($item->created_at ? $item->created_at->format('H:i') : '00:00');
-                $iDate = $item->date ? Carbon::parse($item->date)->format('d/m/Y') : '';
-                $valParts = [];
-                if ($item->crates_count > 0) {
-                    $valParts[] = number_format($item->crates_count, 0, ',', '.') . ' Peti';
-                }
-                if ($item->weight_kg > 0) {
-                    $kgFormatted = $item->weight_kg == floor($item->weight_kg) ? number_format($item->weight_kg, 0, ',', '.') : number_format($item->weight_kg, 1, ',', '.');
-                    $valParts[] = $kgFormatted . ' Kg';
-                }
-                $valStr = !empty($valParts) ? '+' . implode(' & ', $valParts) : '+' . number_format($item->crates_count, 0, ',', '.') . ' Peti';
-
-                $activities->push([
-                    'id' => 'egg_' . $item->id,
-                    'category' => 'egg',
-                    'title' => 'Produksi Telur',
-                    'subtitle' => $coopName . ($item->notes ? ' • ' . $item->notes : ''),
-                    'datetime' => $iDate . ' ' . $timeStr,
-                    'time' => $timeStr,
-                    'value' => $valStr,
-                    'subvalue' => number_format($item->total_eggs, 0, ',', '.') . ' Butir',
-                    'user_username' => $getUserName($item->user),
-                    'trip_username' => null,
-                    'raw_timestamp' => $item->created_at ? $item->created_at->timestamp : strtotime($item->date . ' ' . ($item->time ?: '00:00:00')),
-                ]);
-            }
-
-            foreach ($recentFeeds as $item) {
-                $coopName = $item->coop ? $item->coop->name : 'Kandang';
-                $timeStr = $item->time ? substr($item->time, 0, 5) : ($item->created_at ? $item->created_at->format('H:i') : '00:00');
-                $iDate = $item->date ? Carbon::parse($item->date)->format('d/m/Y') : '';
-                $activities->push([
-                    'id' => 'feed_' . $item->id,
-                    'category' => 'feed',
-                    'title' => 'Pemakaian Pakan',
-                    'subtitle' => $coopName . ' • ' . $item->feed_name,
-                    'datetime' => $iDate . ' ' . $timeStr,
-                    'time' => $timeStr,
-                    'value' => '-' . number_format($item->quantity_kg, 0, ',', '.') . ' Kg',
-                    'subvalue' => $item->feeding_time,
-                    'user_username' => $getUserName($item->user),
-                    'trip_username' => null,
-                    'raw_timestamp' => $item->created_at ? $item->created_at->timestamp : strtotime($item->date . ' ' . ($item->time ?: '00:00:00')),
-                ]);
-            }
-
-            foreach ($recentMort as $item) {
-                $coopName = $item->coop ? $item->coop->name : 'Kandang';
-                $timeStr = $item->time ? substr($item->time, 0, 5) : ($item->created_at ? $item->created_at->format('H:i') : '00:00');
-                $iDate = $item->date ? Carbon::parse($item->date)->format('d/m/Y') : '';
-                $activities->push([
-                    'id' => 'mort_' . $item->id,
-                    'category' => 'mortality',
-                    'title' => 'Mortalitas Ayam',
-                    'subtitle' => $coopName . ($item->cause ? ' • ' . $item->cause : ''),
-                    'datetime' => $iDate . ' ' . $timeStr,
-                    'time' => $timeStr,
-                    'value' => '-' . $item->count . ' Ekor',
-                    'subvalue' => ucfirst($item->type),
-                    'user_username' => $getUserName($item->user),
-                    'trip_username' => null,
-                    'raw_timestamp' => $item->created_at ? $item->created_at->timestamp : strtotime($item->date . ' ' . ($item->time ?: '00:00:00')),
-                ]);
-            }
-
-            foreach ($recentHealth as $item) {
-                $coopName = $item->coop ? $item->coop->name : 'Semua Blok';
-                $timeStr = $item->time ? substr($item->time, 0, 5) : ($item->created_at ? $item->created_at->format('H:i') : '00:00');
-                $iDate = $item->date ? Carbon::parse($item->date)->format('d/m/Y') : '';
-                $activities->push([
-                    'id' => 'health_' . $item->id,
-                    'category' => 'health',
-                    'title' => ucfirst($item->type) . ' / Obat',
-                    'subtitle' => $coopName . ' • ' . $item->medicine_name,
-                    'datetime' => $iDate . ' ' . $timeStr,
-                    'time' => $timeStr,
-                    'value' => $item->dosage ?: '1 Kegiatan',
-                    'subvalue' => $item->application_method,
-                    'user_username' => $getUserName($item->user),
-                    'trip_username' => null,
-                    'raw_timestamp' => $item->created_at ? $item->created_at->timestamp : strtotime($item->date . ' ' . ($item->time ?: '00:00:00')),
-                ]);
-            }
-
-            foreach ($recentStock as $item) {
-                $timeStr = $item->created_at ? $item->created_at->format('H:i') : '00:00';
-                $iDate = $item->date ? $item->date->format('d/m/Y') : '';
-                $activities->push([
-                    'id' => 'stock_' . $item->id,
-                    'category' => $item->type === 'masuk' ? 'stock_masuk' : 'stock_keluar',
-                    'title' => 'Mutasi Gudang (' . ucfirst($item->category) . ')',
-                    'subtitle' => $item->item_name . ($item->source ? ' • ' . $item->source : ($item->notes ? ' • ' . $item->notes : '')),
-                    'datetime' => $iDate . ' ' . $timeStr,
-                    'time' => $timeStr,
-                    'value' => ($item->type === 'masuk' ? '+' : '-') . number_format($item->quantity, 0, ',', '.') . ' ' . ($item->unit ?: 'Unit'),
-                    'subvalue' => ($item->type === 'masuk' ? 'Barang Masuk' : 'Barang Keluar') . ($item->source ? ' (' . $item->source . ')' : ''),
-                    'user_username' => $getUserName($item->user),
-                    'trip_username' => null,
-                    'raw_timestamp' => $item->created_at ? $item->created_at->timestamp : ($item->date ? strtotime($item->date->format('Y-m-d') . ' 00:00:00') : 0),
-                ]);
-            }
-
-            foreach ($recentSales as $item) {
-                $timeStr = $item->created_at ? $item->created_at->format('H:i') : '00:00';
-                $iDate = $item->date ? $item->date->format('d/m/Y') : '';
-                $firstItem = $item->items->first();
-                $firstItemName = $firstItem ? $firstItem->item_name : '';
-                $subTitleStr = ($item->customer_name ?: 'Pelanggan') . ($firstItemName ? ' • ' . $firstItemName : '');
-
-                $qtyDisplayParts = [];
-                if ($item->items->count() > 0) {
-                    $groupedItems = [];
-                    foreach ($item->items as $saleItem) {
-                        $unit = $saleItem->unit ?: 'Item';
-                        if (!isset($groupedItems[$unit])) {
-                            $groupedItems[$unit] = 0;
-                        }
-                        $groupedItems[$unit] += $saleItem->quantity;
-                    }
-                    
-                    $isFirst = true;
-                    foreach ($groupedItems as $unit => $qty) {
-                        $formattedQty = number_format($qty, 0, ',', '.');
-                        if ($isFirst) {
-                            $qtyDisplayParts[] = '-' . $formattedQty . ' ' . $unit;
-                            $isFirst = false;
-                        } else {
-                            $qtyDisplayParts[] = $formattedQty . ' ' . $unit;
-                        }
-                    }
-                }
-                
-                $qtyDisplay = !empty($qtyDisplayParts) ? implode(' dan ', $qtyDisplayParts) : '-';
-
-                $activities->push([
-                    'id' => 'sale_' . $item->id,
-                    'category' => 'sale',
-                    'title' => 'Penjualan ' . ucfirst($item->category ?: 'Telur'),
-                    'subtitle' => $subTitleStr,
-                    'datetime' => $iDate . ' ' . $timeStr,
-                    'time' => $timeStr,
-                    'value' => $qtyDisplay,
-                    'subvalue' => ($item->invoice_no ? '#' . $item->invoice_no : '') . ($item->payment_status ? ($item->invoice_no ? ' • ' : '') . ucfirst($item->payment_status) : ''),
-                    'user_username' => $getUserName($item->user),
-                    'trip_username' => $getRecentTripUserName($item->trip_id),
-                    'raw_timestamp' => $item->created_at ? $item->created_at->timestamp : ($item->date ? strtotime($item->date->format('Y-m-d') . ' 00:00:00') : 0),
-                ]);
-            }
-        }
-
+        // Fallback untuk aktivitas jika kosong dihapus agar filter tanggal berfungsi semestinya.
         $activities = $activities->sortByDesc('raw_timestamp')->take(15)->values();
 
         // 7. Data Master untuk modal quick action
@@ -543,6 +391,8 @@ class DashboardController extends Controller
         $coopFeedTodayData = [];
         $coopEggCratesData = [];
         $coopEggKgData = [];
+        $coopEggUserInputData = [];
+        $coopFeedUserInputData = [];
 
         foreach ($coops as $c) {
             $todayEgg = (int) $eggProdRecords->where('coop_id', $c->id)->sum('total_eggs');
@@ -567,6 +417,12 @@ class DashboardController extends Controller
             }
             $coopEggCratesData[$c->id] = $cPetiRaw;
             $coopEggKgData[$c->id] = $cKgRaw;
+
+            $firstEgg = $coopProds->first();
+            $coopEggUserInputData[$c->id] = $firstEgg && $firstEgg->user ? ($firstEgg->user->username ?: $firstEgg->user->name) : null;
+
+            $firstFeed = $feedConsRecords->where('coop_id', $c->id)->first();
+            $coopFeedUserInputData[$c->id] = $firstFeed && $firstFeed->user ? ($firstFeed->user->username ?: $firstFeed->user->name) : null;
         }
 
         $flockHdData = [];
@@ -629,7 +485,12 @@ class DashboardController extends Controller
             'coopEggTodayData',
             'coopFeedTodayData',
             'coopEggCratesData',
-            'coopEggKgData'
+            'coopEggKgData',
+            'coopEggUserInputData',
+            'coopFeedUserInputData',
+            'currentQuarantineCount',
+            'todaySickCount',
+            'todayRecoveredCount'
         ));
     }
 
@@ -786,47 +647,120 @@ class DashboardController extends Controller
     }
 
     /**
-     * Simpan Mortalitas Cepat
+     * Simpan Mortalitas / Karantina Cepat
      */
     public function storeMortality(Request $request)
     {
         $validated = $request->validate([
             'coop_id' => 'required|exists:coops,id',
             'count' => 'required|integer|min:1',
-            'type' => 'nullable|string',
-            'cause' => 'nullable|string',
+            'type' => 'nullable|string|in:mati,afkir,sakit,sembuh',
+            'cause' => 'nullable|string|max:255',
             'date' => 'nullable|date',
+            'battery_number' => 'nullable|string|max:100',
             'notes' => 'nullable|string',
         ]);
 
         $coop = Coop::findOrFail($validated['coop_id']);
+        $type = $validated['type'] ?? 'mati';
+        $count = (int) $validated['count'];
+        $date = $validated['date'] ?? Carbon::today()->toDateString();
+        $userId = Auth::id() ?? User::where('username', 'petugas')->value('id') ?? User::value('id');
+        $batteryNumber = !empty($validated['battery_number']) ? trim($validated['battery_number']) : null;
 
-        $mortality = Mortality::create([
-            'flock_id' => $coop->flock_id,
-            'coop_id' => $coop->id,
-            'user_id' => Auth::id() ?? User::where('username', 'petugas')->value('id') ?? User::value('id'),
-            'date' => $validated['date'] ?? Carbon::today()->toDateString(),
-            'time' => Carbon::now()->format('H:i:s'),
-            'count' => $validated['count'],
-            'type' => $validated['type'] ?? 'mati',
-            'cause' => $validated['cause'] ?? 'Wajar',
-            'notes' => $validated['notes'] ?? null,
-        ]);
+        if ($type === 'sakit') {
+            // 1. Kurangi populasi aktif kandang
+            if ($coop->active_chickens >= $count) {
+                $coop->decrement('active_chickens', $count);
+            }
 
-        // Perbarui jumlah ayam aktif di blok jika bertipe mati/afkir
-        if ($coop->active_chickens >= $validated['count']) {
-            $coop->decrement('active_chickens', $validated['count']);
-        }
-
-        if ($request->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Data mortalitas berhasil dicatat!',
-                'data' => $mortality,
+            // 2. Simpan ke riwayat karantina
+            $record = Quarantine::create([
+                'flock_id' => $coop->flock_id,
+                'coop_id' => $coop->id,
+                'user_id' => $userId,
+                'date' => $date,
+                'time' => Carbon::now()->format('H:i:s'),
+                'battery_number' => $batteryNumber,
+                'count' => $count,
+                'status' => 'sakit',
+                'cause' => $validated['cause'] ?? 'Sakit',
+                'notes' => $validated['notes'] ?? null,
             ]);
-        }
 
-        return redirect()->back()->with('success', 'Data mortalitas berhasil dicatat!');
+            $batInfo = $batteryNumber ? " (Baterai: {$batteryNumber})" : '';
+            $msg = "{$count} ekor ayam sakit{$batInfo} berhasil dicatat dan dipindahkan ke Karantina!";
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $msg,
+                    'data' => $record,
+                ]);
+            }
+            return redirect()->back()->with('success', $msg);
+
+        } elseif ($type === 'sembuh') {
+            // 1. Tambah kembali populasi aktif kandang
+            $coop->increment('active_chickens', $count);
+
+            // 2. Simpan ke riwayat karantina (Status: sembuh)
+            $record = Quarantine::create([
+                'flock_id' => $coop->flock_id,
+                'coop_id' => $coop->id,
+                'user_id' => $userId,
+                'date' => $date,
+                'time' => Carbon::now()->format('H:i:s'),
+                'battery_number' => $batteryNumber,
+                'count' => $count,
+                'status' => 'sembuh',
+                'cause' => $validated['cause'] ?? 'Sembuh',
+                'notes' => $validated['notes'] ?? null,
+            ]);
+
+            $batInfo = $batteryNumber ? " (Baterai: {$batteryNumber})" : '';
+            $msg = "{$count} ekor ayam sembuh berhasil dikembalikan ke {$coop->name}{$batInfo}!";
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $msg,
+                    'data' => $record,
+                ]);
+            }
+            return redirect()->back()->with('success', $msg);
+
+        } else {
+            // Standar Mortalitas (Mati / Afkir)
+            $mortality = Mortality::create([
+                'flock_id' => $coop->flock_id,
+                'coop_id' => $coop->id,
+                'user_id' => $userId,
+                'date' => $date,
+                'time' => Carbon::now()->format('H:i:s'),
+                'count' => $count,
+                'type' => $type,
+                'cause' => $validated['cause'] ?? 'Wajar',
+                'notes' => $validated['notes'] ?? null,
+            ]);
+
+            // Kurangi jumlah ayam aktif di blok
+            if ($coop->active_chickens >= $count) {
+                $coop->decrement('active_chickens', $count);
+            }
+
+            $labelType = $type === 'afkir' ? 'Afkir' : 'Kematian';
+            $msg = "Data mortalitas ({$labelType}) {$count} ekor berhasil dicatat!";
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $msg,
+                    'data' => $mortality,
+                ]);
+            }
+            return redirect()->back()->with('success', $msg);
+        }
     }
 
     /**

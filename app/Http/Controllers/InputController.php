@@ -48,7 +48,8 @@ class InputController extends Controller
         // Ringkasan Populasi Real-time
         $kloter1Pop = (int) ($flocks->where('code', 'K1')->first() ? $flocks->where('code', 'K1')->first()->coops->sum('active_chickens') : 2249);
         $kloter2Pop = (int) ($flocks->where('code', 'K2')->first() ? $flocks->where('code', 'K2')->first()->coops->sum('active_chickens') : 1768);
-        $mortalitasHariIni = (int) Mortality::whereDate('date', $date)->sum('count');
+        $mortalitasHariIni = (int) Mortality::whereIn('type', ['mati', 'afkir'])->whereDate('date', $date)->sum('count');
+        $totalKarantinaSaatIni = \App\Models\Quarantine::getCurrentCount();
 
         // Ringkasan Stok Obat Real-time
         $medicines = [
@@ -123,7 +124,7 @@ class InputController extends Controller
             'flocks', 'coops', 'totalChickens', 'type', 'date', 'formattedDate',
             'telurStokSaatIni', 'telurMasukHariIni', 'telurKeluarHariIni', 'telurTerjualKg',
             'pakanStokKg', 'pakanPemakaianHariIni',
-            'kloter1Pop', 'kloter2Pop', 'mortalitasHariIni',
+            'kloter1Pop', 'kloter2Pop', 'mortalitasHariIni', 'totalKarantinaSaatIni',
             'medicines', 'farmCondition', 'coopStandards'
         ));
     }

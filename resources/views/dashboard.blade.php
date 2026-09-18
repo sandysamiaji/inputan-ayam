@@ -75,7 +75,7 @@
             </span>
         </div>
 
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
 
             <!-- Card 1: Produksi Telur (Amber) -->
             @if(!auth()->check() || auth()->user()->canAccess('dash_card_egg'))
@@ -186,7 +186,7 @@
 
             <!-- Card 5: Vaksin / Obat (Maroon) -->
             @if(!auth()->check() || auth()->user()->canAccess('dash_card_health'))
-            <div class="col-span-2 md:col-span-1 farm-card p-3.5 sm:p-4 border-l-4 border-l-maroon-800 bg-white flex flex-col justify-between">
+            <div class="farm-card p-3.5 sm:p-4 border-l-4 border-l-maroon-800 bg-white flex flex-col justify-between">
                 <div class="flex items-start justify-between gap-2">
                     <div class="w-10 h-10 rounded-xl bg-maroon-50 text-maroon-800 flex items-center justify-center shrink-0 border border-maroon-100 shadow-xs">
                         <i data-lucide="syringe" class="w-5 h-5 stroke-[2.2]"></i>
@@ -200,6 +200,35 @@
                     </p>
                     <p class="text-[11px] text-slate-400 font-medium mt-0.5">
                         Perlakuan Medis
+                    </p>
+                </div>
+            </div>
+            @endif
+
+            <!-- Card 6: Karantina Ayam (Amber/Orange) -->
+            @if(!auth()->check() || auth()->user()->canAccess('dash_card_quarantine'))
+            <div class="farm-card p-3.5 sm:p-4 border-l-4 border-l-amber-500 bg-white flex flex-col justify-between">
+                <div class="flex items-start justify-between gap-2">
+                    <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100 shadow-xs">
+                        <i data-lucide="shield-alert" class="w-5 h-5 stroke-[2.2]"></i>
+                    </div>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-md {{ $currentQuarantineCount > 0 ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200' }}">
+                        {{ $currentQuarantineCount > 0 ? 'Isolasi' : 'Nihil' }}
+                    </span>
+                </div>
+                <div class="mt-3">
+                    <p class="text-xs font-semibold text-slate-500">Ayam Karantina</p>
+                    <p class="text-lg sm:text-xl font-black {{ $currentQuarantineCount > 0 ? 'text-amber-700' : 'text-slate-900' }} tracking-tight leading-tight mt-0.5">
+                        {{ $currentQuarantineCount }} <span class="text-xs font-bold text-slate-500">Ekor</span>
+                    </p>
+                    <p class="text-[11px] font-medium mt-0.5 {{ $currentQuarantineCount > 0 ? 'text-amber-700' : 'text-slate-400' }}">
+                        @if($todaySickCount > 0 || $todayRecoveredCount > 0)
+                            +{{ $todaySickCount }} Sakit • -{{ $todayRecoveredCount }} Sembuh
+                        @elseif($currentQuarantineCount > 0)
+                            Sedang Diisolasi
+                        @else
+                            Kondisi Sehat
+                        @endif
                     </p>
                 </div>
             </div>
@@ -446,6 +475,11 @@
                                                 ⚠️ <b>Input telur karyawan belum sesuai hitungan aplikasi</b> (masih kurang {{ number_format(abs($eggDiffKg), 1, ',', '.') }} kg dari estimasi {{ $estPetiText }} / {{ number_format($estKg, 1, ',', '.') }} kg).
                                             @endif
                                         </div>
+                                        @if(!empty($coopEggUserInputData[$coop->id]))
+                                        <div class="mt-1 text-[9.5px] text-slate-500 font-medium">
+                                            Diinput oleh: <b class="text-slate-700">{{ $coopEggUserInputData[$coop->id] }}</b>
+                                        </div>
+                                        @endif
                                     @else
                                         <div class="mt-1 text-[10px] text-slate-400">
                                             Belum ada pencatatan panen telur untuk {{ $coop->name }} hari ini.
@@ -511,16 +545,20 @@
                                         @endif
                                     </div>
 
-                                    <div class="mt-1 flex items-baseline justify-between text-[11px]">
+                                    <div class="mt-1 flex items-start justify-between text-[11px]">
                                         <div>
                                             <span class="text-sm font-black {{ $actualFeedKg == 0 ? 'text-slate-500' : (abs($feedDiffKg) <= 1.0 ? 'text-emerald-800' : ($feedDiffKg > 1.0 ? 'text-amber-800' : 'text-rose-800')) }}">
                                                 {{ number_format($actualFeedKg, 1, ',', '.') }} kg
                                             </span>
                                             <span class="text-[10px] text-slate-500 font-medium ml-1">diinput hari ini</span>
                                         </div>
-                                        <span class="text-[10.5px] text-slate-500 font-medium">
-                                            Standar Hitungan: <b>{{ number_format($totalPakanCoopKg, 1, ',', '.') }} kg</b>
-                                        </span>
+                                        <div class="text-[10.5px] text-slate-500 font-medium text-right">
+                                            <div>Standar Hitungan: <b>{{ number_format($totalPakanCoopKg, 1, ',', '.') }} kg</b></div>
+                                            <div class="mt-0.5 text-[9.5px] text-slate-400">
+                                                Jadwal Pagi (40%): <b class="text-slate-500">{{ number_format($pagiKg, 1, ',', '.') }} kg</b><br>
+                                                Sore (60%): <b class="text-slate-500">{{ number_format($soreKg, 1, ',', '.') }} kg</b>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     @if($actualFeedKg > 0)
@@ -533,6 +571,11 @@
                                                 ⚠️ <b>Pemberian pakan KURANG dari standar</b> sebesar {{ number_format(abs($feedDiffKg), 1, ',', '.') }} kg dari acuan {{ number_format($totalPakanCoopKg, 1, ',', '.') }} kg.
                                             @endif
                                         </div>
+                                        @if(!empty($coopFeedUserInputData[$coop->id]))
+                                        <div class="mt-1 text-[9.5px] text-slate-500 font-medium">
+                                            Diinput oleh: <b class="text-slate-700">{{ $coopFeedUserInputData[$coop->id] }}</b>
+                                        </div>
+                                        @endif
                                     @else
                                         <div class="mt-1 text-[10px] text-slate-400">
                                             Belum ada pencatatan pakan untuk {{ $coop->name }} hari ini.
@@ -957,11 +1000,22 @@
 
             <div>
                 <label class="block text-xs font-bold text-slate-700 mb-1.5">Status / Kategori</label>
-                <select name="type" class="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-maroon-800 outline-none bg-slate-50">
+                <select name="type" id="modalMortType" onchange="toggleModalMortType()" class="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-maroon-800 outline-none bg-slate-50">
                     <option value="mati">Kematian (Mati)</option>
                     <option value="afkir">Afkir (Dipisahkan)</option>
-                    <option value="sakit">Karantina Sakit</option>
+                    @if(!auth()->check() || auth()->user()->canAccess('input_form_quarantine'))
+                    <option value="sakit">Karantina (Ayam Sakit)</option>
+                    <option value="sembuh">Sembuh (Kembali ke Kandang)</option>
+                    @endif
                 </select>
+            </div>
+
+            <!-- Dynamic Battery Number Field for Modal -->
+            <div id="modalMortBatteryField" style="display: none;">
+                <label id="modalMortBatteryLabel" class="block text-xs font-bold text-slate-700 mb-1.5">Nomor Baterai Kandang</label>
+                <input type="text" name="battery_number" id="modalMortBatteryInput" placeholder="Contoh: A-12 / B-05"
+                       class="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-maroon-800 outline-none bg-slate-50">
+                <span class="text-[10px] text-slate-400 mt-1 block" id="modalMortBatteryHint">Catat posisi baterai untuk riwayat isolasi.</span>
             </div>
 
             <div>
@@ -1405,6 +1459,26 @@
             petiEl.value = currentPeti + extraPeti;
             const remainderKg = Math.round((kgVal - (extraPeti * 10)) * 10) / 10;
             kgEl.value = remainderKg > 0 ? remainderKg : '';
+        }
+    }
+
+    // Toggle jenis status mortalitas & nomor baterai di modal
+    function toggleModalMortType() {
+        const sel = document.getElementById('modalMortType');
+        const field = document.getElementById('modalMortBatteryField');
+        const label = document.getElementById('modalMortBatteryLabel');
+        const hint = document.getElementById('modalMortBatteryHint');
+        const val = sel ? sel.value : 'mati';
+        if (val === 'sakit') {
+            if (field) field.style.display = 'block';
+            if (label) label.textContent = 'Nomor Baterai Asal (Kandang)';
+            if (hint) hint.textContent = 'Catat nomor baterai asal ayam sakit untuk riwayat isolasi karantina.';
+        } else if (val === 'sembuh') {
+            if (field) field.style.display = 'block';
+            if (label) label.textContent = 'Nomor Baterai Tujuan (Kandang)';
+            if (hint) hint.textContent = 'Catat nomor baterai tempat ayam yang sembuh dikembalikan ke kandang.';
+        } else {
+            if (field) field.style.display = 'none';
         }
     }
 </script>

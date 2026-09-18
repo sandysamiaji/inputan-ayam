@@ -503,7 +503,7 @@
                                     </div>
                                 </div>
                                 @if(isset($coopWeightData[$coop->id]) && $coopWeightData[$coop->id])
-                                <div class="mt-2 p-1.5 px-2 rounded-lg bg-sky-50/70 border border-sky-100 flex items-center justify-between text-[10.5px]">
+                                <div class="mt-2 p-1.5 px-2 rounded-lg bg-sky-50/70 border border-sky-100 flex flex-wrap items-center justify-between gap-1 text-[10.5px]">
                                     <span class="flex items-center gap-1 font-bold text-sky-950">
                                         <i data-lucide="scale" class="w-3.5 h-3.5 text-sky-600"></i>
                                         <span>Sampel Bobot: <b class="text-sky-800">{{ number_format($coopWeightData[$coop->id], 2, ',', '.') }} kg</b></span>
@@ -538,7 +538,7 @@
                                 @endphp
                                 <div class="mt-2.5 p-2.5 rounded-lg text-xs {{ !$hasEggInput ? 'bg-slate-50 border border-slate-200' : ($isEggMatch ? 'bg-emerald-50/80 border border-emerald-200' : 'bg-rose-50/80 border border-rose-200') }}">
                                     <!-- Header Realisasi vs Acuan -->
-                                    <div class="flex items-center justify-between font-bold text-[11px]">
+                                    <div class="flex flex-wrap items-center justify-between gap-1 font-bold text-[11px]">
                                         <span class="flex items-center gap-1.5 {{ !$hasEggInput ? 'text-slate-700' : ($isEggMatch ? 'text-emerald-900' : 'text-rose-900') }}">
                                             <span class="text-sm">🥚</span>
                                             <span>Realisasi Panen Telur:</span>
@@ -561,7 +561,7 @@
                                     </div>
 
                                     <!-- Angka Realisasi vs Perkiraan -->
-                                    <div class="mt-1 flex items-baseline justify-between text-[11px]">
+                                    <div class="mt-1 flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 text-[11px]">
                                         <div>
                                             <span class="text-sm font-black {{ !$hasEggInput ? 'text-slate-500' : ($isEggMatch ? 'text-emerald-800' : 'text-rose-800') }}">
                                                 {{ $hasEggInput ? $actPetiText : '0 Peti' }}
@@ -570,7 +570,7 @@
                                                 <span class="text-[10px] text-slate-500 font-medium ml-1">({{ number_format($actTotalKg, 1, ',', '.') }} kg)</span>
                                             @endif
                                         </div>
-                                        <div class="text-[10.5px] text-slate-500 font-medium text-right">
+                                        <div class="text-[10.5px] text-slate-500 font-medium text-left sm:text-right">
                                             Perkiraan: <b class="text-slate-800">{{ $estPetiText }}</b>
                                             @if($estKg > 0)
                                                 <span class="text-[10px] text-slate-400">({{ number_format($estKg, 1, ',', '.') }} kg)</span>

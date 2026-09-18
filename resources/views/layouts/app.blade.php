@@ -272,7 +272,7 @@
         if ($navCount < 1) $navCount = 1;
     @endphp
     <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[440px] z-40 bg-white border-t border-slate-200 shadow-2xl">
-        <div class="grid grid-cols-{{ $navCount }} py-2 px-1 text-center items-center">
+        <div class="grid py-2 px-1 text-center items-center" style="grid-template-columns: repeat({{ $navCount }}, minmax(0, 1fr));">
             @if($showDashboard)
             <!-- 1. Dashboard -->
             <a href="{{ route('dashboard') }}" class="flex flex-col items-center justify-center py-1 {{ request()->routeIs('dashboard') ? 'text-maroon-800 font-extrabold' : 'text-slate-500 hover:text-maroon-700 font-medium' }} transition-transform active:scale-90">

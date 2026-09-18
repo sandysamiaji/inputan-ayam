@@ -277,7 +277,7 @@
                     'date' => \Carbon\Carbon::parse($item->date)->translatedFormat('d F Y'),
                     'raw_date' => $item->date->format('Y-m-d'),
                     'time' => $item->created_at ? $item->created_at->format('H:i') : '07:10',
-                    'petugas' => $item->user ? $item->user->name : 'Petugas',
+                    'petugas' => $item->user ? ($item->user->username ? '@' . ltrim($item->user->username, '@') : $item->user->name) : 'Petugas',
                     'kandang' => $item->source ?? 'Semua Blok',
                     'jenis_pakan' => str_contains(strtolower($item->notes ?? ''), 'layer') ? 'Pakan Layer' : (str_contains(strtolower($item->notes ?? ''), 'starter') ? 'Pakan Starter' : 'Pakan Komplit'),
                     'is_nonaktif' => $isNonaktif
@@ -313,7 +313,7 @@
                         <div class="text-[10px] sm:text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5">
                             <span>{{ \Carbon\Carbon::parse($item->date)->translatedFormat('d M Y') }} {{ $item->created_at ? $item->created_at->format('H:i') : '' }}</span>
                             <span>•</span>
-                            <span class="text-slate-500 font-medium">{{ $item->user ? $item->user->name : 'Petugas' }}</span>
+                            <span class="text-slate-500 font-medium">{{ $item->user ? ($item->user->username ? '@' . ltrim($item->user->username, '@') : $item->user->name) : 'Petugas' }}</span>
                             @if($item->source)
                                 <span>•</span>
                                 <span class="text-slate-500">{{ $item->source }}</span>
@@ -341,7 +341,7 @@
                             'date' => \Carbon\Carbon::parse($item->date)->translatedFormat('d F Y'),
                             'raw_date' => $item->date->format('Y-m-d'),
                             'time' => $item->created_at ? $item->created_at->format('H:i') : '07:10',
-                            'petugas' => $item->user ? $item->user->name : 'Petugas01',
+                            'petugas' => $item->user ? ($item->user->username ? '@' . ltrim($item->user->username, '@') : $item->user->name) : 'Petugas',
                             'kandang' => $item->source ?? 'A1, A2, A3',
                             'jenis_pakan' => str_contains(strtolower($item->notes ?? ''), 'layer') ? 'Pakan Layer' : (str_contains(strtolower($item->notes ?? ''), 'starter') ? 'Pakan Starter' : 'Pakan Komplit'),
                             'is_nonaktif' => $isNonaktif

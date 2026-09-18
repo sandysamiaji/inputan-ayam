@@ -769,7 +769,7 @@
                                 @if($item->source)
                                     <span>• {{ $item->source }}</span>
                                 @endif
-                                <span>• {{ $item->user ? $item->user->name : 'Petugas' }}</span>
+                                <span>• {{ $item->user ? ($item->user->username ? '@' . ltrim($item->user->username, '@') : $item->user->name) : 'Petugas' }}</span>
                             </div>
                         </div>
                     </div>

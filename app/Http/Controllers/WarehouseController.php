@@ -784,7 +784,8 @@ class WarehouseController extends Controller
             $collection = $collection->filter(function ($item) use ($s) {
                 return str_contains(strtolower($item->item_name), $s) ||
                        str_contains(strtolower($item->source ?? ''), $s) ||
-                       str_contains(strtolower($item->notes ?? ''), $s);
+                       str_contains(strtolower($item->notes ?? ''), $s) ||
+                       str_contains(strtolower($item->user ? ($item->user->username ?: $item->user->name) : ''), $s);
             });
         }
 
@@ -921,7 +922,8 @@ class WarehouseController extends Controller
             $collection = $collection->filter(function ($item) use ($s) {
                 return str_contains(strtolower($item->item_name), $s) ||
                        str_contains(strtolower($item->source ?? ''), $s) ||
-                       str_contains(strtolower($item->notes ?? ''), $s);
+                       str_contains(strtolower($item->notes ?? ''), $s) ||
+                       str_contains(strtolower($item->user ? ($item->user->username ?: $item->user->name) : ''), $s);
             });
         }
 
@@ -1055,7 +1057,8 @@ class WarehouseController extends Controller
                 return str_contains(strtolower($item->item_name), $s) ||
                        str_contains(strtolower($item->source ?? ''), $s) ||
                        str_contains(strtolower($item->notes ?? ''), $s) ||
-                       str_contains(strtolower($item->category ?? ''), $s);
+                       str_contains(strtolower($item->category ?? ''), $s) ||
+                       str_contains(strtolower($item->user ? ($item->user->username ?: $item->user->name) : ''), $s);
             });
         }
 

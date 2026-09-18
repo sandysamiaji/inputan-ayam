@@ -164,7 +164,7 @@
                     'date' => \Carbon\Carbon::parse($item->date)->translatedFormat('d F Y'),
                     'raw_date' => $item->date->format('Y-m-d'),
                     'time' => $item->time,
-                    'petugas' => $item->user ? ($item->user->username ? '@' . $item->user->username : $item->user->name) : 'Petugas',
+                    'petugas' => $item->user ? ($item->user->username ? '@' . ltrim($item->user->username, '@') : $item->user->name) : 'Petugas',
                     'source' => $item->source,
                     'is_nonaktif' => $isNonaktif,
                     'coop_id' => $item->coop_id,
@@ -230,7 +230,7 @@
                         <div class="text-[10px] sm:text-[11px] text-slate-400 flex items-center gap-1.5 mt-1">
                             <span>{{ \Carbon\Carbon::parse($item->date)->translatedFormat('d M Y') }} {{ $item->time ? $item->time : '' }}</span>
                             <span>•</span>
-                            <span class="text-slate-600 font-medium">Petugas: {{ $item->user ? ($item->user->username ? '@' . $item->user->username : $item->user->name) : 'Petugas' }}</span>
+                            <span class="text-slate-600 font-medium">Petugas: {{ $item->user ? ($item->user->username ? '@' . ltrim($item->user->username, '@') : $item->user->name) : 'Petugas' }}</span>
                         </div>
                     </div>
                 </div>
@@ -256,7 +256,7 @@
                             'date' => \Carbon\Carbon::parse($item->date)->translatedFormat('d F Y'),
                             'raw_date' => $item->date->format('Y-m-d'),
                             'time' => $item->time,
-                            'petugas' => $item->user ? ($item->user->username ? '@' . $item->user->username : $item->user->name) : 'Petugas',
+                            'petugas' => $item->user ? ($item->user->username ? '@' . ltrim($item->user->username, '@') : $item->user->name) : 'Petugas',
                             'source' => $item->source,
                             'is_nonaktif' => $isNonaktif,
                             'coop_id' => $item->coop_id,

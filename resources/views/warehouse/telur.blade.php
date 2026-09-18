@@ -218,7 +218,7 @@
                     'date' => \Carbon\Carbon::parse($item->date)->translatedFormat('d F Y'),
                     'raw_date' => $item->date->format('Y-m-d'),
                     'time' => $item->created_at ? $item->created_at->format('H:i') : '06:30',
-                    'petugas' => $item->user ? $item->user->name : 'Petugas01',
+                    'petugas' => $item->user ? ($item->user->username ? '@' . ltrim($item->user->username, '@') : $item->user->name) : 'Petugas',
                     'source' => $item->source ?? 'A1, A2, A3',
                     'is_nonaktif' => $isNonaktif,
                     'good_eggs' => $item->good_eggs ?? null,
@@ -264,7 +264,7 @@
                         <div class="text-[10px] sm:text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5">
                             <span>{{ \Carbon\Carbon::parse($item->date)->translatedFormat('d M Y') }} {{ $item->created_at ? $item->created_at->format('H:i') : '' }}</span>
                             <span>•</span>
-                            <span class="text-slate-500 font-medium">{{ $item->user ? $item->user->name : 'Petugas' }}</span>
+                            <span class="text-slate-500 font-medium">{{ $item->user ? ($item->user->username ? '@' . ltrim($item->user->username, '@') : $item->user->name) : 'Petugas' }}</span>
                         </div>
                     </div>
                 </div>
@@ -287,7 +287,7 @@
                             'date' => \Carbon\Carbon::parse($item->date)->translatedFormat('d F Y'),
                             'raw_date' => $item->date->format('Y-m-d'),
                             'time' => $item->created_at ? $item->created_at->format('H:i') : '06:30',
-                            'petugas' => $item->user ? $item->user->name : 'Petugas01',
+                            'petugas' => $item->user ? ($item->user->username ? '@' . ltrim($item->user->username, '@') : $item->user->name) : 'Petugas',
                             'source' => $item->source ?? 'A1, A2, A3',
                             'is_nonaktif' => $isNonaktif,
                             'good_eggs' => $item->good_eggs ?? null,

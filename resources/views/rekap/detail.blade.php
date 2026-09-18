@@ -400,7 +400,7 @@
                             <tr class="hover:bg-slate-50/70 transition-colors">
                                 <td class="py-3 px-4 font-bold text-slate-800">{{ \Carbon\Carbon::parse($r->date)->translatedFormat('d M Y') }}</td>
                                 <td class="py-3 px-4">{{ $r->coop ? $r->coop->name : '-' }}</td>
-                                <td class="py-3 px-4 text-right font-extrabold text-blue-700">{{ number_format($r->average_weight_kg, 3, ',', '.') }} Kg</td>
+                                <td class="py-3 px-4 text-right font-extrabold text-blue-700">{{ number_format($r->average_weight_kg, 1, ',', '.') }} Kg</td>
                                 <td class="py-3 px-4 text-right">{{ $r->sample_count }}</td>
                                 <td class="py-3 px-4 text-right font-bold text-slate-900">{{ number_format($r->uniformity_percentage, 1, ',', '.') }}%</td>
                                 <td class="py-3 px-4 text-slate-600">{{ $r->age_weeks }} Minggu</td>
@@ -430,7 +430,7 @@
                                                 @csrf @method('PUT')
                                                 <div>
                                                     <label class="block text-xs font-bold text-slate-700 mb-1">Bobot Rata-rata (Kg)</label>
-                                                    <input type="number" step="0.001" name="average_weight_kg" value="{{ $r->average_weight_kg }}" class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-maroon-800/20">
+                                                    <input type="number" step="0.1" name="average_weight_kg" value="{{ $r->average_weight_kg }}" class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-maroon-800/20">
                                                 </div>
                                                 <div>
                                                     <label class="block text-xs font-bold text-slate-700 mb-1">Keseragaman (%)</label>

@@ -753,7 +753,7 @@ class RekapController extends Controller
                 foreach ($records as $r) {
                     fputcsv($file, [
                         $this->formatIndoDate($r->date),
-                        number_format($r->average_weight_kg, 3, ',', '.'),
+                        number_format($r->average_weight_kg, 1, ',', '.'),
                         $r->sample_count,
                         number_format($r->uniformity_percentage, 1, ',', '.') . '%',
                         $r->age_weeks . ' Minggu',

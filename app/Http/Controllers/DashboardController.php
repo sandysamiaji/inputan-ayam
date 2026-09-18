@@ -245,7 +245,7 @@ class DashboardController extends Controller
                 'subtitle' => 'Umur ' . ($item->age_weeks ?: '-') . ' mgg' . $batteryInfo . $eggGramInfo . ($item->notes ? ' • ' . $item->notes : ''),
                 'datetime' => $carbonDate->format('d/m/Y') . ' ' . $timeStr,
                 'time' => $timeStr,
-                'value' => number_format($item->average_weight_kg, 2, ',', '.') . ' Kg',
+                'value' => number_format($item->average_weight_kg, 1, ',', '.') . ' Kg',
                 'subvalue' => 'Bobot Ayam',
                 'user_username' => $getUserName($item->user),
                 'trip_username' => null,

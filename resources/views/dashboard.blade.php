@@ -224,7 +224,7 @@
                                 $isMissed = ($w !== null && $w < $bbTarget);
                             @endphp
                             <div class="flex items-center justify-between px-1.5 py-0.5 rounded transition-colors {{ $w === null ? 'bg-slate-50 border border-slate-100 text-slate-400' : ($isTargetOrMore ? 'bg-emerald-50/80 border border-emerald-200 text-emerald-950' : 'bg-rose-50/80 border border-rose-200 text-rose-950') }}" 
-                                 title="{{ $w !== null ? ($isTargetOrMore ? 'Capai Target / Lebih (Target: ' . number_format($bbTarget, 2, ',', '.') . ' kg)' : 'Belum Sesuai Master (Target: ' . number_format($bbTarget, 2, ',', '.') . ' kg)') : 'Belum Ada Input' }}">
+                                 title="{{ $w !== null ? ($isTargetOrMore ? 'Capai Target / Lebih (Target: ' . number_format($bbTarget, 1, ',', '.') . ' kg)' : 'Belum Sesuai Master (Target: ' . number_format($bbTarget, 1, ',', '.') . ' kg)') : 'Belum Ada Input' }}">
                                 <div class="flex items-center gap-1">
                                     @if($w !== null)
                                         <span class="w-1.5 h-1.5 rounded-full shrink-0 {{ $isTargetOrMore ? 'bg-emerald-500' : 'bg-rose-500' }}"></span>
@@ -232,7 +232,7 @@
                                     <span class="text-[10px] font-extrabold {{ $w === null ? 'text-slate-500' : ($isTargetOrMore ? 'text-emerald-900' : 'text-rose-900') }}">{{ $cShort }}</span>
                                 </div>
                                 <span class="text-[10.5px] font-black {{ $w === null ? 'text-slate-400' : ($isTargetOrMore ? 'text-emerald-700' : 'text-rose-700') }}">
-                                    {{ $w ? number_format($w, 2, ',', '.') . ' kg' : '-' }}
+                                    {{ $w ? number_format($w, 1, ',', '.') . ' kg' : '-' }}
                                 </span>
                             </div>
                         @endforeach
@@ -1272,12 +1272,12 @@
                             @elseif($isTargetOrMore)
                                 <span class="text-xs font-black px-2.5 py-1 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 shadow-2xs">
                                     <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600"></i>
-                                    Kondisi Ayam: SUDAH CAPAI TARGET MASTER ({{ number_format($bbAct, 2, ',', '.') }} kg >= {{ number_format($bbTarget, 2, ',', '.') }} kg)
+                                    Kondisi Ayam: SUDAH CAPAI TARGET MASTER ({{ number_format($bbAct, 1, ',', '.') }} kg >= {{ number_format($bbTarget, 1, ',', '.') }} kg)
                                 </span>
                             @else
                                 <span class="text-xs font-black px-2.5 py-1 rounded-md bg-rose-100 text-rose-800 border border-rose-300 flex items-center gap-1 shadow-2xs">
                                     <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-rose-600"></i>
-                                    Kondisi Ayam: DI BAWAH TARGET MASTER (-{{ number_format(round($bbTarget - $bbAct, 3), 2, ',', '.') }} kg dari target {{ number_format($bbTarget, 2, ',', '.') }} kg)
+                                    Kondisi Ayam: DI BAWAH TARGET MASTER (-{{ number_format(round($bbTarget - $bbAct, 2), 1, ',', '.') }} kg dari target {{ number_format($bbTarget, 1, ',', '.') }} kg)
                                 </span>
                             @endif
                         </div>
@@ -1288,7 +1288,7 @@
                         <div class="bg-white p-2.5 rounded-lg border border-slate-200">
                             <span class="text-[10px] font-bold text-slate-400 block uppercase">BB Ayam (Input Aktual)</span>
                             <b class="text-base font-black {{ $bbAct === null ? 'text-slate-400' : ($isTargetOrMore ? 'text-emerald-700' : 'text-rose-700') }}">
-                                {{ $bbAct ? number_format($bbAct, 3, ',', '.') . ' Kg' : 'Belum Input' }}
+                                {{ $bbAct ? number_format($bbAct, 1, ',', '.') . ' Kg' : 'Belum Input' }}
                             </b>
                             <span class="text-[10px] text-slate-500 block mt-0.5">
                                 {{ $d && $d['battery_number'] ? 'Baterai: ' . $d['battery_number'] : 'Posisi sampel acak' }}
@@ -1298,12 +1298,12 @@
                         <div class="bg-white p-2.5 rounded-lg border border-slate-200">
                             <span class="text-[10px] font-bold text-slate-400 block uppercase">Standar BB Master (Umur {{ $c->chicken_age_weeks }} Mgg)</span>
                             <div class="flex items-center gap-1 font-bold text-slate-800 text-xs mt-0.5">
-                                <span class="text-slate-500">Min: {{ number_format($bbMin, 2, ',', '.') }}</span> •
-                                <b class="text-emerald-700 font-black">Target: {{ number_format($bbTarget, 2, ',', '.') }}</b> •
-                                <span class="text-slate-500">Max: {{ number_format($bbMax, 2, ',', '.') }}</span>
+                                <span class="text-slate-500">Min: {{ number_format($bbMin, 1, ',', '.') }}</span> •
+                                <b class="text-emerald-700 font-black">Target: {{ number_format($bbTarget, 1, ',', '.') }}</b> •
+                                <span class="text-slate-500">Max: {{ number_format($bbMax, 1, ',', '.') }}</span>
                             </div>
                             <span class="text-[10px] font-semibold text-emerald-800 block mt-0.5">
-                                Rentang ideal: {{ number_format($bbMin, 2, ',', '.') }} – {{ number_format($bbMax, 2, ',', '.') }} Kg
+                                Rentang ideal: {{ number_format($bbMin, 1, ',', '.') }} – {{ number_format($bbMax, 1, ',', '.') }} Kg
                             </span>
                         </div>
 
@@ -1411,25 +1411,25 @@
                                 <!-- BB Ayam Aktual -->
                                 <td class="py-3 px-3 text-right whitespace-nowrap {{ $bbAct === null ? 'bg-sky-50/30' : ($bbAct >= $bbTarget ? 'bg-emerald-50/40' : 'bg-rose-50/40') }}">
                                     <b class="text-xs font-black {{ $bbAct === null ? 'text-slate-400' : ($bbAct >= $bbTarget ? 'text-emerald-700 text-sm' : 'text-rose-700 text-sm') }}">
-                                        {{ $bbAct ? number_format($bbAct, 2, ',', '.') . ' Kg' : '-' }}
+                                        {{ $bbAct ? number_format($bbAct, 1, ',', '.') . ' Kg' : '-' }}
                                     </b>
                                 </td>
 
                                 <!-- Acuan Master: BB Min -->
                                 <td class="py-3 px-2.5 text-right whitespace-nowrap font-semibold text-slate-600 bg-slate-50/50">
-                                    {{ number_format($bbMin, 2, ',', '.') }} kg
+                                    {{ number_format($bbMin, 1, ',', '.') }} kg
                                 </td>
 
                                 <!-- Acuan Master: BB Target (Ideal) -->
                                 <td class="py-3 px-2.5 text-right whitespace-nowrap bg-emerald-50/40">
                                     <b class="font-black text-emerald-800 text-xs px-1.5 py-0.5 rounded bg-emerald-100/70 border border-emerald-300">
-                                        {{ number_format($bbTarget, 2, ',', '.') }} kg
+                                        {{ number_format($bbTarget, 1, ',', '.') }} kg
                                     </b>
                                 </td>
 
                                 <!-- Acuan Master: BB Max -->
                                 <td class="py-3 px-2.5 text-right whitespace-nowrap font-semibold text-slate-600 bg-slate-50/50">
-                                    {{ number_format($bbMax, 2, ',', '.') }} kg
+                                    {{ number_format($bbMax, 1, ',', '.') }} kg
                                 </td>
 
                                 <!-- Status Kesesuaian Ayam (Adu Master: Hijau jika capai/lebih target, Merah jika di bawah target) -->
@@ -1439,11 +1439,11 @@
                                             Belum Input
                                         </span>
                                     @elseif($bbAct >= $bbTarget)
-                                        <span class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-black text-[10px] border border-emerald-300 inline-flex items-center gap-1 shadow-2xs" title="Capai target atau lebih ({{ number_format($bbAct, 2, ',', '.') }} kg >= {{ number_format($bbTarget, 2, ',', '.') }} kg)">
+                                        <span class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-black text-[10px] border border-emerald-300 inline-flex items-center gap-1 shadow-2xs" title="Capai target atau lebih ({{ number_format($bbAct, 1, ',', '.') }} kg >= {{ number_format($bbTarget, 1, ',', '.') }} kg)">
                                             <i data-lucide="check-circle-2" class="w-3 h-3 text-emerald-600"></i> Capai Target / Lebih
                                         </span>
                                     @else
-                                        <span class="px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 font-black text-[10px] border border-rose-300 inline-flex items-center gap-1 shadow-2xs" title="Belum sesuai master (Kurang {{ number_format(round($bbTarget - $bbAct, 3), 2, ',', '.') }} kg)">
+                                        <span class="px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 font-black text-[10px] border border-rose-300 inline-flex items-center gap-1 shadow-2xs" title="Belum sesuai master (Kurang {{ number_format(round($bbTarget - $bbAct, 3), 1, ',', '.') }} kg)">
                                             <i data-lucide="alert-circle" class="w-3 h-3 text-rose-600"></i> Di Bawah Target
                                         </span>
                                     @endif

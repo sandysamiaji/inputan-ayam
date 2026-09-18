@@ -1122,7 +1122,7 @@
                 <div class="row-fields">
                     <div class="field">
                         <label>Berat Ayam (Kg) <span style="color:#e11d48">*</span></label>
-                        <input type="number" step="0.001" name="average_weight_kg" id="bobotBeratAyam" placeholder="Contoh: 1.620" oninput="calcBobotFeedback()" required>
+                        <input type="number" step="0.1" name="average_weight_kg" id="bobotBeratAyam" placeholder="Contoh: 1.1" oninput="calcBobotFeedback()" required>
                     </div>
                     <div class="field">
                         <label>Berat Telur (Butir / Gram)</label>
@@ -1331,13 +1331,13 @@ function calcBobotFeedback() {
         box.style.background = '#fffbeb';
         box.style.borderColor = '#fde68a';
         box.style.color = '#92400e';
-        const diff = (bbMin - bbVal).toFixed(2).replace('.', ',');
+        const diff = (bbMin - bbVal).toFixed(1).replace('.', ',');
         bbStatusHtml = `⚠️ <b>Kurang Bobot:</b> ${bbVal.toString().replace('.', ',')} kg berada di bawah BB Minimum (${bbMin.toString().replace('.', ',')} kg). Selisih ${diff} kg di bawah standar.`;
     } else {
         box.style.background = '#fff1f2';
         box.style.borderColor = '#fecdd3';
         box.style.color = '#9f1239';
-        const diff = (bbVal - bbMax).toFixed(2).replace('.', ',');
+        const diff = (bbVal - bbMax).toFixed(1).replace('.', ',');
         bbStatusHtml = `⚠️ <b>Kelebihan Bobot:</b> ${bbVal.toString().replace('.', ',')} kg berada di atas BB Maksimum (${bbMax.toString().replace('.', ',')} kg). Selisih ${diff} kg di atas standar.`;
     }
 

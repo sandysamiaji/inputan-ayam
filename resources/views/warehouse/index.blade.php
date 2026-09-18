@@ -19,53 +19,53 @@
 
         <!-- Traveloka Style Date Range Selector -->
         @if(!auth()->check() || auth()->user()->canAccess('warehouse_filter_tanggal'))
-        <div class="relative" id="travelokaDatePicker">
+        <div class="relative w-full sm:w-auto" id="travelokaDatePicker">
             <!-- Traveloka Search Capsule Trigger -->
             <div onclick="toggleTravelokaPopover()" 
                  id="travelokaTriggerBtn"
-                 class="cursor-pointer bg-white hover:bg-slate-50/90 border border-slate-200/90 hover:border-maroon-300 shadow-xs hover:shadow-md transition-all rounded-2xl p-1.5 sm:p-2 flex items-center gap-1.5 sm:gap-2.5 group select-none">
+                 class="cursor-pointer bg-white hover:bg-slate-50/90 border border-slate-200/90 hover:border-maroon-300 shadow-xs hover:shadow-md transition-all rounded-2xl p-1.5 sm:p-2 flex flex-wrap sm:flex-nowrap items-center justify-between sm:justify-start gap-1.5 sm:gap-2.5 group select-none max-w-full overflow-hidden">
                 
                 <!-- Start Date Segment -->
-                <div class="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-slate-50 group-hover:bg-white transition-colors">
-                    <div class="w-7 h-7 rounded-lg bg-rose-50 text-maroon-800 flex items-center justify-center shrink-0">
-                        <i data-lucide="calendar" class="w-4 h-4"></i>
+                <div class="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-2.5 py-1 rounded-xl bg-slate-50 group-hover:bg-white transition-colors shrink-0">
+                    <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-rose-50 text-maroon-800 flex items-center justify-center shrink-0">
+                        <i data-lucide="calendar" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
                     </div>
                     <div>
-                        <div class="text-[9px] font-extrabold uppercase tracking-wider text-slate-400">Dari Tanggal</div>
-                        <div class="text-xs sm:text-sm font-black text-slate-800 whitespace-nowrap">
+                        <div class="text-[8.5px] sm:text-[9px] font-extrabold uppercase tracking-wider text-slate-400">Dari Tanggal</div>
+                        <div class="text-[11px] sm:text-sm font-black text-slate-800 truncate">
                             {{ $formattedStartDate }}
                         </div>
                     </div>
                 </div>
 
                 <!-- Center Duration Badge (Traveloka Style) -->
-                <div class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-rose-50 to-amber-50 text-maroon-900 text-[10px] font-extrabold shrink-0 border border-rose-200/80 shadow-2xs">
+                <div class="flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-full bg-gradient-to-r from-rose-50 to-amber-50 text-maroon-900 text-[9px] sm:text-[10px] font-extrabold shrink-0 border border-rose-200/80 shadow-2xs">
                     <span>{{ $diffDays }} Hari</span>
-                    <i data-lucide="arrow-right" class="w-3 h-3 text-maroon-700"></i>
+                    <i data-lucide="arrow-right" class="w-2.5 h-2.5 sm:w-3 sm:h-3 text-maroon-700"></i>
                 </div>
 
                 <!-- End Date Segment -->
-                <div class="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-slate-50 group-hover:bg-white transition-colors">
-                    <div class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
-                        <i data-lucide="calendar-check-2" class="w-4 h-4"></i>
+                <div class="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-2.5 py-1 rounded-xl bg-slate-50 group-hover:bg-white transition-colors shrink-0">
+                    <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+                        <i data-lucide="calendar-check-2" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
                     </div>
                     <div>
-                        <div class="text-[9px] font-extrabold uppercase tracking-wider text-slate-400">Sampai Tanggal</div>
-                        <div class="text-xs sm:text-sm font-black text-slate-800 whitespace-nowrap">
+                        <div class="text-[8.5px] sm:text-[9px] font-extrabold uppercase tracking-wider text-slate-400">Sampai Tanggal</div>
+                        <div class="text-[11px] sm:text-sm font-black text-slate-800 truncate">
                             {{ $formattedEndDate }}
                         </div>
                     </div>
                 </div>
 
                 <!-- Toggle Dropdown Icon -->
-                <div class="w-7 h-7 rounded-xl bg-slate-100 group-hover:bg-maroon-800 group-hover:text-white text-slate-500 flex items-center justify-center transition-all shrink-0">
+                <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-xl bg-slate-100 group-hover:bg-maroon-800 group-hover:text-white text-slate-500 flex items-center justify-center transition-all shrink-0">
                     <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i>
                 </div>
             </div>
 
             <!-- Traveloka Popover Dropdown Panel -->
             <div id="travelokaPopoverPanel" 
-                 class="hidden absolute right-0 top-full mt-2 w-[340px] sm:w-[440px] bg-white rounded-2xl shadow-2xl border border-slate-200/90 p-4 sm:p-5 z-50 animate-in fade-in zoom-in-95 duration-150">
+                 class="hidden absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] max-w-[440px] sm:w-[440px] bg-white rounded-2xl shadow-2xl border border-slate-200/90 p-3.5 sm:p-5 z-50 animate-in fade-in zoom-in-95 duration-150">
                 
                 <!-- Popover Header -->
                 <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3.5">

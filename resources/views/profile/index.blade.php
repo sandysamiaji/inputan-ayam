@@ -177,10 +177,8 @@
 <div id="modalAboutApp" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm opacity-0 invisible pointer-events-none transition-all duration-300 flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl transform translate-y-full sm:translate-y-0 transition-transform duration-300 text-center space-y-4">
         
-        <div class="w-16 h-16 rounded-full bg-maroon-800 text-white flex items-center justify-center mx-auto shadow-lg border-2 border-rose-200">
-            <svg viewBox="0 0 24 24" class="w-9 h-9 fill-white" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C8.13 2 5 6.48 5 12c0 4.42 3.13 8 7 8s7-3.58 7-8c0-5.52-3.13-10-7-10z"/>
-            </svg>
+        <div class="w-20 h-20 rounded-full bg-white flex items-center justify-center mx-auto shadow-lg border-2 border-slate-200 overflow-hidden p-1">
+            <img src="{{ asset('images/logo-nochi.png') }}" alt="Nochi Farm Logo" class="w-full h-full object-contain rounded-full bg-white">
         </div>
 
         <div>

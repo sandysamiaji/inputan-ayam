@@ -92,6 +92,7 @@ class DashboardController extends Controller
             ->latest('date')
             ->first();
         $averageWeightKg = $latestWeight ? (float) $latestWeight->average_weight_kg : 1.620;
+        $weightSampleRecords = WeightSample::with(['coop', 'user'])->whereDate('date', $selectedDate)->get();
 
         // 5. Ringkasan Vaksin & Obat Hari Ini
         $healthTreatments = HealthTreatment::with(['coop', 'user'])->whereDate('date', $selectedDate)->get();
@@ -229,6 +230,26 @@ class DashboardController extends Controller
                 'user_username' => $getUserName($item->user),
                 'trip_username' => null,
                 'raw_timestamp' => $item->created_at ? $item->created_at->timestamp : strtotime($item->date . ' ' . ($item->time ?: '00:00:00')),
+            ]);
+        }
+
+        foreach ($weightSampleRecords as $item) {
+            $coopName = $item->coop ? $item->coop->name : 'Kandang';
+            $timeStr = $item->created_at ? $item->created_at->format('H:i') : '00:00';
+            $batteryInfo = $item->battery_number ? ' • Baterai ' . $item->battery_number : '';
+            $eggGramInfo = $item->egg_weight_gram ? ' • Telur ' . $item->egg_weight_gram . 'g' : '';
+            $activities->push([
+                'id' => 'weight_' . $item->id,
+                'category' => 'weight',
+                'title' => 'Sampel Ayam (' . $coopName . ')',
+                'subtitle' => 'Umur ' . ($item->age_weeks ?: '-') . ' mgg' . $batteryInfo . $eggGramInfo . ($item->notes ? ' • ' . $item->notes : ''),
+                'datetime' => $carbonDate->format('d/m/Y') . ' ' . $timeStr,
+                'time' => $timeStr,
+                'value' => number_format($item->average_weight_kg, 2, ',', '.') . ' Kg',
+                'subvalue' => 'Bobot Ayam',
+                'user_username' => $getUserName($item->user),
+                'trip_username' => null,
+                'raw_timestamp' => $item->created_at ? $item->created_at->timestamp : strtotime($item->date . ' 00:00:00'),
             ]);
         }
 
@@ -389,6 +410,12 @@ class DashboardController extends Controller
         $coopHdData = [];
         $coopEggTodayData = [];
         $coopFeedTodayData = [];
+        $coopFeedPagiData = [];
+        $coopFeedSoreData = [];
+        $coopFeedHasPagiData = [];
+        $coopFeedHasSoreData = [];
+        $coopFeedPagiUserData = [];
+        $coopFeedSoreUserData = [];
         $coopEggCratesData = [];
         $coopEggKgData = [];
         $coopEggUserInputData = [];
@@ -402,7 +429,35 @@ class DashboardController extends Controller
             } else {
                 $coopHdData[$c->id] = null; // Belum diinput oleh user
             }
-            $coopFeedTodayData[$c->id] = (float) $feedConsRecords->where('coop_id', $c->id)->sum('quantity_kg');
+
+            // Realisasi Pakan per Blok
+            $cFeeds = $feedConsRecords->where('coop_id', $c->id);
+            $coopFeedTodayData[$c->id] = (float) $cFeeds->sum('quantity_kg');
+
+            // Pisahkan input pakan Pagi dan Sore berdasarkan feeding_time (case-insensitive)
+            $pagiFeeds = $cFeeds->filter(function ($item) {
+                return stripos($item->feeding_time ?? '', 'pagi') !== false;
+            });
+            $soreFeeds = $cFeeds->filter(function ($item) {
+                return stripos($item->feeding_time ?? '', 'sore') !== false;
+            });
+
+            $coopFeedHasPagiData[$c->id] = $pagiFeeds->isNotEmpty();
+            $coopFeedHasSoreData[$c->id] = $soreFeeds->isNotEmpty();
+            $coopFeedPagiData[$c->id] = (float) $pagiFeeds->sum('quantity_kg');
+            $coopFeedSoreData[$c->id] = (float) $soreFeeds->sum('quantity_kg');
+
+            // Penginput Pagi
+            $pagiUsers = $pagiFeeds->map(function ($f) {
+                return $f->user ? ($f->user->username ?: $f->user->name) : null;
+            })->filter()->unique()->values()->all();
+            $coopFeedPagiUserData[$c->id] = !empty($pagiUsers) ? implode(', ', $pagiUsers) : null;
+
+            // Penginput Sore
+            $soreUsers = $soreFeeds->map(function ($f) {
+                return $f->user ? ($f->user->username ?: $f->user->name) : null;
+            })->filter()->unique()->values()->all();
+            $coopFeedSoreUserData[$c->id] = !empty($soreUsers) ? implode(', ', $soreUsers) : null;
 
             // Hitung realisasi Peti & Kg per blok (10 kg = 1 Peti, Peti integer)
             $coopProds = $eggProdRecords->where('coop_id', $c->id);
@@ -421,8 +476,39 @@ class DashboardController extends Controller
             $firstEgg = $coopProds->first();
             $coopEggUserInputData[$c->id] = $firstEgg && $firstEgg->user ? ($firstEgg->user->username ?: $firstEgg->user->name) : null;
 
-            $firstFeed = $feedConsRecords->where('coop_id', $c->id)->first();
-            $coopFeedUserInputData[$c->id] = $firstFeed && $firstFeed->user ? ($firstFeed->user->username ?: $firstFeed->user->name) : null;
+            $allFeedUsers = $cFeeds->map(function ($f) {
+                return $f->user ? ($f->user->username ?: $f->user->name) : null;
+            })->filter()->unique()->values()->all();
+            $coopFeedUserInputData[$c->id] = !empty($allFeedUsers) ? implode(', ', $allFeedUsers) : null;
+        }
+
+        // Data Sampel Berat Badan Terkini Per 6 Blok (Bukan Rata-rata)
+        WeightSample::ensureColumnsExist();
+        $coopWeightData = [];
+        $coopWeightDetails = [];
+        foreach ($coops as $c) {
+            $ws = WeightSample::with('user')
+                ->where('coop_id', $c->id)
+                ->whereDate('date', '<=', $selectedDate)
+                ->latest('date')
+                ->latest('id')
+                ->first();
+
+            if ($ws) {
+                $coopWeightData[$c->id] = (float) $ws->average_weight_kg;
+                $coopWeightDetails[$c->id] = [
+                    'weight_kg' => (float) $ws->average_weight_kg,
+                    'egg_weight_gram' => $ws->egg_weight_gram ? (float) $ws->egg_weight_gram : null,
+                    'battery_number' => $ws->battery_number,
+                    'age_weeks' => $ws->age_weeks ?? $c->chicken_age_weeks,
+                    'date' => $ws->date ? Carbon::parse($ws->date)->format('d/m/Y') : null,
+                    'notes' => $ws->notes,
+                    'user' => $ws->user ? ($ws->user->username ?: $ws->user->name) : null,
+                ];
+            } else {
+                $coopWeightData[$c->id] = null;
+                $coopWeightDetails[$c->id] = null;
+            }
         }
 
         $flockHdData = [];
@@ -484,13 +570,21 @@ class DashboardController extends Controller
             'flockHdData',
             'coopEggTodayData',
             'coopFeedTodayData',
+            'coopFeedPagiData',
+            'coopFeedSoreData',
+            'coopFeedHasPagiData',
+            'coopFeedHasSoreData',
+            'coopFeedPagiUserData',
+            'coopFeedSoreUserData',
             'coopEggCratesData',
             'coopEggKgData',
             'coopEggUserInputData',
             'coopFeedUserInputData',
             'currentQuarantineCount',
             'todaySickCount',
-            'todayRecoveredCount'
+            'todayRecoveredCount',
+            'coopWeightData',
+            'coopWeightDetails'
         ));
     }
 
@@ -768,40 +862,48 @@ class DashboardController extends Controller
     }
 
     /**
-     * Simpan Berat Badan Cepat
+     * Simpan Berat Badan Cepat / Sampel Mingguan
      */
     public function storeWeightSample(Request $request)
     {
         $validated = $request->validate([
             'coop_id' => 'required|exists:coops,id',
             'average_weight_kg' => 'required|numeric|min:0.1',
+            'egg_weight_gram' => 'nullable|numeric|min:0',
+            'battery_number' => 'nullable|string|max:100',
             'sample_count' => 'nullable|integer|min:1',
+            'age_weeks' => 'nullable|integer',
             'date' => 'nullable|date',
             'notes' => 'nullable|string',
         ]);
 
         $coop = Coop::findOrFail($validated['coop_id']);
 
+        // Pastikan kolom baru sudah ada pada tabel weight_samples
+        WeightSample::ensureColumnsExist();
+
         $weight = WeightSample::create([
             'flock_id' => $coop->flock_id,
             'coop_id' => $coop->id,
             'user_id' => Auth::id() ?? User::where('username', 'petugas')->value('id') ?? User::value('id'),
             'date' => $validated['date'] ?? Carbon::today()->toDateString(),
-            'sample_count' => $validated['sample_count'] ?? 50,
+            'battery_number' => $validated['battery_number'] ?? null,
+            'sample_count' => $validated['sample_count'] ?? 1,
             'average_weight_kg' => $validated['average_weight_kg'],
-            'age_weeks' => $coop->chicken_age_weeks,
+            'egg_weight_gram' => $validated['egg_weight_gram'] ?? null,
+            'age_weeks' => $validated['age_weeks'] ?? $coop->chicken_age_weeks,
             'notes' => $validated['notes'] ?? null,
         ]);
 
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Data berat badan berhasil disimpan!',
+                'message' => 'Data sampel ayam mingguan berhasil disimpan!',
                 'data' => $weight,
             ]);
         }
 
-        return redirect()->back()->with('success', 'Data berat badan berhasil disimpan!');
+        return redirect()->route('dashboard')->with('success', 'Data sampel ayam mingguan Blok ' . $coop->name . ' berhasil disimpan!');
     }
 
     /**

@@ -69,6 +69,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/obat', [WarehouseController::class, 'obat'])
             ->name('obat')
             ->middleware('permission:feature_warehouse_obat');
+        Route::get('/karantina', [WarehouseController::class, 'karantina'])
+            ->name('karantina')
+            ->middleware('permission:warehouse_click_quarantine');
 
         Route::post('/store', [WarehouseController::class, 'store'])
             ->name('store')

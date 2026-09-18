@@ -111,6 +111,11 @@
   grid-template-columns: 1fr 1fr;
   gap: 9px;
 }
+@media (min-width: 640px) {
+  .input-mobile-app .types {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
 .input-mobile-app .type-card {
   background: #fff;
   border: 1px solid var(--line);
@@ -575,6 +580,15 @@
             <small>Potong otomatis stok obat</small>
         </div>
         @endif
+
+        @if(!auth()->check() || auth()->user()->canAccess('input_form_weight'))
+        <!-- 5. Sampel Ayam -->
+        <div class="type-card {{ $type === 'bobot' ? 'active' : '' }}" onclick="switchType('bobot')" id="btnTypeBobot">
+            <div class="icon-box" style="background:#f0f9ff; color:#0284c7;">⚖️</div>
+            <b>Sampel Ayam</b>
+            <small>Input bobot mingguan</small>
+        </div>
+        @endif
     </section>
 
     <!-- FORM 1: PRODUKSI TELUR -->
@@ -1032,6 +1046,137 @@
         </section>
     </div>
 
+    <!-- FORM 5: SAMPEL AYAM PER MINGGU -->
+    <div id="formSectionBobot" style="{{ $type === 'bobot' ? '' : 'display:none;' }}">
+        <section class="form-card">
+            <div class="cardhead">
+                <h2>⚖️ Sampel Ayam Mingguan</h2>
+                <span class="tag" style="background:#e0f2fe; color:#0369a1; border-color:#bae6fd;">↗ Bobot 6 Blok</span>
+            </div>
+
+            <form method="POST" action="{{ route('weight.store') }}" id="formBobot">
+                @csrf
+                <input type="hidden" name="date" value="{{ $date }}">
+
+                <div class="row-fields">
+                    <div class="field">
+                        <label>Kloter</label>
+                        <select id="bobotKloter" onchange="filterCoops('bobot')">
+                            @foreach($flocks as $flock)
+                                <option value="{{ $flock->id }}">{{ $flock->name }} ({{ $flock->code }})</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>Blok</label>
+                        <select name="coop_id" id="bobotCoop" onchange="updateCoopPop('bobot')" required>
+                            @foreach($coops as $coop)
+                                @php
+                                    $cStd = $coopStandards[$coop->id] ?? \App\Services\ProductionStandardService::getStandardForWeek((int)$coop->chicken_age_weeks);
+                                    $eggTgt = (float)($cStd['berat_telur_val'] ?? 0);
+                                    $eggMinT = $eggTgt > 0 ? round($eggTgt - 2.5, 1) : 0;
+                                    $eggMaxT = $eggTgt > 0 ? round($eggTgt + 2.5, 1) : 0;
+                                    $eggTolStr = $eggTgt > 0 ? number_format($eggMinT, 1, ',', '.') . '–' . number_format($eggMaxT, 1, ',', '.') . ' g' : '-';
+                                @endphp
+                                <option value="{{ $coop->id }}" 
+                                        data-flock="{{ $coop->flock_id }}" 
+                                        data-pop="{{ $coop->active_chickens }}"
+                                        data-age="{{ $coop->chicken_age_weeks }}"
+                                        data-fase="{{ $cStd['fase'] ?? 'Laying Phase' }}"
+                                        data-pill="{{ $cStd['pill'] ?? 'LAYER' }}"
+                                        data-bbmin="{{ number_format($cStd['bb_min'] ?? 0, 2, '.', '') }}"
+                                        data-bbtarget="{{ number_format($cStd['bb_target'] ?? 0, 2, '.', '') }}"
+                                        data-bbmax="{{ number_format($cStd['bb_max'] ?? 0, 2, '.', '') }}"
+                                        data-eggtarget="{{ $eggTgt }}"
+                                        data-egglabel="{{ $cStd['berat_telur'] ?? '-' }}"
+                                        data-eggtol="{{ $eggTolStr }}">
+                                    {{ $coop->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row-fields">
+                    <div class="field">
+                        <label>Populasi Aktif</label>
+                        <input class="readonly" id="bobotPopulasi" value="762 ekor" readonly>
+                    </div>
+                    <div class="field">
+                        <label>Usia Ayam</label>
+                        <input class="readonly" id="bobotUsia" value="24 minggu" readonly>
+                        <input type="hidden" name="age_weeks" id="bobotUsiaVal" value="24">
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label>Fase Pertumbuhan (Otomatis)</label>
+                    <input class="readonly" id="bobotFase" value="Puncak Produksi (Egg Peak)" readonly style="font-weight:700; color:#047857; background:#f0fdf4;">
+                </div>
+
+                <div class="field">
+                    <label>Nomor Baterai Ayam Sampel <span style="color:#e11d48">*</span></label>
+                    <input type="text" name="battery_number" id="bobotBaterai" placeholder="Contoh: Baris 2 / B-14" required>
+                </div>
+
+                <div class="row-fields">
+                    <div class="field">
+                        <label>Berat Ayam (Kg) <span style="color:#e11d48">*</span></label>
+                        <input type="number" step="0.001" name="average_weight_kg" id="bobotBeratAyam" placeholder="Contoh: 1.620" oninput="calcBobotFeedback()" required>
+                    </div>
+                    <div class="field">
+                        <label>Berat Telur (Butir / Gram)</label>
+                        <input type="number" step="0.1" name="egg_weight_gram" id="bobotBeratTelur" placeholder="Contoh: 58.5" oninput="calcBobotFeedback()">
+                    </div>
+                </div>
+
+                <!-- Kotak Acuan Master Standar Produksi (BB Min, Target, Max, Toleransi Telur) -->
+                <div class="standard" style="background:#f0f9ff; border-color:#bae6fd; margin-top:8px;">
+                    <div class="stdtop">
+                        <b style="color:#0369a1;" id="bobotStdTitle">Acuan Master Umur 24 Minggu</b>
+                        <span style="color:#0284c7; font-weight:800;" id="bobotStdFaseBadge">PUNCAK PRODUKSI</span>
+                    </div>
+                    <div class="calc" style="grid-template-columns: repeat(4, 1fr); margin-top:8px;">
+                        <div>
+                            <small style="color:#64748b; font-size:7.5px; display:block;">BB Minimum</small>
+                            <b style="font-size:10px; color:#334155; display:block; margin-top:2px;" id="bobotStdMin">1,58 kg</b>
+                        </div>
+                        <div style="background:#ecfdf5; border-color:#a7f3d0;">
+                            <small style="color:#047857; font-size:7.5px; display:block;">BB Target (Ideal)</small>
+                            <b style="font-size:10.5px; color:#065f46; display:block; margin-top:2px;" id="bobotStdTarget">1,65 kg</b>
+                        </div>
+                        <div>
+                            <small style="color:#64748b; font-size:7.5px; display:block;">BB Maksimum</small>
+                            <b style="font-size:10px; color:#334155; display:block; margin-top:2px;" id="bobotStdMax">1,72 kg</b>
+                        </div>
+                        <div>
+                            <small style="color:#64748b; font-size:7.5px; display:block;">Toleransi Telur</small>
+                            <b style="font-size:10px; color:#92400e; display:block; margin-top:2px;" id="bobotStdTelur">53,8–58,8 g</b>
+                        </div>
+                    </div>
+                    <!-- Live Feedback Indicator -->
+                    <div id="bobotLiveFeedback" style="margin-top:8px; font-size:10px; font-weight:700; padding:7px 9px; border-radius:8px; background:#fff; border:1px solid #bae6fd; color:#0369a1; display:flex; align-items:center; gap:6px;">
+                        <span id="bobotFeedbackText">ℹ Masukkan bobot ayam untuk membandingkan langsung dengan acuan master umur ayam ini.</span>
+                    </div>
+                </div>
+
+                <div class="field" style="margin-top:11px">
+                    <label>Catatan Kondisi Ayam</label>
+                    <textarea name="notes" placeholder="Contoh: Ayam aktif, nafsu makan baik, jengger merah segar..."></textarea>
+                </div>
+
+                <div class="sync" style="background:#f0f9ff; border-color:#bae6fd;">
+                    <b style="color:#0369a1;">↗ Otomatis Masuk ke Ringkasan Bobot & Analisa 6 Blok</b>
+                    <p style="color:#0284c7;">Data berat badan ayam dan berat butir telur per sampel mingguan ini otomatis memperbarui kartu bobot 6 blok di Dashboard dan Rekapitulasi.</p>
+                </div>
+
+                <button type="submit" class="btn-submit" style="background:#0284c7;">Simpan Sampel Ayam</button>
+                <a href="{{ route('dashboard') }}" class="btn-cancel">Batal</a>
+                <div class="info-note">Timbang sampel ayam rutin per minggu untuk memantau kurva pertumbuhan bobot dan kesesuaian target produksi telur.</div>
+            </form>
+        </section>
+    </div>
+
 </div>
 
 <!-- Interactive Engine Logic for Mobile Input Forms -->
@@ -1051,9 +1196,13 @@ function switchType(type) {
     document.getElementById('formSectionPakan').style.display = 'none';
     document.getElementById('formSectionMortalitas').style.display = 'none';
     document.getElementById('formSectionObat').style.display = 'none';
+    if (document.getElementById('formSectionBobot')) {
+        document.getElementById('formSectionBobot').style.display = 'none';
+    }
 
     // Show selected form section
-    document.getElementById('formSection' + type.charAt(0).toUpperCase() + type.slice(1)).style.display = 'block';
+    const targetSection = document.getElementById('formSection' + type.charAt(0).toUpperCase() + type.slice(1));
+    if (targetSection) targetSection.style.display = 'block';
 
     // Update hero subtitle
     const sub = document.getElementById('heroSubtitle');
@@ -1065,6 +1214,8 @@ function switchType(type) {
         sub.textContent = 'Catat ayam mati atau afkir. Populasi aktif blok otomatis diperbarui setelah transaksi disimpan.';
     } else if (type === 'obat') {
         sub.textContent = 'Catat vaksin, vitamin, obat, dan perlakuan. Pemakaian otomatis tercatat ke Gudang Obat.';
+    } else if (type === 'bobot') {
+        sub.textContent = 'Catat sampel bobot ayam & berat telur per minggu. Metrik 6 blok otomatis terbarui di Dashboard.';
     }
 }
 
@@ -1072,6 +1223,7 @@ function switchType(type) {
 function filterCoops(prefix) {
     const flockSelect = document.getElementById(prefix + 'Kloter');
     const coopSelect = document.getElementById(prefix + 'Coop');
+    if (!flockSelect || !coopSelect) return;
     const selectedFlockId = flockSelect.value;
 
     let firstMatch = null;
@@ -1094,6 +1246,7 @@ function filterCoops(prefix) {
 // 3. Update Population Display for selected Coop
 function updateCoopPop(prefix) {
     const coopSelect = document.getElementById(prefix + 'Coop');
+    if (!coopSelect) return;
     const selectedOpt = coopSelect.options[coopSelect.selectedIndex];
     const pop = selectedOpt ? parseInt(selectedOpt.getAttribute('data-pop') || 762) : 762;
 
@@ -1106,7 +1259,100 @@ function updateCoopPop(prefix) {
     } else if (prefix === 'mort') {
         document.getElementById('mortPopSebelum').textContent = pop + ' ekor';
         calcMort();
+    } else if (prefix === 'bobot') {
+        const bobotPop = document.getElementById('bobotPopulasi');
+        if (bobotPop) bobotPop.value = pop + ' ekor';
+        const age = selectedOpt ? selectedOpt.getAttribute('data-age') : 24;
+        const fase = selectedOpt ? selectedOpt.getAttribute('data-fase') : 'Puncak Produksi';
+        const pill = selectedOpt ? selectedOpt.getAttribute('data-pill') : 'PUNCAK';
+        const bbMin = selectedOpt ? parseFloat(selectedOpt.getAttribute('data-bbmin') || 1.58) : 1.58;
+        const bbTarget = selectedOpt ? parseFloat(selectedOpt.getAttribute('data-bbtarget') || 1.65) : 1.65;
+        const bbMax = selectedOpt ? parseFloat(selectedOpt.getAttribute('data-bbmax') || 1.72) : 1.72;
+        const eggTol = selectedOpt ? selectedOpt.getAttribute('data-eggtol') : '53,8–58,8 g';
+
+        const usiaEl = document.getElementById('bobotUsia');
+        const usiaVal = document.getElementById('bobotUsiaVal');
+        const faseEl = document.getElementById('bobotFase');
+        if (usiaEl) usiaEl.value = (age || 24) + ' minggu';
+        if (usiaVal) usiaVal.value = age || 24;
+        if (faseEl) faseEl.value = fase;
+
+        const titleEl = document.getElementById('bobotStdTitle');
+        const badgeEl = document.getElementById('bobotStdFaseBadge');
+        const minEl = document.getElementById('bobotStdMin');
+        const tgtEl = document.getElementById('bobotStdTarget');
+        const maxEl = document.getElementById('bobotStdMax');
+        const tolEl = document.getElementById('bobotStdTelur');
+
+        if (titleEl) titleEl.textContent = `Acuan Master Umur ${age} Minggu`;
+        if (badgeEl) badgeEl.textContent = pill;
+        if (minEl) minEl.textContent = bbMin.toString().replace('.', ',') + ' kg';
+        if (tgtEl) tgtEl.textContent = bbTarget.toString().replace('.', ',') + ' kg';
+        if (maxEl) maxEl.textContent = bbMax.toString().replace('.', ',') + ' kg';
+        if (tolEl) tolEl.textContent = eggTol;
+
+        calcBobotFeedback();
     }
+}
+
+// 3b. Real-time Live Evaluator BB Ayam & Telur vs Master
+function calcBobotFeedback() {
+    const coopSelect = document.getElementById('bobotCoop');
+    if (!coopSelect) return;
+    const selectedOpt = coopSelect.options[coopSelect.selectedIndex];
+    if (!selectedOpt) return;
+
+    const bbMin = parseFloat(selectedOpt.getAttribute('data-bbmin') || 1.58);
+    const bbTarget = parseFloat(selectedOpt.getAttribute('data-bbtarget') || 1.65);
+    const bbMax = parseFloat(selectedOpt.getAttribute('data-bbmax') || 1.72);
+    const eggTarget = parseFloat(selectedOpt.getAttribute('data-eggtarget') || 0);
+
+    const bbVal = parseFloat(document.getElementById('bobotBeratAyam').value);
+    const eggVal = parseFloat(document.getElementById('bobotBeratTelur').value);
+    const box = document.getElementById('bobotLiveFeedback');
+    const txt = document.getElementById('bobotFeedbackText');
+    if (!box || !txt) return;
+
+    if (isNaN(bbVal) || bbVal <= 0) {
+        box.style.background = '#fff';
+        box.style.borderColor = '#bae6fd';
+        box.style.color = '#0369a1';
+        txt.innerHTML = 'ℹ Masukkan bobot ayam untuk membandingkan langsung dengan acuan master umur ayam ini.';
+        return;
+    }
+
+    let bbStatusHtml = '';
+    if (bbVal >= bbMin && bbVal <= bbMax) {
+        box.style.background = '#ecfdf5';
+        box.style.borderColor = '#a7f3d0';
+        box.style.color = '#065f46';
+        bbStatusHtml = `✓ <b>BB Ayam Sesuai Target (Ideal):</b> ${bbVal.toString().replace('.', ',')} kg berada dalam rentang ideal master (${bbMin.toString().replace('.', ',')} – ${bbMax.toString().replace('.', ',')} kg). Target ideal: ${bbTarget.toString().replace('.', ',')} kg.`;
+    } else if (bbVal < bbMin) {
+        box.style.background = '#fffbeb';
+        box.style.borderColor = '#fde68a';
+        box.style.color = '#92400e';
+        const diff = (bbMin - bbVal).toFixed(2).replace('.', ',');
+        bbStatusHtml = `⚠️ <b>Kurang Bobot:</b> ${bbVal.toString().replace('.', ',')} kg berada di bawah BB Minimum (${bbMin.toString().replace('.', ',')} kg). Selisih ${diff} kg di bawah standar.`;
+    } else {
+        box.style.background = '#fff1f2';
+        box.style.borderColor = '#fecdd3';
+        box.style.color = '#9f1239';
+        const diff = (bbVal - bbMax).toFixed(2).replace('.', ',');
+        bbStatusHtml = `⚠️ <b>Kelebihan Bobot:</b> ${bbVal.toString().replace('.', ',')} kg berada di atas BB Maksimum (${bbMax.toString().replace('.', ',')} kg). Selisih ${diff} kg di atas standar.`;
+    }
+
+    let eggStatusHtml = '';
+    if (!isNaN(eggVal) && eggVal > 0 && eggTarget > 0) {
+        const minTol = eggTarget - 2.5;
+        const maxTol = eggTarget + 2.5;
+        if (eggVal >= minTol && eggVal <= maxTol) {
+            eggStatusHtml = `<br><span style="color:#047857;">✓ <b>BB Telur Sesuai Toleransi:</b> ${eggVal.toString().replace('.', ',')} g (Batas: ${minTol.toFixed(1).replace('.', ',')} – ${maxTol.toFixed(1).replace('.', ',')} g).</span>`;
+        } else {
+            eggStatusHtml = `<br><span style="color:#b45309;">⚠️ <b>BB Telur di Luar Toleransi:</b> ${eggVal.toString().replace('.', ',')} g (Target acuan: ${eggTarget.toFixed(1).replace('.', ',')} g).</span>`;
+        }
+    }
+
+    txt.innerHTML = bbStatusHtml + eggStatusHtml;
 }
 
 // 4. Calculations for Produksi Telur
@@ -1273,8 +1519,12 @@ document.addEventListener('DOMContentLoaded', function () {
     filterCoops('pakan');
     filterCoops('mort');
     filterCoops('obat');
+    filterCoops('bobot');
     toggleMortalityType();
     updateMedDetails();
+    if (currentType) {
+        switchType(currentType);
+    }
 });
 </script>
 @endsection

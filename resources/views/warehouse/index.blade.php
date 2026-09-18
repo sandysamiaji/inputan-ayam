@@ -412,7 +412,7 @@
         <!-- 4. GUDANG AYAM KARANTINA -->
         @if(!auth()->check() || auth()->user()->canAccess('warehouse_card_quarantine'))
             @if(!auth()->check() || auth()->user()->canAccess('warehouse_click_quarantine'))
-            <a href="{{ route('input.index', ['type' => 'mortalitas']) }}" class="farm-card farm-card-interactive p-4 sm:p-6 block group relative overflow-hidden">
+            <a href="{{ route('warehouse.karantina', array_filter(['start_date' => $startDate ?? null, 'end_date' => $endDate ?? null])) }}" class="farm-card farm-card-interactive p-4 sm:p-6 block group relative overflow-hidden">
             @else
             <div class="farm-card p-4 sm:p-6 block relative overflow-hidden opacity-90 cursor-not-allowed bg-slate-50">
             @endif

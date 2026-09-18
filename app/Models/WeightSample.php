@@ -12,10 +12,12 @@ class WeightSample extends Model
     protected $fillable = [
         'flock_id',
         'coop_id',
+        'battery_number',
         'user_id',
         'date',
         'sample_count',
         'average_weight_kg',
+        'egg_weight_gram',
         'uniformity_percentage',
         'age_weeks',
         'notes',
@@ -25,9 +27,28 @@ class WeightSample extends Model
         'date' => 'date',
         'sample_count' => 'integer',
         'average_weight_kg' => 'decimal:3',
+        'egg_weight_gram' => 'decimal:2',
         'uniformity_percentage' => 'decimal:2',
         'age_weeks' => 'integer',
     ];
+
+    public static function ensureColumnsExist(): void
+    {
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('weight_samples')) {
+                \Illuminate\Support\Facades\Schema::table('weight_samples', function (\Illuminate\Database\Schema\Blueprint $table) {
+                    if (!\Illuminate\Support\Facades\Schema::hasColumn('weight_samples', 'battery_number')) {
+                        $table->string('battery_number')->nullable()->after('coop_id');
+                    }
+                    if (!\Illuminate\Support\Facades\Schema::hasColumn('weight_samples', 'egg_weight_gram')) {
+                        $table->decimal('egg_weight_gram', 6, 2)->nullable()->after('average_weight_kg');
+                    }
+                });
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('WeightSample ensureColumnsExist error: ' . $e->getMessage());
+        }
+    }
 
     public function flock()
     {

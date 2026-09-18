@@ -43,7 +43,7 @@
             <div class="flex items-center gap-3 self-start md:self-center">
                 <div class="text-center bg-white border border-slate-200 rounded-2xl px-4 py-2.5 shadow-sm min-w-[85px] flex items-center justify-center">
                     <i data-lucide="user" class="w-5 h-5 text-maroon-800 mr-2"></i>
-                    <span class="block text-lg font-black text-maroon-800">{{ $user ? $user->name : 'Petugas' }}</span>
+                    <span class="block text-lg font-black text-maroon-800">{{ $user ? ($user->username ?: $user->name) : 'Petugas' }}</span>
                 </div>
 
                 <div class="flex flex-col gap-1">
@@ -163,23 +163,57 @@
             </div>
             @endif
 
-            <!-- Card 4: Berat Badan (Sky Blue) -->
+            <!-- Card 4: Berat Badan 6 Blok (Sky Blue) -->
             @if(!auth()->check() || auth()->user()->canAccess('dash_card_weight'))
-            <div class="farm-card p-3.5 sm:p-4 border-l-4 border-l-sky-600 bg-white flex flex-col justify-between">
-                <div class="flex items-start justify-between gap-2">
-                    <div class="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center shrink-0 border border-sky-100 shadow-xs">
-                        <i data-lucide="scale" class="w-5 h-5 stroke-[2.2]"></i>
+            @php
+                $canClickWeight = auth()->check() && auth()->user()->canAccess('dash_card_weight_click');
+            @endphp
+            <div class="farm-card p-3 sm:p-3.5 border-l-4 border-l-sky-600 bg-white flex flex-col justify-between {{ $canClickWeight ? 'hover:border-sky-500 hover:shadow-md transition-all cursor-pointer group' : 'cursor-default' }}" 
+                 @if($canClickWeight) onclick="openModal('modalBobot6Blok')" @endif>
+                <div>
+                    <div class="flex items-start justify-between gap-1.5">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center shrink-0 border border-sky-100 shadow-xs {{ $canClickWeight ? 'group-hover:scale-105 transition-transform' : '' }}">
+                                <i data-lucide="scale" class="w-4 h-4 stroke-[2.2]"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-slate-700 leading-tight">Bobot Ayam</p>
+                                <span class="text-[10px] text-sky-700 font-extrabold">Data 6 Blok</span>
+                            </div>
+                        </div>
+                        <span class="text-[9px] font-black px-1.5 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-200">
+                            6 Blok
+                        </span>
                     </div>
-                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200">Bobot</span>
+
+                    <!-- Mini Grid Data 6 Blok -->
+                    <div class="grid grid-cols-2 gap-1 mt-2.5">
+                        @foreach($coops as $c)
+                            @php
+                                $w = $coopWeightData[$c->id] ?? null;
+                                $cShort = str_replace(['BLOK ', 'Blok '], '', $c->name);
+                            @endphp
+                            <div class="flex items-center justify-between px-1.5 py-0.5 rounded {{ $w ? 'bg-sky-50/70 border border-sky-100/80 text-sky-950' : 'bg-slate-50 border border-slate-100 text-slate-400' }}">
+                                <span class="text-[10px] font-extrabold {{ $w ? 'text-slate-800' : 'text-slate-500' }}">{{ $cShort }}</span>
+                                <span class="text-[10.5px] font-black {{ $w ? 'text-sky-800' : 'text-slate-400' }}">
+                                    {{ $w ? number_format($w, 2, ',', '.') . ' kg' : '-' }}
+                                </span>
+                            </div>
+                        @endforeach
+                    </div>
                 </div>
-                <div class="mt-3">
-                    <p class="text-xs font-semibold text-slate-500">Berat Badan</p>
-                    <p class="text-lg sm:text-xl font-black text-slate-900 tracking-tight leading-tight mt-0.5">
-                        {{ number_format($averageWeightKg, 2, ',', '.') }} <span class="text-xs font-bold text-slate-500">Kg</span>
-                    </p>
-                    <p class="text-[11px] text-slate-500 font-medium mt-0.5">
-                        (Rata-rata Sampel)
-                    </p>
+
+                <div class="mt-2 pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px]">
+                    <span class="text-slate-400 font-medium">Sampel mingguan</span>
+                    @if($canClickWeight)
+                        <span class="text-sky-700 font-bold group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
+                            Detail &raquo;
+                        </span>
+                    @else
+                        <span class="text-slate-400 font-semibold flex items-center gap-1">
+                            <i data-lucide="lock" class="w-2.5 h-2.5"></i> Terkunci
+                        </span>
+                    @endif
                 </div>
             </div>
             @endif
@@ -207,14 +241,32 @@
 
             <!-- Card 6: Karantina Ayam (Amber/Orange) -->
             @if(!auth()->check() || auth()->user()->canAccess('dash_card_quarantine'))
-            <div class="farm-card p-3.5 sm:p-4 border-l-4 border-l-amber-500 bg-white flex flex-col justify-between">
+            @php
+                $canClickQuarantine = auth()->check() && auth()->user()->canAccess('dash_card_quarantine_click');
+            @endphp
+            @if($canClickQuarantine)
+            <a href="{{ route('warehouse.karantina') }}" class="farm-card p-3.5 sm:p-4 border-l-4 border-l-amber-500 bg-white flex flex-col justify-between hover:border-amber-600 hover:shadow-md transition-all cursor-pointer group">
+            @else
+            <div class="farm-card p-3.5 sm:p-4 border-l-4 border-l-amber-500 bg-white flex flex-col justify-between cursor-default">
+            @endif
                 <div class="flex items-start justify-between gap-2">
-                    <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100 shadow-xs">
+                    <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100 shadow-xs {{ $canClickQuarantine ? 'group-hover:scale-105 transition-transform' : '' }}">
                         <i data-lucide="shield-alert" class="w-5 h-5 stroke-[2.2]"></i>
                     </div>
-                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-md {{ $currentQuarantineCount > 0 ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200' }}">
-                        {{ $currentQuarantineCount > 0 ? 'Isolasi' : 'Nihil' }}
-                    </span>
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-md {{ $currentQuarantineCount > 0 ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200' }}">
+                            {{ $currentQuarantineCount > 0 ? 'Isolasi' : 'Nihil' }}
+                        </span>
+                        @if($canClickQuarantine)
+                            <div class="w-5 h-5 rounded-full bg-amber-50 text-amber-700 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
+                                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                            </div>
+                        @else
+                            <div class="w-5 h-5 rounded-full bg-slate-50 text-slate-300 flex items-center justify-center">
+                                <i data-lucide="lock" class="w-3 h-3"></i>
+                            </div>
+                        @endif
+                    </div>
                 </div>
                 <div class="mt-3">
                     <p class="text-xs font-semibold text-slate-500">Ayam Karantina</p>
@@ -231,7 +283,11 @@
                         @endif
                     </p>
                 </div>
+            @if($canClickQuarantine)
+            </a>
+            @else
             </div>
+            @endif
             @endif
 
         </div>
@@ -402,6 +458,18 @@
                                         <span class="text-[9px] text-slate-400 block mt-0.5">Pagi {{ $cStd['pagi_gram'] }}g • Sore {{ $cStd['sore_gram'] }}g</span>
                                     </div>
                                 </div>
+                                @if(isset($coopWeightData[$coop->id]) && $coopWeightData[$coop->id])
+                                <div class="mt-2 p-1.5 px-2 rounded-lg bg-sky-50/70 border border-sky-100 flex items-center justify-between text-[10.5px]">
+                                    <span class="flex items-center gap-1 font-bold text-sky-950">
+                                        <i data-lucide="scale" class="w-3.5 h-3.5 text-sky-600"></i>
+                                        <span>Sampel Bobot: <b class="text-sky-800">{{ number_format($coopWeightData[$coop->id], 2, ',', '.') }} kg</b></span>
+                                    </span>
+                                    <span class="text-slate-500 font-medium text-[9.5px]">
+                                        {{ !empty($coopWeightDetails[$coop->id]['battery_number']) ? 'Baterai ' . $coopWeightDetails[$coop->id]['battery_number'] : '' }}
+                                        {{ !empty($coopWeightDetails[$coop->id]['egg_weight_gram']) ? ' • Telur ' . $coopWeightDetails[$coop->id]['egg_weight_gram'] . 'g' : '' }}
+                                    </span>
+                                </div>
+                                @endif
                                 @endif
 
                                 <!-- ESTIMASI TELUR DARI ACUAN & ADU DATA REALISASI INPUT KARYAWAN -->
@@ -516,6 +584,12 @@
                                 @php
                                     $actualFeedKg = $coopFeedTodayData[$coop->id] ?? 0;
                                     $feedDiffKg = round($actualFeedKg - $totalPakanCoopKg, 1);
+                                    $hasPagi = $coopFeedHasPagiData[$coop->id] ?? false;
+                                    $hasSore = $coopFeedHasSoreData[$coop->id] ?? false;
+                                    $actPagiKg = $coopFeedPagiData[$coop->id] ?? 0;
+                                    $actSoreKg = $coopFeedSoreData[$coop->id] ?? 0;
+                                    $uPagi = $coopFeedPagiUserData[$coop->id] ?? null;
+                                    $uSore = $coopFeedSoreUserData[$coop->id] ?? null;
                                 @endphp
                                 <div class="mt-2 p-2.5 rounded-lg text-xs {{ $actualFeedKg == 0 ? 'bg-slate-50 border border-slate-200' : (abs($feedDiffKg) <= 1.0 ? 'bg-emerald-50/80 border border-emerald-200' : ($feedDiffKg > 1.0 ? 'bg-amber-50/80 border border-amber-200' : 'bg-rose-50/80 border border-rose-200')) }}">
                                     <div class="flex items-center justify-between font-bold text-[11px]">
@@ -554,9 +628,13 @@
                                         </div>
                                         <div class="text-[10.5px] text-slate-500 font-medium text-right">
                                             <div>Standar Hitungan: <b>{{ number_format($totalPakanCoopKg, 1, ',', '.') }} kg</b></div>
-                                            <div class="mt-0.5 text-[9.5px] text-slate-400">
-                                                Jadwal Pagi (40%): <b class="text-slate-500">{{ number_format($pagiKg, 1, ',', '.') }} kg</b><br>
-                                                Sore (60%): <b class="text-slate-500">{{ number_format($soreKg, 1, ',', '.') }} kg</b>
+                                            <div class="mt-0.5 text-[9.5px] text-slate-500">
+                                                @if($hasPagi || $hasSore || $actualFeedKg == 0)
+                                                    Jadwal Pagi (40%): <b class="{{ $hasPagi ? 'text-slate-800' : 'text-slate-400 font-normal' }}">{{ $hasPagi ? number_format($actPagiKg, 1, ',', '.') . ' kg' : 'Belum Input' }}</b><br>
+                                                    Sore (60%): <b class="{{ $hasSore ? 'text-slate-800' : 'text-slate-400 font-normal' }}">{{ $hasSore ? number_format($actSoreKg, 1, ',', '.') . ' kg' : 'Belum Input' }}</b>
+                                                @else
+                                                    Input: <b class="text-slate-800">{{ number_format($actualFeedKg, 1, ',', '.') }} kg</b>
+                                                @endif
                                             </div>
                                         </div>
                                     </div>
@@ -571,9 +649,28 @@
                                                 ⚠️ <b>Pemberian pakan KURANG dari standar</b> sebesar {{ number_format(abs($feedDiffKg), 1, ',', '.') }} kg dari acuan {{ number_format($totalPakanCoopKg, 1, ',', '.') }} kg.
                                             @endif
                                         </div>
-                                        @if(!empty($coopFeedUserInputData[$coop->id]))
+                                        @php
+                                            $feedUsersText = '';
+                                            if ($hasPagi && $hasSore) {
+                                                if ($uPagi === $uSore && !empty($uPagi)) {
+                                                    $feedUsersText = $uPagi;
+                                                } else {
+                                                    $parts = [];
+                                                    if ($uPagi) $parts[] = 'Pagi: ' . $uPagi;
+                                                    if ($uSore) $parts[] = 'Sore: ' . $uSore;
+                                                    $feedUsersText = implode(' • ', $parts);
+                                                }
+                                            } elseif ($hasPagi && !empty($uPagi)) {
+                                                $feedUsersText = $uPagi . ' (Pagi)';
+                                            } elseif ($hasSore && !empty($uSore)) {
+                                                $feedUsersText = $uSore . ' (Sore)';
+                                            } elseif (!empty($coopFeedUserInputData[$coop->id])) {
+                                                $feedUsersText = $coopFeedUserInputData[$coop->id];
+                                            }
+                                        @endphp
+                                        @if(!empty($feedUsersText))
                                         <div class="mt-1 text-[9.5px] text-slate-500 font-medium">
-                                            Diinput oleh: <b class="text-slate-700">{{ $coopFeedUserInputData[$coop->id] }}</b>
+                                            Diinput oleh: <b class="text-slate-700">{{ $feedUsersText }}</b>
                                         </div>
                                         @endif
                                     @else
@@ -1039,63 +1136,345 @@
 <!-- ========================================================================= -->
 <!-- MODAL 4: INPUT BERAT BADAN                                                -->
 <!-- ========================================================================= -->
-<div id="modalBobot" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm opacity-0 invisible pointer-events-none transition-all duration-300 flex items-end sm:items-center justify-center p-0 sm:p-4">
-    <div class="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl p-5 sm:p-6 shadow-2xl transform translate-y-full sm:translate-y-0 transition-transform duration-300 max-h-[90vh] overflow-y-auto">
+<!-- MODAL: DATA SAMPEL BOBOT AYAM 6 BLOK & INPUT CEPAT                         -->
+<!-- ========================================================================= -->
+<!-- MODAL: DATA SAMPEL BOBOT AYAM & EVALUASI ADU DATA MASTER (6 BLOK)          -->
+<!-- ========================================================================= -->
+@if(auth()->check() && auth()->user()->canAccess('dash_card_weight_click'))
+<div id="modalBobot6Blok" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm opacity-0 invisible pointer-events-none transition-all duration-300 flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full sm:max-w-5xl rounded-t-3xl sm:rounded-2xl p-4 sm:p-6 shadow-2xl transform translate-y-full sm:translate-y-0 transition-transform duration-300 max-h-[92vh] overflow-y-auto">
+        
+        <!-- Header Modal -->
         <div class="flex items-center justify-between pb-3 border-b border-slate-100">
             <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center">
+                <div class="w-10 h-10 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center shrink-0 shadow-xs">
                     <i data-lucide="scale" class="w-5 h-5"></i>
                 </div>
-                <h3 class="font-black text-slate-900 text-base">Input Bobot Ayam</h3>
+                <div>
+                    <h3 class="font-black text-slate-900 text-base sm:text-lg">Evaluasi Sampel Bobot Ayam & Telur vs Data Master</h3>
+                    <p class="text-xs text-slate-500">Adu kesesuaian input BB ayam & berat butir telur dengan acuan master (BB Min, Target, Max, & Toleransi Telur sesuai minggu umur)</p>
+                </div>
             </div>
-            <button onclick="closeModal('modalBobot')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500">
+            <button onclick="closeModal('modalBobot6Blok')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500">
                 <i data-lucide="x" class="w-4 h-4"></i>
             </button>
         </div>
 
-        <form action="{{ route('weight.store') }}" method="POST" class="py-4 space-y-4">
-            @csrf
-            <input type="hidden" name="date" value="{{ $selectedDate }}">
+        <div class="py-4 space-y-4">
+            <!-- Filter Kloter & Blok -->
+            <div class="bg-slate-50 p-3 sm:p-3.5 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-2.5 flex-wrap">
+                    <div>
+                        <label class="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">Pilih Kloter</label>
+                        <select id="modalBobotFilterFlock" onchange="onModalBobotFlockChange()" class="text-xs font-bold text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 outline-none shadow-xs">
+                            <option value="all">Semua Kloter</option>
+                            @foreach($flocks as $flock)
+                                <option value="{{ $flock->id }}">{{ $flock->name }} ({{ $flock->code }})</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">Pilih Blok</label>
+                        <select id="modalBobotFilterCoop" onchange="filterModalBobot()" class="text-xs font-bold text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 outline-none shadow-xs">
+                            <option value="all">Semua Blok (6 Blok)</option>
+                            @foreach($coops as $coop)
+                                <option value="{{ $coop->id }}" data-flock="{{ $coop->flock_id }}">{{ $coop->name }} ({{ $coop->flock ? $coop->flock->name : 'K1' }})</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
 
-            <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1.5">Pilih Blok Kandang</label>
-                <select name="coop_id" required class="w-full text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-maroon-800 outline-none bg-slate-50">
-                    <option value="">-- Pilih Blok --</option>
-                    @foreach($coops as $coop)
-                        <option value="{{ $coop->id }}">{{ $coop->name }}</option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1.5">Rata-rata Berat Badan (Kg)</label>
-                <div class="relative">
-                    <input type="number" step="0.001" name="average_weight_kg" required placeholder="Contoh: 1.620"
-                           class="w-full text-sm font-bold text-slate-900 px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-maroon-800 outline-none bg-slate-50">
-                    <span class="absolute right-3.5 top-2.5 text-xs font-semibold text-slate-400">Kg</span>
+                <div class="flex items-center gap-2">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold shadow-2xs">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Acuan Master Standar Produksi
+                    </span>
                 </div>
             </div>
 
-            <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1.5">Jumlah Sampel Timbang</label>
-                <div class="relative">
-                    <input type="number" name="sample_count" value="50" placeholder="50"
-                           class="w-full text-xs sm:text-sm font-semibold px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-maroon-800 outline-none bg-slate-50">
-                    <span class="absolute right-3.5 top-2.5 text-xs font-semibold text-slate-400">Ekor</span>
+            <!-- Kartu Detail Evaluasi Blok Terpilih (Muncul jika user memilih blok tertentu) -->
+            @foreach($coops as $c)
+                @php
+                    $d = $coopWeightDetails[$c->id] ?? null;
+                    $cStd = $coopStandards[$c->id] ?? \App\Services\ProductionStandardService::getStandardForWeek((int)$c->chicken_age_weeks);
+                    $bbAct = $d && isset($d['weight_kg']) ? (float)$d['weight_kg'] : null;
+                    $eggAct = $d && isset($d['egg_weight_gram']) ? (float)$d['egg_weight_gram'] : null;
+                    $bbMin = (float)($cStd['bb_min'] ?? 0);
+                    $bbTarget = (float)($cStd['bb_target'] ?? 0);
+                    $bbMax = (float)($cStd['bb_max'] ?? 0);
+                    $eggTargetVal = (float)($cStd['berat_telur_val'] ?? 0);
+                    $eggMinTol = $eggTargetVal > 0 ? round($eggTargetVal - 2.5, 1) : 0;
+                    $eggMaxTol = $eggTargetVal > 0 ? round($eggTargetVal + 2.5, 1) : 0;
+
+                    $isIdealBB = ($bbAct !== null && $bbAct >= $bbMin && $bbAct <= $bbMax);
+                    $isUnderBB = ($bbAct !== null && $bbAct < $bbMin);
+                    $isOverBB = ($bbAct !== null && $bbAct > $bbMax);
+                    $isIdealEgg = ($eggAct !== null && $eggTargetVal > 0 && $eggAct >= $eggMinTol && $eggAct <= $eggMaxTol);
+                @endphp
+                <div class="modal-bobot-card-detail p-4 rounded-xl border {{ $isIdealBB ? 'bg-emerald-50/50 border-emerald-200' : ($bbAct ? 'bg-amber-50/50 border-amber-200' : 'bg-slate-50 border-slate-200') }}" 
+                     data-coop="{{ $c->id }}" 
+                     style="display: none;">
+                    
+                    <div class="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-slate-200/60">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-black text-slate-900">{{ $c->name }}</span>
+                            <span class="text-xs font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
+                                {{ $c->flock ? $c->flock->name : 'Kloter' }}
+                            </span>
+                            <span class="text-xs font-bold px-2 py-0.5 rounded bg-rose-50 text-maroon-800 border border-rose-100">
+                                Umur: {{ $c->chicken_age_weeks }} Minggu
+                            </span>
+                            <span class="text-xs font-extrabold px-2 py-0.5 rounded border {{ $cStd['pill_class'] }}">
+                                {{ $cStd['pill'] }} ({{ $cStd['fase'] }})
+                            </span>
+                        </div>
+                        <div>
+                            @if($bbAct === null)
+                                <span class="text-xs font-bold px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 border border-slate-200">
+                                    Belum Ada Sampel Diinput
+                                </span>
+                            @elseif($isIdealBB)
+                                <span class="text-xs font-black px-2.5 py-1 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 shadow-2xs">
+                                    <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600"></i>
+                                    Kondisi Ayam: SESUAI STANDAR IDEAL MASTER
+                                </span>
+                            @elseif($isUnderBB)
+                                <span class="text-xs font-black px-2.5 py-1 rounded-md bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1 shadow-2xs">
+                                    <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-amber-600"></i>
+                                    Kondisi Ayam: KURANG DARI STANDAR MINIMUM (-{{ number_format(round($bbMin - $bbAct, 3), 2, ',', '.') }} kg)
+                                </span>
+                            @else
+                                <span class="text-xs font-black px-2.5 py-1 rounded-md bg-rose-100 text-rose-800 border border-rose-300 flex items-center gap-1 shadow-2xs">
+                                    <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-rose-600"></i>
+                                    Kondisi Ayam: MELEBIHI STANDAR MAKSIMUM (+{{ number_format(round($bbAct - $bbMax, 3), 2, ',', '.') }} kg)
+                                </span>
+                            @endif
+                        </div>
+                    </div>
+
+                    <!-- Adu Data Metrik Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 mt-3 text-xs">
+                        <div class="bg-white p-2.5 rounded-lg border border-slate-200">
+                            <span class="text-[10px] font-bold text-slate-400 block uppercase">BB Ayam (Input Aktual)</span>
+                            <b class="text-base font-black {{ $bbAct ? 'text-sky-800' : 'text-slate-400' }}">
+                                {{ $bbAct ? number_format($bbAct, 3, ',', '.') . ' Kg' : 'Belum Input' }}
+                            </b>
+                            <span class="text-[10px] text-slate-500 block mt-0.5">
+                                {{ $d && $d['battery_number'] ? 'Baterai: ' . $d['battery_number'] : 'Posisi sampel acak' }}
+                            </span>
+                        </div>
+
+                        <div class="bg-white p-2.5 rounded-lg border border-slate-200">
+                            <span class="text-[10px] font-bold text-slate-400 block uppercase">Standar BB Master (Umur {{ $c->chicken_age_weeks }} Mgg)</span>
+                            <div class="flex items-center gap-1 font-bold text-slate-800 text-xs mt-0.5">
+                                <span class="text-slate-500">Min: {{ number_format($bbMin, 2, ',', '.') }}</span> •
+                                <b class="text-emerald-700 font-black">Target: {{ number_format($bbTarget, 2, ',', '.') }}</b> •
+                                <span class="text-slate-500">Max: {{ number_format($bbMax, 2, ',', '.') }}</span>
+                            </div>
+                            <span class="text-[10px] font-semibold text-emerald-800 block mt-0.5">
+                                Rentang ideal: {{ number_format($bbMin, 2, ',', '.') }} – {{ number_format($bbMax, 2, ',', '.') }} Kg
+                            </span>
+                        </div>
+
+                        <div class="bg-white p-2.5 rounded-lg border border-slate-200">
+                            <span class="text-[10px] font-bold text-slate-400 block uppercase">BB Telur Butir (Input Aktual)</span>
+                            <b class="text-base font-black {{ $eggAct ? 'text-amber-800' : 'text-slate-400' }}">
+                                {{ $eggAct ? number_format($eggAct, 1, ',', '.') . ' Gram' : '-' }}
+                            </b>
+                            <span class="text-[10px] {{ $isIdealEgg ? 'text-emerald-700 font-bold' : 'text-slate-500' }} block mt-0.5">
+                                {{ $eggAct ? ($isIdealEgg ? '✓ Sesuai batas toleransi' : 'Di luar toleransi target') : 'Belum ditimbang' }}
+                            </span>
+                        </div>
+
+                        <div class="bg-white p-2.5 rounded-lg border border-slate-200">
+                            <span class="text-[10px] font-bold text-slate-400 block uppercase">Acuan & Toleransi Telur</span>
+                            <b class="text-sm font-black text-amber-900 block mt-0.5">
+                                {{ $eggTargetVal > 0 ? number_format($eggMinTol, 1, ',', '.') . ' – ' . number_format($eggMaxTol, 1, ',', '.') . ' g' : '-' }}
+                            </b>
+                            <span class="text-[10px] text-slate-500 block mt-0.5">
+                                Target Ideal Master: <b>{{ $cStd['berat_telur'] }}</b>
+                            </span>
+                        </div>
+                    </div>
+
+                    @if($d && $d['notes'])
+                        <div class="mt-2.5 p-2 bg-white rounded-lg border border-slate-200 text-xs text-slate-700">
+                            <b class="text-slate-900 font-bold">Catatan Kondisi Ayam:</b> {{ $d['notes'] }}
+                        </div>
+                    @endif
+                </div>
+            @endforeach
+
+            <!-- General Banner (Muncul bila 'Semua Blok' dipilih) -->
+            <div id="modalBobotGeneralBanner" class="p-3 bg-sky-50/70 rounded-xl border border-sky-200 text-xs text-sky-950 flex items-start gap-2">
+                <i data-lucide="info" class="w-4 h-4 text-sky-700 shrink-0 mt-0.5"></i>
+                <div class="text-[11px] leading-relaxed">
+                    <b class="text-sky-950">Adu Data Master Standar Produksi vs Hasil Inputan Aktual:</b>
+                    <span class="text-sky-900">
+                        Setiap baris blok kandang membandingkan berat badan (BB) ayam dan bobot butir telur sampel terhadap batas <b>BB Minimum</b>, <b>BB Target (Ideal)</b>, <b>BB Maksimum</b>, dan <b>Batas Toleransi Telur</b> berdasarkan umur minggu ayam di blok tersebut.
+                    </span>
                 </div>
             </div>
 
-            <div class="flex gap-3 pt-3 border-t border-slate-100">
-                <button type="button" onclick="closeModal('modalBobot')" class="flex-1 py-2.5 sm:py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm">
-                    Batal
-                </button>
-                <button type="submit" class="flex-1 py-2.5 sm:py-3 rounded-xl bg-sky-700 hover:bg-sky-800 text-white font-bold text-xs sm:text-sm shadow-md">
-                    Simpan Bobot
-                </button>
+            <!-- Tabel Evaluasi Adu Data Master 6 Blok -->
+            <div class="overflow-x-auto rounded-xl border border-slate-200 shadow-2xs">
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead class="bg-slate-50 text-slate-600 font-bold uppercase text-[9.5px] tracking-wider border-b border-slate-200">
+                        <tr>
+                            <th class="py-2.5 px-3">Kloter & Blok</th>
+                            <th class="py-2.5 px-2.5 text-center">Umur</th>
+                            <th class="py-2.5 px-3">Fase Pertumbuhan</th>
+                            <th class="py-2.5 px-3 text-right bg-sky-50/50 text-sky-950">BB Ayam (Input)</th>
+                            <th class="py-2.5 px-2.5 text-right bg-slate-100/60">BB Min</th>
+                            <th class="py-2.5 px-2.5 text-right bg-emerald-100/50 text-emerald-950">BB Target</th>
+                            <th class="py-2.5 px-2.5 text-right bg-slate-100/60">BB Max</th>
+                            <th class="py-2.5 px-3 text-center">Status BB Ayam</th>
+                            <th class="py-2.5 px-3 text-right bg-amber-50/50 text-amber-950">BB Telur (Input)</th>
+                            <th class="py-2.5 px-3 text-right bg-amber-100/40 text-amber-950">Toleransi Telur</th>
+                            <th class="py-2.5 px-3">No. Baterai</th>
+                            <th class="py-2.5 px-2.5 text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+                        @foreach($coops as $c)
+                            @php
+                                $d = $coopWeightDetails[$c->id] ?? null;
+                                $cStd = $coopStandards[$c->id] ?? \App\Services\ProductionStandardService::getStandardForWeek((int)$c->chicken_age_weeks);
+                                $bbAct = $d && isset($d['weight_kg']) ? (float)$d['weight_kg'] : null;
+                                $eggAct = $d && isset($d['egg_weight_gram']) ? (float)$d['egg_weight_gram'] : null;
+                                $bbMin = (float)($cStd['bb_min'] ?? 0);
+                                $bbTarget = (float)($cStd['bb_target'] ?? 0);
+                                $bbMax = (float)($cStd['bb_max'] ?? 0);
+                                $eggTargetVal = (float)($cStd['berat_telur_val'] ?? 0);
+                                $eggMinTol = $eggTargetVal > 0 ? round($eggTargetVal - 2.5, 1) : 0;
+                                $eggMaxTol = $eggTargetVal > 0 ? round($eggTargetVal + 2.5, 1) : 0;
+                            @endphp
+                            <tr class="modal-bobot-row hover:bg-sky-50/30 transition-colors" 
+                                data-flock="{{ $c->flock_id }}" 
+                                data-coop="{{ $c->id }}">
+                                
+                                <!-- Kloter & Blok -->
+                                <td class="py-3 px-3 font-extrabold text-slate-900 whitespace-nowrap">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="w-2 h-2 rounded-full bg-maroon-800"></span>
+                                        <span>{{ $c->name }}</span>
+                                        <span class="text-[10px] font-semibold text-slate-400">({{ $c->flock ? $c->flock->code : 'K1' }})</span>
+                                    </div>
+                                </td>
+
+                                <!-- Umur Minggu (Otomatis) -->
+                                <td class="py-3 px-2.5 text-center whitespace-nowrap">
+                                    <span class="px-2 py-0.5 rounded bg-rose-50 text-maroon-800 font-black text-[10px] border border-rose-100">
+                                        {{ $c->chicken_age_weeks }} Mgg
+                                    </span>
+                                </td>
+
+                                <!-- Fase Pertumbuhan (Otomatis) -->
+                                <td class="py-3 px-3 whitespace-nowrap">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold border {{ $cStd['pill_class'] }}">
+                                        {{ $cStd['pill'] }}
+                                    </span>
+                                    <span class="block text-[9px] text-slate-400 font-medium truncate max-w-[110px]" title="{{ $cStd['fase'] }}">{{ $cStd['fase'] }}</span>
+                                </td>
+
+                                <!-- BB Ayam Aktual -->
+                                <td class="py-3 px-3 text-right whitespace-nowrap bg-sky-50/30">
+                                    <b class="text-xs font-black {{ $bbAct ? 'text-sky-800 text-sm' : 'text-slate-400' }}">
+                                        {{ $bbAct ? number_format($bbAct, 2, ',', '.') . ' Kg' : '-' }}
+                                    </b>
+                                </td>
+
+                                <!-- Acuan Master: BB Min -->
+                                <td class="py-3 px-2.5 text-right whitespace-nowrap font-semibold text-slate-600 bg-slate-50/50">
+                                    {{ number_format($bbMin, 2, ',', '.') }} kg
+                                </td>
+
+                                <!-- Acuan Master: BB Target (Ideal) -->
+                                <td class="py-3 px-2.5 text-right whitespace-nowrap bg-emerald-50/40">
+                                    <b class="font-black text-emerald-800 text-xs px-1.5 py-0.5 rounded bg-emerald-100/70 border border-emerald-300">
+                                        {{ number_format($bbTarget, 2, ',', '.') }} kg
+                                    </b>
+                                </td>
+
+                                <!-- Acuan Master: BB Max -->
+                                <td class="py-3 px-2.5 text-right whitespace-nowrap font-semibold text-slate-600 bg-slate-50/50">
+                                    {{ number_format($bbMax, 2, ',', '.') }} kg
+                                </td>
+
+                                <!-- Status Kesesuaian Ayam (Adu Master) -->
+                                <td class="py-3 px-3 text-center whitespace-nowrap">
+                                    @if($bbAct === null)
+                                        <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-500 font-bold text-[9.5px] border border-slate-200">
+                                            Belum Input
+                                        </span>
+                                    @elseif($bbAct >= $bbMin && $bbAct <= $bbMax)
+                                        <span class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-black text-[10px] border border-emerald-300 inline-flex items-center gap-1 shadow-2xs" title="BB Ayam berada di dalam rentang ideal master ({{ number_format($bbMin, 2, ',', '.') }} - {{ number_format($bbMax, 2, ',', '.') }} kg)">
+                                            <i data-lucide="check-circle-2" class="w-3 h-3 text-emerald-600"></i> Sesuai Ideal
+                                        </span>
+                                    @elseif($bbAct < $bbMin)
+                                        <span class="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 font-black text-[10px] border border-amber-300 inline-flex items-center gap-1 shadow-2xs" title="Kurang {{ number_format(round($bbMin - $bbAct, 3), 2, ',', '.') }} kg dari BB Minimum">
+                                            <i data-lucide="alert-triangle" class="w-3 h-3 text-amber-600"></i> Kurang Bobot
+                                        </span>
+                                    @else
+                                        <span class="px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 font-black text-[10px] border border-rose-300 inline-flex items-center gap-1 shadow-2xs" title="Lebih {{ number_format(round($bbAct - $bbMax, 3), 2, ',', '.') }} kg dari BB Maksimum">
+                                            <i data-lucide="alert-circle" class="w-3 h-3 text-rose-600"></i> Lebih Bobot
+                                        </span>
+                                    @endif
+                                </td>
+
+                                <!-- BB Telur Aktual -->
+                                <td class="py-3 px-3 text-right whitespace-nowrap bg-amber-50/30">
+                                    <b class="text-xs font-bold {{ $eggAct ? 'text-amber-800' : 'text-slate-400' }}">
+                                        {{ $eggAct ? number_format($eggAct, 1, ',', '.') . ' g' : '-' }}
+                                    </b>
+                                </td>
+
+                                <!-- Batas Toleransi Telur Master -->
+                                <td class="py-3 px-3 text-right whitespace-nowrap bg-amber-100/20">
+                                    @if($eggTargetVal > 0)
+                                        <b class="text-[10.5px] font-extrabold text-amber-950 block">
+                                            {{ number_format($eggMinTol, 1, ',', '.') }}–{{ number_format($eggMaxTol, 1, ',', '.') }} g
+                                        </b>
+                                        <span class="text-[9px] text-slate-400 block font-medium">Acuan: {{ $cStd['berat_telur'] }}</span>
+                                    @else
+                                        <span class="text-slate-400 font-medium">-</span>
+                                    @endif
+                                </td>
+
+                                <!-- No. Baterai & Tanggal -->
+                                <td class="py-3 px-3 whitespace-nowrap font-medium text-slate-700">
+                                    <span class="font-bold text-slate-900 block text-[11px]">{{ $d && $d['battery_number'] ? $d['battery_number'] : '-' }}</span>
+                                    <span class="text-[9.5px] text-slate-400 block">{{ $d && $d['date'] ? $d['date'] : '-' }}</span>
+                                </td>
+
+                                <!-- Aksi -->
+                                <td class="py-3 px-2.5 text-center whitespace-nowrap">
+                                    <a href="{{ route('input.index', ['type' => 'bobot']) }}" 
+                                       class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200 font-bold text-[10px] transition-all">
+                                        <i data-lucide="edit-3" class="w-3 h-3"></i>
+                                        <span>Input</span>
+                                    </a>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
             </div>
-        </form>
+
+            <!-- Tombol Aksi Bawah -->
+            <div class="flex flex-col sm:flex-row gap-2.5 pt-2 border-t border-slate-100">
+                <button type="button" onclick="closeModal('modalBobot6Blok')" class="py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm">
+                    Tutup
+                </button>
+                <a href="{{ route('input.index', ['type' => 'bobot']) }}" class="flex-1 py-2.5 px-4 rounded-xl bg-sky-700 hover:bg-sky-800 active:scale-[0.99] text-white font-bold text-xs sm:text-sm text-center shadow-md flex items-center justify-center gap-1.5 transition-all">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    <span>+ Input Sampel Ayam Mingguan Baru</span>
+                </a>
+            </div>
+        </div>
     </div>
 </div>
+@endif
 
 <!-- ========================================================================= -->
 <!-- MODAL 5: INPUT VAKSIN & OBAT                                              -->
@@ -1480,6 +1859,60 @@
         } else {
             if (field) field.style.display = 'none';
         }
+    }
+
+    // Filter bar & selector untuk Modal Bobot 6 Blok
+    function filterModalBobot() {
+        const flockVal = document.getElementById('modalBobotFilterFlock').value;
+        const coopVal = document.getElementById('modalBobotFilterCoop').value;
+        const rows = document.querySelectorAll('.modal-bobot-row');
+
+        rows.forEach(row => {
+            const rFlock = row.getAttribute('data-flock');
+            const rCoop = row.getAttribute('data-coop');
+
+            const matchFlock = (flockVal === 'all' || rFlock === flockVal);
+            const matchCoop = (coopVal === 'all' || rCoop === coopVal);
+
+            if (matchFlock && matchCoop) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        const coopCards = document.querySelectorAll('.modal-bobot-card-detail');
+        coopCards.forEach(card => {
+            const cId = card.getAttribute('data-coop');
+            if (coopVal !== 'all' && cId === coopVal) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        const generalBanner = document.getElementById('modalBobotGeneralBanner');
+        if (generalBanner) {
+            generalBanner.style.display = (coopVal === 'all') ? 'flex' : 'none';
+        }
+    }
+
+    function onModalBobotFlockChange() {
+        const flockVal = document.getElementById('modalBobotFilterFlock').value;
+        const coopSelect = document.getElementById('modalBobotFilterCoop');
+
+        Array.from(coopSelect.options).forEach(opt => {
+            if (opt.value === 'all') return;
+            const optFlock = opt.getAttribute('data-flock');
+            if (flockVal === 'all' || optFlock === flockVal) {
+                opt.style.display = '';
+            } else {
+                opt.style.display = 'none';
+            }
+        });
+
+        coopSelect.value = 'all';
+        filterModalBobot();
     }
 </script>
 @endpush

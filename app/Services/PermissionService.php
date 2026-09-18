@@ -78,9 +78,14 @@ class PermissionService
                         'default' => true,
                     ],
                     'dash_card_weight' => [
-                        'label' => 'Kartu Berat Badan Ayam',
-                        'desc' => 'Menampilkan rata-rata sampel bobot badan (Kg) terkini',
+                        'label' => 'Kartu Bobot Badan Ayam',
+                        'desc' => 'Menampilkan ringkasan sampel bobot badan 6 blok di dashboard',
                         'default' => true,
+                    ],
+                    'dash_card_weight_click' => [
+                        'label' => 'Klik Kartu Bobot Ayam (Evaluasi Master 6 Blok)',
+                        'desc' => 'Izin untuk mengklik kartu Bobot Ayam di dashboard untuk membuka modal evaluasi perbandingan data sampel vs master 6 blok',
+                        'default' => false,
                     ],
                     'dash_card_health' => [
                         'label' => 'Kartu Vaksin & Obat Hari Ini',
@@ -90,6 +95,11 @@ class PermissionService
                     'dash_card_quarantine' => [
                         'label' => 'Kartu Karantina Ayam Hari Ini',
                         'desc' => 'Menampilkan metrik ayam sakit dalam masa karantina/pemulihan di dashboard',
+                        'default' => false,
+                    ],
+                    'dash_card_quarantine_click' => [
+                        'label' => 'Klik Kartu Karantina Ayam (Ke Gudang Karantina)',
+                        'desc' => 'Akses untuk mengklik kartu Karantina Ayam di dashboard untuk diarahkan ke halaman riwayat Gudang Karantina',
                         'default' => false,
                     ],
                 ],
@@ -210,6 +220,11 @@ class PermissionService
                         'label' => 'Lihat Gudang Obat & Vaksin',
                         'desc' => 'Membuka tab dan detail data stok obat dan suplemen',
                         'default' => true,
+                    ],
+                    'feature_warehouse_karantina' => [
+                        'label' => 'Lihat Gudang Ayam Karantina',
+                        'desc' => 'Membuka sub-halaman dan manajemen data riwayat ayam karantina (sakit, sembuh, mati)',
+                        'default' => false,
                     ],
                     'warehouse_card_quarantine' => [
                         'label' => 'Kartu Ayam Karantina di Gudang',
@@ -401,12 +416,16 @@ class PermissionService
         }
 
         // Cari pengaturan spesifik user di tabel user_permissions
-        $record = UserPermission::where('user_id', $user->id)
-            ->where('permission_key', $permissionKey)
-            ->first();
+        try {
+            $record = UserPermission::where('user_id', $user->id)
+                ->where('permission_key', $permissionKey)
+                ->first();
 
-        if ($record !== null) {
-            return (bool) $record->is_enabled;
+            if ($record !== null) {
+                return (bool) $record->is_enabled;
+            }
+        } catch (\Throwable $e) {
+            // Fallback ke default registry jika tabel/DB belum terjangkau
         }
 
         // Jika belum diset di tabel, gunakan default dari master registry

@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\FarmStock;
 use App\Models\User;
 use App\Models\Coop;
+use App\Models\Flock;
 use App\Models\EggProduction;
 use App\Models\FeedConsumption;
 use App\Models\HealthTreatment;
@@ -1105,10 +1106,171 @@ class WarehouseController extends Controller
     }
 
     /**
+     * 5. Sub-halaman Gudang Ayam Karantina
+     */
+    public function karantina(Request $request)
+    {
+        $user = Auth::user() ?? User::first();
+        $tab = $request->query('tab', 'semua');
+        $search = $request->query('q');
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+
+        Quarantine::ensureTableExists();
+
+        $collection = collect();
+
+        $qQuery = Quarantine::with(['coop', 'flock', 'user']);
+        if ($startDate && $endDate) {
+            $qQuery->whereBetween('date', [$startDate, $endDate]);
+        }
+        if ($tab === 'sakit') {
+            $qQuery->where('status', 'sakit');
+        } elseif ($tab === 'sembuh') {
+            $qQuery->where('status', 'sembuh');
+        } elseif ($tab === 'mati') {
+            $qQuery->where('status', 'mati');
+        }
+
+        foreach ($qQuery->get() as $q) {
+            $isNonaktif = str_starts_with(trim($q->notes ?? ''), '[NONAKTIF]');
+            $displayNotes = $isNonaktif ? trim(substr(trim($q->notes), strlen('[NONAKTIF]'))) : $q->notes;
+            $coopName = $q->coop ? $q->coop->name : 'Kandang';
+            $flockName = $q->flock ? $q->flock->name : ($q->coop && $q->coop->flock ? $q->coop->flock->name : null);
+
+            $collection->push((object) [
+                'id' => 'quar_' . $q->id,
+                'raw_id' => $q->id,
+                'source_type' => 'quarantine',
+                'item_name' => ($q->status === 'sakit' ? 'Ayam Sakit Masuk' : ($q->status === 'sembuh' ? 'Ayam Sembuh Keluar' : 'Ayam Mati Karantina')) . ' - ' . $coopName,
+                'status' => $q->status,
+                'type' => $q->status === 'sakit' ? 'masuk' : 'keluar',
+                'quantity' => (int) $q->count,
+                'unit' => 'Ekor',
+                'date' => Carbon::parse($q->date),
+                'created_at' => $q->created_at ? Carbon::parse($q->created_at) : Carbon::parse($q->date),
+                'time' => $q->time ? substr($q->time, 0, 5) : ($q->created_at ? $q->created_at->format('H:i') : '00:00'),
+                'source' => $coopName . ($flockName ? ' (' . $flockName . ')' : ''),
+                'battery_number' => $q->battery_number,
+                'cause' => $q->cause,
+                'action_taken' => $q->action_taken,
+                'notes' => $displayNotes,
+                'raw_notes' => $q->notes,
+                'user' => $q->user,
+                'is_nonaktif' => $isNonaktif,
+                'coop_id' => $q->coop_id,
+                'flock_id' => $q->flock_id,
+            ]);
+        }
+
+        // Filter pencarian
+        if (!empty($search)) {
+            $s = strtolower($search);
+            $collection = $collection->filter(function ($item) use ($s) {
+                return str_contains(strtolower($item->item_name), $s) ||
+                       str_contains(strtolower($item->source ?? ''), $s) ||
+                       str_contains(strtolower($item->battery_number ?? ''), $s) ||
+                       str_contains(strtolower($item->cause ?? ''), $s) ||
+                       str_contains(strtolower($item->action_taken ?? ''), $s) ||
+                       str_contains(strtolower($item->notes ?? ''), $s) ||
+                       str_contains(strtolower($item->user ? ($item->user->username ?: $item->user->name) : ''), $s);
+            });
+        }
+
+        // Urutkan tanggal desc, created_at desc
+        $sorted = $collection->sortByDesc(function ($item) {
+            return $item->date->toDateString() . ' ' . ($item->created_at ? $item->created_at->format('H:i:s') : '00:00:00');
+        })->values();
+
+        // Paginasi
+        $page = LengthAwarePaginator::resolveCurrentPage() ?: 1;
+        $perPage = 15;
+        $items = new LengthAwarePaginator(
+            $sorted->forPage($page, $perPage)->values(),
+            $sorted->count(),
+            $perPage,
+            $page,
+            ['path' => LengthAwarePaginator::resolveCurrentPath(), 'query' => $request->query()]
+        );
+
+        // Ringkasan Statistik
+        $stokSaatIni = Quarantine::getCurrentCount();
+
+        $baseStatQ = Quarantine::query();
+        if ($startDate && $endDate) {
+            $baseStatQ->whereBetween('date', [$startDate, $endDate]);
+        }
+        $activeOnlyQ = clone $baseStatQ;
+        $activeOnlyQ->where(function($q) {
+            $q->whereNull('notes')->orWhere('notes', 'not like', '[NONAKTIF]%');
+        });
+
+        $totalSakit = (int) (clone $activeOnlyQ)->where('status', 'sakit')->sum('count');
+        $totalSembuh = (int) (clone $activeOnlyQ)->where('status', 'sembuh')->sum('count');
+        $totalMati = (int) (clone $activeOnlyQ)->where('status', 'mati')->sum('count');
+        $transactionCount = $sorted->count();
+
+        $flocks = Flock::where('is_active', true)->get();
+        $coops = Coop::where('is_active', true)->get();
+
+        return view('warehouse.karantina', compact(
+            'user', 'items', 'tab', 'search', 'startDate', 'endDate',
+            'stokSaatIni', 'totalSakit', 'totalSembuh', 'totalMati', 'transactionCount',
+            'coops', 'flocks'
+        ));
+    }
+
+    /**
      * Store transaksi stok baru
      */
     public function store(Request $request)
     {
+        if ($request->input('category') === 'karantina') {
+            $validated = $request->validate([
+                'coop_id' => 'required|exists:coops,id',
+                'status' => 'required|in:sakit,sembuh,mati',
+                'count' => 'required|integer|min:1',
+                'date' => 'required|date',
+                'time' => 'nullable|string',
+                'battery_number' => 'nullable|string|max:100',
+                'cause' => 'nullable|string|max:255',
+                'action_taken' => 'nullable|string|max:255',
+                'notes' => 'nullable|string',
+            ]);
+
+            Quarantine::ensureTableExists();
+
+            $coop = Coop::findOrFail($validated['coop_id']);
+            $count = (int) $validated['count'];
+            $status = $validated['status'];
+            $userId = Auth::id() ?? User::where('role', 'user')->orWhere('username', 'petugas')->value('id') ?? User::value('id');
+
+            // Sinkronkan active_chickens di kandang
+            if ($status === 'sakit') {
+                if ($coop->active_chickens >= $count) {
+                    $coop->decrement('active_chickens', $count);
+                }
+            } elseif ($status === 'sembuh') {
+                $coop->increment('active_chickens', $count);
+            }
+
+            Quarantine::create([
+                'flock_id' => $coop->flock_id,
+                'coop_id' => $coop->id,
+                'user_id' => $userId,
+                'date' => $validated['date'],
+                'time' => $validated['time'] ?? Carbon::now()->format('H:i:s'),
+                'battery_number' => $validated['battery_number'] ?? null,
+                'count' => $count,
+                'status' => $status,
+                'cause' => $validated['cause'] ?? null,
+                'action_taken' => $validated['action_taken'] ?? null,
+                'notes' => $validated['notes'] ?? null,
+            ]);
+
+            return back()->with('success', 'Data transaksi ayam karantina berhasil dicatat!');
+        }
+
         $validated = $request->validate([
             'category' => 'required|in:telur,pakan,obat,vaksin,vitamin',
             'type' => 'required|in:masuk,keluar',
@@ -1270,6 +1432,56 @@ class WarehouseController extends Controller
             if ($request->has('date')) $ht->date = $request->date;
             $ht->save();
             return back()->with('success', 'Data pemakaian obat berhasil diperbarui!');
+        } elseif (str_starts_with($id, 'quar_')) {
+            $realId = substr($id, 5);
+            $quar = Quarantine::findOrFail($realId);
+
+            $oldCoopId = $quar->coop_id;
+            $oldStatus = $quar->status;
+            $oldCount = (int) $quar->count;
+
+            $newCount = $request->has('count') ? (int) $request->count : ($request->has('quantity') ? (int) $request->quantity : $oldCount);
+            $newStatus = $request->input('status', $oldStatus);
+            $newCoopId = $request->input('coop_id', $oldCoopId);
+
+            // Rollback dampak populasi lama jika ada coop
+            if ($oldCoopId) {
+                $oldCoop = Coop::find($oldCoopId);
+                if ($oldCoop) {
+                    if ($oldStatus === 'sakit') {
+                        $oldCoop->increment('active_chickens', $oldCount);
+                    } elseif ($oldStatus === 'sembuh') {
+                        $oldCoop->decrement('active_chickens', $oldCount);
+                    }
+                }
+            }
+
+            // Terapkan dampak populasi baru
+            if ($newCoopId) {
+                $newCoop = Coop::find($newCoopId);
+                if ($newCoop) {
+                    $quar->coop_id = $newCoop->id;
+                    $quar->flock_id = $newCoop->flock_id;
+
+                    if ($newStatus === 'sakit') {
+                        $newCoop->decrement('active_chickens', $newCount);
+                    } elseif ($newStatus === 'sembuh') {
+                        $newCoop->increment('active_chickens', $newCount);
+                    }
+                }
+            }
+
+            $quar->count = max(1, $newCount);
+            $quar->status = $newStatus;
+            if ($request->has('battery_number')) $quar->battery_number = $request->battery_number;
+            if ($request->has('cause')) $quar->cause = $request->cause;
+            if ($request->has('action_taken')) $quar->action_taken = $request->action_taken;
+            if ($request->has('notes')) $quar->notes = $request->notes;
+            if ($request->has('date')) $quar->date = $request->date;
+            if ($request->has('time')) $quar->time = $request->time;
+            $quar->save();
+
+            return back()->with('success', 'Data ayam karantina berhasil diperbarui!');
         }
 
         $stock = FarmStock::findOrFail($id);
@@ -1304,7 +1516,7 @@ class WarehouseController extends Controller
      */
     public function toggleStatus($id)
     {
-        if (str_starts_with($id, 'ep_') || str_starts_with($id, 'fc_') || str_starts_with($id, 'ht_')) {
+        if (str_starts_with($id, 'ep_') || str_starts_with($id, 'fc_') || str_starts_with($id, 'ht_') || str_starts_with($id, 'quar_')) {
             $model = null;
             if (str_starts_with($id, 'ep_')) {
                 $realId = substr($id, 3);
@@ -1314,6 +1526,8 @@ class WarehouseController extends Controller
                 $model = FeedConsumption::find(substr($id, 3));
             } elseif (str_starts_with($id, 'ht_')) {
                 $model = HealthTreatment::find(substr($id, 3));
+            } elseif (str_starts_with($id, 'quar_')) {
+                $model = Quarantine::find(substr($id, 5));
             }
 
             if ($model) {
@@ -1321,9 +1535,23 @@ class WarehouseController extends Controller
                 if (str_starts_with(trim($currentNotes), '[NONAKTIF]')) {
                     $model->notes = trim(substr(trim($currentNotes), strlen('[NONAKTIF]')));
                     $msg = 'Data berhasil diaktifkan kembali.';
+                    if ($model instanceof Quarantine && $model->coop_id) {
+                        $coop = Coop::find($model->coop_id);
+                        if ($coop) {
+                            if ($model->status === 'sakit') $coop->decrement('active_chickens', (int) $model->count);
+                            elseif ($model->status === 'sembuh') $coop->increment('active_chickens', (int) $model->count);
+                        }
+                    }
                 } else {
                     $model->notes = '[NONAKTIF] ' . $currentNotes;
                     $msg = 'Data berhasil dinonaktifkan.';
+                    if ($model instanceof Quarantine && $model->coop_id) {
+                        $coop = Coop::find($model->coop_id);
+                        if ($coop) {
+                            if ($model->status === 'sakit') $coop->increment('active_chickens', (int) $model->count);
+                            elseif ($model->status === 'sembuh') $coop->decrement('active_chickens', (int) $model->count);
+                        }
+                    }
                 }
                 $model->save();
                 return back()->with('success', $msg);
@@ -1365,6 +1593,23 @@ class WarehouseController extends Controller
             $realId = substr($id, 3);
             HealthTreatment::find($realId)?->delete();
             return back()->with('success', 'Data penggunaan obat berhasil dihapus!');
+        } elseif (str_starts_with($id, 'quar_')) {
+            $realId = substr($id, 5);
+            $quar = Quarantine::find($realId);
+            if ($quar) {
+                if ($quar->coop_id) {
+                    $coop = Coop::find($quar->coop_id);
+                    if ($coop) {
+                        if ($quar->status === 'sakit') {
+                            $coop->increment('active_chickens', (int) $quar->count);
+                        } elseif ($quar->status === 'sembuh') {
+                            $coop->decrement('active_chickens', (int) $quar->count);
+                        }
+                    }
+                }
+                $quar->delete();
+            }
+            return back()->with('success', 'Data riwayat karantina berhasil dihapus!');
         }
 
         $stock = FarmStock::findOrFail($id);

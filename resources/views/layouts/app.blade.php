@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>NOCHI FARM - Peternak Telur</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/logo-nochi.png') }}">
 
     <!-- Google Font: Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -130,12 +131,8 @@
                 <!-- Brand Logo & Title -->
                 <div class="flex items-center gap-3">
                     <a href="{{ route('dashboard') }}" class="flex items-center gap-3 group">
-                        <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white flex items-center justify-center shadow-md border-2 border-maroon-200 text-maroon-800 font-bold overflow-hidden p-1 group-hover:scale-105 transition-transform">
-                            <!-- Chicken / Egg SVG -->
-                            <svg viewBox="0 0 24 24" class="w-7 h-7 fill-maroon-800" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12 2C8.13 2 5 6.48 5 12c0 4.42 3.13 8 7 8s7-3.58 7-8c0-5.52-3.13-10-7-10zm-1 5c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm3.5 8c-.83 0-1.5-.67-1.5-1.5S13.67 12 14.5 12s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" opacity="0.3"/>
-                                <path d="M18.88 10.37c-.36-.93-1.07-1.68-2-2.11l-.88-.41.34-.91c.42-1.12.22-2.39-.53-3.32-.76-.94-1.95-1.46-3.16-1.38-.85.06-1.65.43-2.26 1.05l-.65.66-.7-.61C8.29 2.68 7.23 2.36 6.16 2.45c-1.39.12-2.61.94-3.23 2.19-.61 1.23-.49 2.69.32 3.8l.58.8-.93.38c-1.19.49-2.03 1.56-2.25 2.84-.21 1.26.24 2.53 1.18 3.39l.23.21C2.57 18.06 6.94 22 12 22s9.43-3.94 9.94-5.94l.23-.21c.94-.86 1.39-2.13 1.18-3.39-.22-1.28-1.06-2.35-2.25-2.84l-.22-.09zM12 20c-3.87 0-7-3.58-7-8 0-3.35 1.4-6.4 3.4-8.08.7.67 1.63 1.08 2.6 1.08h2c.97 0 1.9-.41 2.6-1.08C17.6 5.6 19 8.65 19 12c0 4.42-3.13 8-7 8z"/>
-                            </svg>
+                        <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white flex items-center justify-center shadow-md border-2 border-white text-maroon-800 font-bold overflow-hidden p-0.5 group-hover:scale-105 transition-transform shrink-0">
+                            <img src="{{ asset('images/logo-nochi.png') }}" alt="Nochi Farm Logo" class="w-full h-full object-contain rounded-full bg-white">
                         </div>
                         <div>
                             <span class="text-base sm:text-lg font-extrabold tracking-wide leading-tight text-white block">
@@ -208,7 +205,7 @@
                             <i data-lucide="user-check" class="w-4 h-4 text-rose-200"></i>
                         </div>
                         <div class="text-left leading-tight">
-                            <span class="text-xs font-bold text-white block">{{ auth()->user()->name ?? 'Petugas' }}</span>
+                            <span class="text-xs font-bold text-white block">{{ auth()->user()->username ?? auth()->user()->name ?? 'Petugas' }}</span>
                             <span class="text-[10px] text-rose-200 font-medium block">{{ auth()->user() && auth()->user()->role === 'admin' ? 'Administrator' : 'Petugas Kandang' }}</span>
                         </div>
                     </a>

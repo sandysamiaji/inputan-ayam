@@ -1130,8 +1130,8 @@
                     </div>
                 </div>
 
-                <!-- Kotak Acuan Master Standar Produksi (BB Min, Target, Max, Toleransi Telur) -->
-                <div class="standard" style="background:#f0f9ff; border-color:#bae6fd; margin-top:8px;">
+                <!-- Kotak Acuan Master Standar Produksi (Disembunyikan / Hidden Sesuai Permintaan User) -->
+                <div class="standard" style="display:none; background:#f0f9ff; border-color:#bae6fd; margin-top:8px;">
                     <div class="stdtop">
                         <b style="color:#0369a1;" id="bobotStdTitle">Acuan Master Umur 24 Minggu</b>
                         <span style="color:#0284c7; font-weight:800;" id="bobotStdFaseBadge">PUNCAK PRODUKSI</span>

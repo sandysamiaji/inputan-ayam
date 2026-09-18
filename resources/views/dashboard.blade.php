@@ -167,6 +167,20 @@
             @if(!auth()->check() || auth()->user()->canAccess('dash_card_weight'))
             @php
                 $canClickWeight = auth()->check() && auth()->user()->canAccess('dash_card_weight_click');
+                $totalTargetAchieved = 0;
+                $totalTargetMissed = 0;
+                foreach($coops as $c) {
+                    $wVal = $coopWeightData[$c->id] ?? null;
+                    if ($wVal !== null) {
+                        $cStdVal = $coopStandards[$c->id] ?? \App\Services\ProductionStandardService::getStandardForWeek((int)$c->chicken_age_weeks);
+                        $tgtVal = (float) ($cStdVal['bb_target'] ?? 0);
+                        if ($wVal >= $tgtVal) {
+                            $totalTargetAchieved++;
+                        } else {
+                            $totalTargetMissed++;
+                        }
+                    }
+                }
             @endphp
             <div class="farm-card p-3 sm:p-3.5 border-l-4 border-l-sky-600 bg-white flex flex-col justify-between {{ $canClickWeight ? 'hover:border-sky-500 hover:shadow-md transition-all cursor-pointer group' : 'cursor-default' }}" 
                  @if($canClickWeight) onclick="openModal('modalBobot6Blok')" @endif>
@@ -181,21 +195,43 @@
                                 <span class="text-[10px] text-sky-700 font-extrabold">Data 6 Blok</span>
                             </div>
                         </div>
-                        <span class="text-[9px] font-black px-1.5 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-200">
-                            6 Blok
-                        </span>
+                        @if($totalTargetAchieved + $totalTargetMissed > 0)
+                            @if($totalTargetMissed == 0)
+                                <span class="text-[9px] font-black px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Capai Target
+                                </span>
+                            @else
+                                <span class="text-[9px] font-black px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> {{ $totalTargetMissed }} Blok Kurang
+                                </span>
+                            @endif
+                        @else
+                            <span class="text-[9px] font-black px-1.5 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-200">
+                                6 Blok
+                            </span>
+                        @endif
                     </div>
 
-                    <!-- Mini Grid Data 6 Blok -->
+                    <!-- Mini Grid Data 6 Blok (Hijau jika capai/lebih target, Merah jika di bawah target) -->
                     <div class="grid grid-cols-2 gap-1 mt-2.5">
                         @foreach($coops as $c)
                             @php
                                 $w = $coopWeightData[$c->id] ?? null;
                                 $cShort = str_replace(['BLOK ', 'Blok '], '', $c->name);
+                                $cStd = $coopStandards[$c->id] ?? \App\Services\ProductionStandardService::getStandardForWeek((int)$c->chicken_age_weeks);
+                                $bbTarget = (float) ($cStd['bb_target'] ?? 0);
+                                $isTargetOrMore = ($w !== null && $w >= $bbTarget);
+                                $isMissed = ($w !== null && $w < $bbTarget);
                             @endphp
-                            <div class="flex items-center justify-between px-1.5 py-0.5 rounded {{ $w ? 'bg-sky-50/70 border border-sky-100/80 text-sky-950' : 'bg-slate-50 border border-slate-100 text-slate-400' }}">
-                                <span class="text-[10px] font-extrabold {{ $w ? 'text-slate-800' : 'text-slate-500' }}">{{ $cShort }}</span>
-                                <span class="text-[10.5px] font-black {{ $w ? 'text-sky-800' : 'text-slate-400' }}">
+                            <div class="flex items-center justify-between px-1.5 py-0.5 rounded transition-colors {{ $w === null ? 'bg-slate-50 border border-slate-100 text-slate-400' : ($isTargetOrMore ? 'bg-emerald-50/80 border border-emerald-200 text-emerald-950' : 'bg-rose-50/80 border border-rose-200 text-rose-950') }}" 
+                                 title="{{ $w !== null ? ($isTargetOrMore ? 'Capai Target / Lebih (Target: ' . number_format($bbTarget, 2, ',', '.') . ' kg)' : 'Belum Sesuai Master (Target: ' . number_format($bbTarget, 2, ',', '.') . ' kg)') : 'Belum Ada Input' }}">
+                                <div class="flex items-center gap-1">
+                                    @if($w !== null)
+                                        <span class="w-1.5 h-1.5 rounded-full shrink-0 {{ $isTargetOrMore ? 'bg-emerald-500' : 'bg-rose-500' }}"></span>
+                                    @endif
+                                    <span class="text-[10px] font-extrabold {{ $w === null ? 'text-slate-500' : ($isTargetOrMore ? 'text-emerald-900' : 'text-rose-900') }}">{{ $cShort }}</span>
+                                </div>
+                                <span class="text-[10.5px] font-black {{ $w === null ? 'text-slate-400' : ($isTargetOrMore ? 'text-emerald-700' : 'text-rose-700') }}">
                                     {{ $w ? number_format($w, 2, ',', '.') . ' kg' : '-' }}
                                 </span>
                             </div>
@@ -204,7 +240,10 @@
                 </div>
 
                 <div class="mt-2 pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px]">
-                    <span class="text-slate-400 font-medium">Sampel mingguan</span>
+                    <div class="flex items-center gap-2 text-[9.5px]">
+                        <span class="inline-flex items-center gap-1 text-emerald-700 font-bold"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Capai</span>
+                        <span class="inline-flex items-center gap-1 text-rose-600 font-bold"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Kurang</span>
+                    </div>
                     @if($canClickWeight)
                         <span class="text-sky-700 font-bold group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
                             Detail &raquo;
@@ -619,24 +658,22 @@
                                         @endif
                                     </div>
 
-                                    <div class="mt-1 flex items-start justify-between text-[11px]">
+                                    <div class="mt-1 flex items-baseline justify-between text-[11px]">
                                         <div>
                                             <span class="text-sm font-black {{ $actualFeedKg == 0 ? 'text-slate-500' : (abs($feedDiffKg) <= 1.0 ? 'text-emerald-800' : ($feedDiffKg > 1.0 ? 'text-amber-800' : 'text-rose-800')) }}">
                                                 {{ number_format($actualFeedKg, 1, ',', '.') }} kg
                                             </span>
                                             <span class="text-[10px] text-slate-500 font-medium ml-1">diinput hari ini</span>
                                         </div>
-                                        <div class="text-[10.5px] text-slate-500 font-medium text-right">
-                                            <div>Standar Hitungan: <b>{{ number_format($totalPakanCoopKg, 1, ',', '.') }} kg</b></div>
-                                            <div class="mt-0.5 text-[9.5px] text-slate-500">
-                                                @if($hasPagi || $hasSore || $actualFeedKg == 0)
-                                                    Jadwal Pagi (40%): <b class="{{ $hasPagi ? 'text-slate-800' : 'text-slate-400 font-normal' }}">{{ $hasPagi ? number_format($actPagiKg, 1, ',', '.') . ' kg' : 'Belum Input' }}</b><br>
-                                                    Sore (60%): <b class="{{ $hasSore ? 'text-slate-800' : 'text-slate-400 font-normal' }}">{{ $hasSore ? number_format($actSoreKg, 1, ',', '.') . ' kg' : 'Belum Input' }}</b>
-                                                @else
-                                                    Input: <b class="text-slate-800">{{ number_format($actualFeedKg, 1, ',', '.') }} kg</b>
-                                                @endif
-                                            </div>
+                                        <div class="text-[10.5px] text-slate-500 font-medium">
+                                            Standar Hitungan: <b class="text-slate-800">{{ number_format($totalPakanCoopKg, 1, ',', '.') }} kg</b>
                                         </div>
+                                    </div>
+
+                                    <!-- Jadwal Pagi & Sore Realisasi Samping-Sampingan -->
+                                    <div class="mt-1.5 pt-1.5 border-t border-slate-200/60 flex items-center justify-between text-[10px] text-slate-600 font-medium">
+                                        <span>Jadwal Pagi (40%): <b class="{{ $hasPagi ? 'text-slate-900 font-extrabold' : 'text-slate-400 font-normal' }}">{{ $hasPagi ? number_format($actPagiKg, 1, ',', '.') . ' kg' : 'Belum Input' }}</b></span>
+                                        <span>Sore (60%): <b class="{{ $hasSore ? 'text-slate-900 font-extrabold' : 'text-slate-400 font-normal' }}">{{ $hasSore ? number_format($actSoreKg, 1, ',', '.') . ' kg' : 'Belum Input' }}</b></span>
                                     </div>
 
                                     @if($actualFeedKg > 0)
@@ -1206,12 +1243,11 @@
                     $eggMinTol = $eggTargetVal > 0 ? round($eggTargetVal - 2.5, 1) : 0;
                     $eggMaxTol = $eggTargetVal > 0 ? round($eggTargetVal + 2.5, 1) : 0;
 
-                    $isIdealBB = ($bbAct !== null && $bbAct >= $bbMin && $bbAct <= $bbMax);
-                    $isUnderBB = ($bbAct !== null && $bbAct < $bbMin);
-                    $isOverBB = ($bbAct !== null && $bbAct > $bbMax);
+                    $isTargetOrMore = ($bbAct !== null && $bbAct >= $bbTarget);
+                    $isBelowTarget = ($bbAct !== null && $bbAct < $bbTarget);
                     $isIdealEgg = ($eggAct !== null && $eggTargetVal > 0 && $eggAct >= $eggMinTol && $eggAct <= $eggMaxTol);
                 @endphp
-                <div class="modal-bobot-card-detail p-4 rounded-xl border {{ $isIdealBB ? 'bg-emerald-50/50 border-emerald-200' : ($bbAct ? 'bg-amber-50/50 border-amber-200' : 'bg-slate-50 border-slate-200') }}" 
+                <div class="modal-bobot-card-detail p-4 rounded-xl border {{ $bbAct === null ? 'bg-slate-50 border-slate-200' : ($isTargetOrMore ? 'bg-emerald-50/50 border-emerald-200' : 'bg-rose-50/50 border-rose-200') }}" 
                      data-coop="{{ $c->id }}" 
                      style="display: none;">
                     
@@ -1233,20 +1269,15 @@
                                 <span class="text-xs font-bold px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 border border-slate-200">
                                     Belum Ada Sampel Diinput
                                 </span>
-                            @elseif($isIdealBB)
+                            @elseif($isTargetOrMore)
                                 <span class="text-xs font-black px-2.5 py-1 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 shadow-2xs">
                                     <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600"></i>
-                                    Kondisi Ayam: SESUAI STANDAR IDEAL MASTER
-                                </span>
-                            @elseif($isUnderBB)
-                                <span class="text-xs font-black px-2.5 py-1 rounded-md bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1 shadow-2xs">
-                                    <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-amber-600"></i>
-                                    Kondisi Ayam: KURANG DARI STANDAR MINIMUM (-{{ number_format(round($bbMin - $bbAct, 3), 2, ',', '.') }} kg)
+                                    Kondisi Ayam: SUDAH CAPAI TARGET MASTER ({{ number_format($bbAct, 2, ',', '.') }} kg >= {{ number_format($bbTarget, 2, ',', '.') }} kg)
                                 </span>
                             @else
                                 <span class="text-xs font-black px-2.5 py-1 rounded-md bg-rose-100 text-rose-800 border border-rose-300 flex items-center gap-1 shadow-2xs">
                                     <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-rose-600"></i>
-                                    Kondisi Ayam: MELEBIHI STANDAR MAKSIMUM (+{{ number_format(round($bbAct - $bbMax, 3), 2, ',', '.') }} kg)
+                                    Kondisi Ayam: DI BAWAH TARGET MASTER (-{{ number_format(round($bbTarget - $bbAct, 3), 2, ',', '.') }} kg dari target {{ number_format($bbTarget, 2, ',', '.') }} kg)
                                 </span>
                             @endif
                         </div>
@@ -1256,7 +1287,7 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 mt-3 text-xs">
                         <div class="bg-white p-2.5 rounded-lg border border-slate-200">
                             <span class="text-[10px] font-bold text-slate-400 block uppercase">BB Ayam (Input Aktual)</span>
-                            <b class="text-base font-black {{ $bbAct ? 'text-sky-800' : 'text-slate-400' }}">
+                            <b class="text-base font-black {{ $bbAct === null ? 'text-slate-400' : ($isTargetOrMore ? 'text-emerald-700' : 'text-rose-700') }}">
                                 {{ $bbAct ? number_format($bbAct, 3, ',', '.') . ' Kg' : 'Belum Input' }}
                             </b>
                             <span class="text-[10px] text-slate-500 block mt-0.5">
@@ -1378,8 +1409,8 @@
                                 </td>
 
                                 <!-- BB Ayam Aktual -->
-                                <td class="py-3 px-3 text-right whitespace-nowrap bg-sky-50/30">
-                                    <b class="text-xs font-black {{ $bbAct ? 'text-sky-800 text-sm' : 'text-slate-400' }}">
+                                <td class="py-3 px-3 text-right whitespace-nowrap {{ $bbAct === null ? 'bg-sky-50/30' : ($bbAct >= $bbTarget ? 'bg-emerald-50/40' : 'bg-rose-50/40') }}">
+                                    <b class="text-xs font-black {{ $bbAct === null ? 'text-slate-400' : ($bbAct >= $bbTarget ? 'text-emerald-700 text-sm' : 'text-rose-700 text-sm') }}">
                                         {{ $bbAct ? number_format($bbAct, 2, ',', '.') . ' Kg' : '-' }}
                                     </b>
                                 </td>
@@ -1401,23 +1432,19 @@
                                     {{ number_format($bbMax, 2, ',', '.') }} kg
                                 </td>
 
-                                <!-- Status Kesesuaian Ayam (Adu Master) -->
+                                <!-- Status Kesesuaian Ayam (Adu Master: Hijau jika capai/lebih target, Merah jika di bawah target) -->
                                 <td class="py-3 px-3 text-center whitespace-nowrap">
                                     @if($bbAct === null)
                                         <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-500 font-bold text-[9.5px] border border-slate-200">
                                             Belum Input
                                         </span>
-                                    @elseif($bbAct >= $bbMin && $bbAct <= $bbMax)
-                                        <span class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-black text-[10px] border border-emerald-300 inline-flex items-center gap-1 shadow-2xs" title="BB Ayam berada di dalam rentang ideal master ({{ number_format($bbMin, 2, ',', '.') }} - {{ number_format($bbMax, 2, ',', '.') }} kg)">
-                                            <i data-lucide="check-circle-2" class="w-3 h-3 text-emerald-600"></i> Sesuai Ideal
-                                        </span>
-                                    @elseif($bbAct < $bbMin)
-                                        <span class="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 font-black text-[10px] border border-amber-300 inline-flex items-center gap-1 shadow-2xs" title="Kurang {{ number_format(round($bbMin - $bbAct, 3), 2, ',', '.') }} kg dari BB Minimum">
-                                            <i data-lucide="alert-triangle" class="w-3 h-3 text-amber-600"></i> Kurang Bobot
+                                    @elseif($bbAct >= $bbTarget)
+                                        <span class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-black text-[10px] border border-emerald-300 inline-flex items-center gap-1 shadow-2xs" title="Capai target atau lebih ({{ number_format($bbAct, 2, ',', '.') }} kg >= {{ number_format($bbTarget, 2, ',', '.') }} kg)">
+                                            <i data-lucide="check-circle-2" class="w-3 h-3 text-emerald-600"></i> Capai Target / Lebih
                                         </span>
                                     @else
-                                        <span class="px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 font-black text-[10px] border border-rose-300 inline-flex items-center gap-1 shadow-2xs" title="Lebih {{ number_format(round($bbAct - $bbMax, 3), 2, ',', '.') }} kg dari BB Maksimum">
-                                            <i data-lucide="alert-circle" class="w-3 h-3 text-rose-600"></i> Lebih Bobot
+                                        <span class="px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 font-black text-[10px] border border-rose-300 inline-flex items-center gap-1 shadow-2xs" title="Belum sesuai master (Kurang {{ number_format(round($bbTarget - $bbAct, 3), 2, ',', '.') }} kg)">
+                                            <i data-lucide="alert-circle" class="w-3 h-3 text-rose-600"></i> Di Bawah Target
                                         </span>
                                     @endif
                                 </td>

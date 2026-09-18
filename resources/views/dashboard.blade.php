@@ -1309,11 +1309,11 @@
 
                         <div class="bg-white p-2.5 rounded-lg border border-slate-200">
                             <span class="text-[10px] font-bold text-slate-400 block uppercase">BB Telur Butir (Input Aktual)</span>
-                            <b class="text-base font-black {{ $eggAct ? 'text-amber-800' : 'text-slate-400' }}">
+                            <b class="text-base font-black {{ $eggAct ? ($isIdealEgg ? 'text-emerald-700' : 'text-rose-700') : 'text-slate-400' }}">
                                 {{ $eggAct ? number_format($eggAct, 1, ',', '.') . ' Gram' : '-' }}
                             </b>
-                            <span class="text-[10px] {{ $isIdealEgg ? 'text-emerald-700 font-bold' : 'text-slate-500' }} block mt-0.5">
-                                {{ $eggAct ? ($isIdealEgg ? '✓ Sesuai batas toleransi' : 'Di luar toleransi target') : 'Belum ditimbang' }}
+                            <span class="text-[10px] {{ $eggAct ? ($isIdealEgg ? 'text-emerald-700 font-bold' : 'text-rose-600 font-bold') : 'text-slate-500' }} block mt-0.5">
+                                {{ $eggAct ? ($isIdealEgg ? '✓ Sesuai batas toleransi' : '⚠️ Di luar toleransi target') : 'Belum ditimbang' }}
                             </span>
                         </div>
 
@@ -1379,6 +1379,7 @@
                                 $eggTargetVal = (float)($cStd['berat_telur_val'] ?? 0);
                                 $eggMinTol = $eggTargetVal > 0 ? round($eggTargetVal - 2.5, 1) : 0;
                                 $eggMaxTol = $eggTargetVal > 0 ? round($eggTargetVal + 2.5, 1) : 0;
+                                $isIdealEgg = $eggAct !== null && ($eggAct >= $eggMinTol && $eggAct <= $eggMaxTol);
                             @endphp
                             <tr class="modal-bobot-row hover:bg-sky-50/30 transition-colors" 
                                 data-flock="{{ $c->flock_id }}" 
@@ -1450,10 +1451,15 @@
                                 </td>
 
                                 <!-- BB Telur Aktual -->
-                                <td class="py-3 px-3 text-right whitespace-nowrap bg-amber-50/30">
-                                    <b class="text-xs font-bold {{ $eggAct ? 'text-amber-800' : 'text-slate-400' }}">
+                                <td class="py-3 px-3 text-right whitespace-nowrap {{ $eggAct === null ? 'bg-amber-50/20' : ($isIdealEgg ? 'bg-emerald-50/40' : 'bg-rose-50/40') }}">
+                                    <b class="text-xs font-black {{ $eggAct === null ? 'text-slate-400' : ($isIdealEgg ? 'text-emerald-700' : 'text-rose-700') }}">
                                         {{ $eggAct ? number_format($eggAct, 1, ',', '.') . ' g' : '-' }}
                                     </b>
+                                    @if($eggAct !== null)
+                                        <span class="block text-[9.5px] font-black {{ $isIdealEgg ? 'text-emerald-700' : 'text-rose-700' }}">
+                                            {{ $isIdealEgg ? '✓ Sesuai' : '⚠️ Di Luar' }}
+                                        </span>
+                                    @endif
                                 </td>
 
                                 <!-- Batas Toleransi Telur Master -->
@@ -1495,7 +1501,7 @@
                 </button>
                 <a href="{{ route('input.index', ['type' => 'bobot']) }}" class="flex-1 py-2.5 px-4 rounded-xl bg-sky-700 hover:bg-sky-800 active:scale-[0.99] text-white font-bold text-xs sm:text-sm text-center shadow-md flex items-center justify-center gap-1.5 transition-all">
                     <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                    <span>+ Input Sampel Ayam Mingguan Baru</span>
+                    <span>+ Input Timbang Ayam + Telur Baru</span>
                 </a>
             </div>
         </div>

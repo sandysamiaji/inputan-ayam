@@ -582,10 +582,10 @@
         @endif
 
         @if(!auth()->check() || auth()->user()->canAccess('input_form_weight'))
-        <!-- 5. Sampel Ayam -->
+        <!-- 5. Timbang Ayam + Telur -->
         <div class="type-card {{ $type === 'bobot' ? 'active' : '' }}" onclick="switchType('bobot')" id="btnTypeBobot">
             <div class="icon-box" style="background:#f0f9ff; color:#0284c7;">⚖️</div>
-            <b>Sampel Ayam</b>
+            <b>Timbang Ayam + Telur</b>
             <small>Input bobot mingguan</small>
         </div>
         @endif
@@ -1046,11 +1046,11 @@
         </section>
     </div>
 
-    <!-- FORM 5: SAMPEL AYAM PER MINGGU -->
+    <!-- FORM 5: TIMBANG AYAM + TELUR MINGGUAN -->
     <div id="formSectionBobot" style="{{ $type === 'bobot' ? '' : 'display:none;' }}">
         <section class="form-card">
             <div class="cardhead">
-                <h2>⚖️ Sampel Ayam Mingguan</h2>
+                <h2>⚖️ Timbang Ayam + Telur Mingguan</h2>
                 <span class="tag" style="background:#e0f2fe; color:#0369a1; border-color:#bae6fd;">↗ Bobot 6 Blok</span>
             </div>
 
@@ -1170,7 +1170,7 @@
                     <p style="color:#0284c7;">Data berat badan ayam dan berat butir telur per sampel mingguan ini otomatis memperbarui kartu bobot 6 blok di Dashboard dan Rekapitulasi.</p>
                 </div>
 
-                <button type="submit" class="btn-submit" style="background:#0284c7;">Simpan Sampel Ayam</button>
+                <button type="submit" class="btn-submit" style="background:#0284c7;">Simpan Timbang Ayam & Telur</button>
                 <a href="{{ route('dashboard') }}" class="btn-cancel">Batal</a>
                 <div class="info-note">Timbang sampel ayam rutin per minggu untuk memantau kurva pertumbuhan bobot dan kesesuaian target produksi telur.</div>
             </form>

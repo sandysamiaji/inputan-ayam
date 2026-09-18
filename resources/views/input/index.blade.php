@@ -542,6 +542,19 @@
         </div>
     </section>
 
+    @if(session('error'))
+        <div class="sync" style="background:#fff1f2; border-color:#fecdd3; margin-top:12px; padding:12px; border-radius:12px;">
+            <b style="color:#9f1239; font-size:11px; font-weight:800;">⚠️ Double Input Tercegah</b>
+            <p style="color:#be123c; font-size:10.5px; margin-top:3px; line-height:1.4;">{{ session('error') }}</p>
+        </div>
+    @endif
+    @if(session('success'))
+        <div class="sync green" style="background:#ecfdf5; border-color:#a7f3d0; margin-top:12px; padding:12px; border-radius:12px;">
+            <b style="color:#047857; font-size:11px; font-weight:800;">✓ Berhasil Disimpan</b>
+            <p style="color:#065f46; font-size:10.5px; margin-top:3px; line-height:1.4;">{{ session('success') }}</p>
+        </div>
+    @endif
+
     <!-- Section: Pilih Transaksi -->
     <div class="section-title">PILIH TRANSAKSI</div>
     <section class="types">
@@ -666,7 +679,12 @@
                     <p>Telur baik menjadi <b>stok telur tersedia</b>. Retak dan pecah tetap tercatat sebagai hasil produksi, tetapi tidak masuk stok telur baik.</p>
                 </div>
 
-                <button type="submit" class="btn-submit">Simpan Produksi</button>
+                <div id="prodCompletedAlert" class="sync green" style="display:none; background:#ecfdf5; border-color:#a7f3d0; padding:11px; border-radius:12px; margin-top:11px;">
+                    <b style="color:#047857; font-size:10.5px;">✓ Semua Blok di Kloter ini sudah diinput Produksi Telur untuk tanggal ini.</b>
+                    <p style="color:#065f46; font-size:9.5px; margin-top:2px;">Penjagaan otomatis aktif agar tidak terjadi dobel input.</p>
+                </div>
+
+                <button type="submit" class="btn-submit" id="prodSubmitBtn">Simpan Produksi</button>
                 <a href="{{ route('dashboard') }}" class="btn-cancel">Batal</a>
             </form>
         </section>
@@ -792,7 +810,12 @@
                     </div>
                 </div>
 
-                <button type="submit" class="btn-submit">Simpan Pemakaian</button>
+                <div id="pakanCompletedAlert" class="sync green" style="display:none; background:#ecfdf5; border-color:#a7f3d0; padding:11px; border-radius:12px; margin-top:11px;">
+                    <b style="color:#047857; font-size:10.5px;">✓ Semua Blok di Kloter ini sudah diinput Pemakaian Pakan (Pagi & Sore) untuk tanggal ini.</b>
+                    <p style="color:#065f46; font-size:9.5px; margin-top:2px;">Penjagaan otomatis aktif agar tidak terjadi dobel input.</p>
+                </div>
+
+                <button type="submit" class="btn-submit" id="pakanSubmitBtn">Simpan Pemakaian</button>
                 <a href="{{ route('dashboard') }}" class="btn-cancel">Batal</a>
                 <div class="info-note">Standar gram/ekor berasal dari Master berdasarkan umur ayam. Petugas tetap memasukkan jumlah aktual yang benar-benar diberikan.</div>
             </form>
@@ -1197,6 +1220,8 @@
 <!-- Interactive Engine Logic for Mobile Input Forms -->
 <script>
 let currentType = '{{ $type }}';
+const completedEggCoops = @json($completedEggCoopIds ?? []);
+const completedFeedMap = @json($completedFeedRecords ?? []);
 
 // 1. Switch Transaction Type Tabs
 function switchType(type) {
@@ -1234,7 +1259,7 @@ function switchType(type) {
     }
 }
 
-// 2. Filter Coops based on Selected Flock
+// 2. Filter Coops based on Selected Flock & Double Input Protection
 function filterCoops(prefix) {
     const flockSelect = document.getElementById(prefix + 'Kloter');
     const coopSelect = document.getElementById(prefix + 'Coop');
@@ -1242,23 +1267,67 @@ function filterCoops(prefix) {
     const selectedFlockId = flockSelect.value;
 
     let firstMatch = null;
+    let availableCount = 0;
+
     Array.from(coopSelect.options).forEach(opt => {
         const flockId = opt.getAttribute('data-flock');
-        if (flockId === selectedFlockId || !flockId) {
-            opt.style.display = '';
-            if (!firstMatch) firstMatch = opt;
+        const coopId = parseInt(opt.value);
+        const matchesFlock = (flockId === selectedFlockId || !flockId);
+
+        if (matchesFlock) {
+            let isCompleted = false;
+
+            if (prefix === 'prod') {
+                // Produksi Telur: Cek apakah coopId sudah pernah diinput produksi untuk tanggal ini
+                isCompleted = completedEggCoops.map(Number).includes(coopId);
+            } else if (prefix === 'pakan') {
+                // Pemakaian Pakan: Cek apakah Pagi & Sore keduanya sudah selesai diinput untuk coopId
+                const doneTimes = (completedFeedMap[coopId] || []).map(t => String(t).toLowerCase());
+                const hasPagi = doneTimes.includes('pagi');
+                const hasSore = doneTimes.includes('sore') || doneTimes.includes('siang');
+                isCompleted = (hasPagi && hasSore);
+            }
+
+            if (isCompleted) {
+                opt.style.display = 'none';
+                opt.disabled = true;
+            } else {
+                opt.style.display = '';
+                opt.disabled = false;
+                availableCount++;
+                if (!firstMatch) firstMatch = opt;
+            }
         } else {
             opt.style.display = 'none';
+            opt.disabled = true;
         }
     });
 
+    const alertBanner = document.getElementById(prefix + 'CompletedAlert');
+    const submitBtn = document.getElementById(prefix + 'SubmitBtn');
+
     if (firstMatch) {
         coopSelect.value = firstMatch.value;
+        if (alertBanner) alertBanner.style.display = 'none';
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '1';
+            submitBtn.style.cursor = 'pointer';
+        }
+    } else {
+        coopSelect.value = '';
+        if (alertBanner) alertBanner.style.display = 'block';
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.5';
+            submitBtn.style.cursor = 'not-allowed';
+        }
     }
+
     updateCoopPop(prefix);
 }
 
-// 3. Update Population Display for selected Coop
+// 3. Update Population & Time Display for selected Coop
 function updateCoopPop(prefix) {
     const coopSelect = document.getElementById(prefix + 'Coop');
     if (!coopSelect) return;
@@ -1270,6 +1339,37 @@ function updateCoopPop(prefix) {
         calcProduksi();
     } else if (prefix === 'pakan') {
         document.getElementById('pakanPopulasi').value = pop + ' ekor';
+
+        // Filter Waktu Pemberian Pakan (Pagi / Sore) untuk Blok Pakan yang dipilih
+        const coopId = parseInt(coopSelect.value);
+        const pakanWaktuSelect = document.getElementById('pakanWaktu');
+        if (pakanWaktuSelect && coopId) {
+            const doneTimes = (completedFeedMap[coopId] || []).map(t => String(t).toLowerCase());
+            const hasPagi = doneTimes.includes('pagi');
+            const hasSore = doneTimes.includes('sore') || doneTimes.includes('siang');
+
+            let firstAvailTime = null;
+            Array.from(pakanWaktuSelect.options).forEach(opt => {
+                const valLower = opt.value.toLowerCase();
+                let isTimeDone = false;
+                if (valLower === 'pagi' && hasPagi) isTimeDone = true;
+                if ((valLower === 'sore' || valLower === 'siang') && hasSore) isTimeDone = true;
+
+                if (isTimeDone) {
+                    opt.style.display = 'none';
+                    opt.disabled = true;
+                } else {
+                    opt.style.display = '';
+                    opt.disabled = false;
+                    if (!firstAvailTime) firstAvailTime = opt.value;
+                }
+            });
+
+            if (firstAvailTime) {
+                pakanWaktuSelect.value = firstAvailTime;
+            }
+        }
+
         calcPakan();
     } else if (prefix === 'mort') {
         document.getElementById('mortPopSebelum').textContent = pop + ' ekor';

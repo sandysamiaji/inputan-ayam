@@ -617,6 +617,23 @@ class DashboardController extends Controller
         ]);
 
         $coop = Coop::findOrFail($validated['coop_id']);
+        $targetDate = $validated['date'] ?? Carbon::today()->toDateString();
+
+        // Penjagaan ganda: Cek apakah produksi telur untuk Blok & Tanggal ini sudah pernah diinput
+        $existingEgg = EggProduction::where('coop_id', $coop->id)
+            ->whereDate('date', $targetDate)
+            ->first();
+
+        if ($existingEgg) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Data produksi telur untuk {$coop->name} pada tanggal " . Carbon::parse($targetDate)->format('d-m-Y') . " sudah pernah diinput sebelumnya!",
+                ], 422);
+            }
+            return redirect()->back()->with('error', "Data produksi telur untuk {$coop->name} pada tanggal " . Carbon::parse($targetDate)->format('d-m-Y') . " sudah pernah diinput sebelumnya!");
+        }
+
         $goodEggs = (int) $validated['good_eggs'];
         $brokenEggs = (int) ($validated['broken_eggs'] ?? 0);
         $abnormalEggs = (int) ($validated['abnormal_eggs'] ?? 0);
@@ -700,9 +717,29 @@ class DashboardController extends Controller
         ]);
 
         $flockId = null;
+        $targetDate = $validated['date'] ?? Carbon::today()->toDateString();
+        $feedingTime = $validated['feeding_time'] ?? 'Pagi';
+
         if (!empty($validated['coop_id'])) {
             $coop = Coop::find($validated['coop_id']);
             $flockId = $coop ? $coop->flock_id : null;
+
+            // Penjagaan ganda: Cek apakah pemakaian pakan untuk Blok, Tanggal & Waktu ini sudah pernah diinput
+            $existingFeed = FeedConsumption::where('coop_id', $validated['coop_id'])
+                ->whereDate('date', $targetDate)
+                ->whereRaw('LOWER(feeding_time) = ?', [strtolower(trim($feedingTime))])
+                ->first();
+
+            if ($existingFeed) {
+                $coopName = $coop ? $coop->name : 'Blok';
+                if ($request->wantsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Pemakaian pakan ({$feedingTime}) untuk {$coopName} pada tanggal " . Carbon::parse($targetDate)->format('d-m-Y') . " sudah pernah diinput sebelumnya!",
+                    ], 422);
+                }
+                return redirect()->back()->with('error', "Pemakaian pakan ({$feedingTime}) untuk {$coopName} pada tanggal " . Carbon::parse($targetDate)->format('d-m-Y') . " sudah pernah diinput sebelumnya!");
+            }
         }
 
         $feed = FeedConsumption::create([

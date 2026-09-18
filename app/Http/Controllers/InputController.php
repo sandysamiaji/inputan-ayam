@@ -120,12 +120,32 @@ class InputController extends Controller
             }
         }
 
+        // Data input yang sudah selesai pada tanggal terpilih (untuk cegah dobel input)
+        $completedEggCoopIds = EggProduction::whereDate('date', $date)
+            ->whereNotNull('coop_id')
+            ->pluck('coop_id')
+            ->unique()
+            ->values()
+            ->toArray();
+
+        $completedFeedRecords = FeedConsumption::whereDate('date', $date)
+            ->whereNotNull('coop_id')
+            ->get(['coop_id', 'feeding_time'])
+            ->groupBy('coop_id')
+            ->map(function ($items) {
+                return $items->pluck('feeding_time')->map(function ($time) {
+                    return strtolower(trim($time ?? ''));
+                })->unique()->values()->toArray();
+            })
+            ->toArray();
+
         return view('input.index', compact(
             'flocks', 'coops', 'totalChickens', 'type', 'date', 'formattedDate',
             'telurStokSaatIni', 'telurMasukHariIni', 'telurKeluarHariIni', 'telurTerjualKg',
             'pakanStokKg', 'pakanPemakaianHariIni',
             'kloter1Pop', 'kloter2Pop', 'mortalitasHariIni', 'totalKarantinaSaatIni',
-            'medicines', 'farmCondition', 'coopStandards'
+            'medicines', 'farmCondition', 'coopStandards',
+            'completedEggCoopIds', 'completedFeedRecords'
         ));
     }
 }

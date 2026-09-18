@@ -150,11 +150,15 @@
                             {{ number_format($item->quantity, 0, ',', '.') }} {{ $item->unit }}
                         </p>
 
-                        <!-- Tanggal & Petugas -->
-                        <div class="text-[10px] sm:text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5">
+                        <!-- Tanggal & Petugas & Blok/Kloter -->
+                        <div class="text-[10px] sm:text-[11px] text-slate-400 flex flex-wrap items-center gap-1.5 mt-0.5">
                             <span>{{ \Carbon\Carbon::parse($item->date)->translatedFormat('d M Y') }} {{ $item->created_at ? $item->created_at->format('H:i') : '' }}</span>
                             <span>•</span>
                             <span class="text-slate-500 font-medium">{{ $item->user ? ($item->user->username ? '@' . ltrim($item->user->username, '@') : $item->user->name) : 'Petugas' }}</span>
+                            @if($item->source)
+                                <span>•</span>
+                                <span class="text-slate-600 font-bold bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200">{{ $item->source }}</span>
+                            @endif
                         </div>
                     </div>
                 </div>

@@ -1223,6 +1223,10 @@ let currentType = '{{ $type }}';
 const completedEggCoops = @json($completedEggCoopIds ?? []);
 const completedFeedMap = @json($completedFeedRecords ?? []);
 
+// Master copies of original option elements for iOS Safari WebKit compatibility
+const masterCoopOptions = {};
+const masterWaktuOptions = [];
+
 // 1. Switch Transaction Type Tabs
 function switchType(type) {
     currentType = type;
@@ -1259,19 +1263,19 @@ function switchType(type) {
     }
 }
 
-// 2. Filter Coops based on Selected Flock & Double Input Protection
+// 2. Filter Coops based on Selected Flock & Double Input Protection (iOS & Cross-Platform Safe)
 function filterCoops(prefix) {
     const flockSelect = document.getElementById(prefix + 'Kloter');
     const coopSelect = document.getElementById(prefix + 'Coop');
     if (!flockSelect || !coopSelect) return;
     const selectedFlockId = flockSelect.value;
+    const masterList = masterCoopOptions[prefix] || Array.from(coopSelect.options);
 
-    let firstMatch = null;
-    let availableCount = 0;
+    const validOptions = [];
 
-    Array.from(coopSelect.options).forEach(opt => {
-        const flockId = opt.getAttribute('data-flock');
-        const coopId = parseInt(opt.value);
+    masterList.forEach(origOpt => {
+        const flockId = origOpt.getAttribute('data-flock');
+        const coopId = parseInt(origOpt.value);
         const matchesFlock = (flockId === selectedFlockId || !flockId);
 
         if (matchesFlock) {
@@ -1288,26 +1292,24 @@ function filterCoops(prefix) {
                 isCompleted = (hasPagi && hasSore);
             }
 
-            if (isCompleted) {
-                opt.style.display = 'none';
-                opt.disabled = true;
-            } else {
-                opt.style.display = '';
-                opt.disabled = false;
-                availableCount++;
-                if (!firstMatch) firstMatch = opt;
+            if (!isCompleted) {
+                const clone = origOpt.cloneNode(true);
+                clone.style.display = '';
+                clone.disabled = false;
+                validOptions.push(clone);
             }
-        } else {
-            opt.style.display = 'none';
-            opt.disabled = true;
         }
     });
+
+    // Rebuild select options (removes items completely from DOM so iOS Safari WebKit wheel won't show grayed-out items)
+    coopSelect.innerHTML = '';
+    validOptions.forEach(opt => coopSelect.appendChild(opt));
 
     const alertBanner = document.getElementById(prefix + 'CompletedAlert');
     const submitBtn = document.getElementById(prefix + 'SubmitBtn');
 
-    if (firstMatch) {
-        coopSelect.value = firstMatch.value;
+    if (validOptions.length > 0) {
+        coopSelect.value = validOptions[0].value;
         if (alertBanner) alertBanner.style.display = 'none';
         if (submitBtn) {
             submitBtn.disabled = false;
@@ -1327,7 +1329,7 @@ function filterCoops(prefix) {
     updateCoopPop(prefix);
 }
 
-// 3. Update Population & Time Display for selected Coop
+// 3. Update Population & Time Display for selected Coop (iOS Safe)
 function updateCoopPop(prefix) {
     const coopSelect = document.getElementById(prefix + 'Coop');
     if (!coopSelect) return;
@@ -1340,33 +1342,34 @@ function updateCoopPop(prefix) {
     } else if (prefix === 'pakan') {
         document.getElementById('pakanPopulasi').value = pop + ' ekor';
 
-        // Filter Waktu Pemberian Pakan (Pagi / Sore) untuk Blok Pakan yang dipilih
+        // Rebuild Waktu Pemberian Pakan (Pagi / Sore) for iOS Safari
         const coopId = parseInt(coopSelect.value);
         const pakanWaktuSelect = document.getElementById('pakanWaktu');
-        if (pakanWaktuSelect && coopId) {
+        if (pakanWaktuSelect && coopId && masterWaktuOptions.length > 0) {
             const doneTimes = (completedFeedMap[coopId] || []).map(t => String(t).toLowerCase());
             const hasPagi = doneTimes.includes('pagi');
             const hasSore = doneTimes.includes('sore') || doneTimes.includes('siang');
 
-            let firstAvailTime = null;
-            Array.from(pakanWaktuSelect.options).forEach(opt => {
-                const valLower = opt.value.toLowerCase();
+            const validWaktuOptions = [];
+            masterWaktuOptions.forEach(origOpt => {
+                const valLower = origOpt.value.toLowerCase();
                 let isTimeDone = false;
                 if (valLower === 'pagi' && hasPagi) isTimeDone = true;
                 if ((valLower === 'sore' || valLower === 'siang') && hasSore) isTimeDone = true;
 
-                if (isTimeDone) {
-                    opt.style.display = 'none';
-                    opt.disabled = true;
-                } else {
-                    opt.style.display = '';
-                    opt.disabled = false;
-                    if (!firstAvailTime) firstAvailTime = opt.value;
+                if (!isTimeDone) {
+                    const clone = origOpt.cloneNode(true);
+                    clone.style.display = '';
+                    clone.disabled = false;
+                    validWaktuOptions.push(clone);
                 }
             });
 
-            if (firstAvailTime) {
-                pakanWaktuSelect.value = firstAvailTime;
+            pakanWaktuSelect.innerHTML = '';
+            validWaktuOptions.forEach(opt => pakanWaktuSelect.appendChild(opt));
+
+            if (validWaktuOptions.length > 0) {
+                pakanWaktuSelect.value = validWaktuOptions[0].value;
             }
         }
 
@@ -1498,14 +1501,16 @@ function autoConvertEggKg(kgInputId, petiInputId) {
 // 5. Calculations for Pemakaian Pakan
 function calcPakan() {
     const coopSelect = document.getElementById('pakanCoop');
+    if (!coopSelect || coopSelect.selectedIndex < 0) return;
     const selectedOpt = coopSelect.options[coopSelect.selectedIndex];
+    if (!selectedOpt) return;
 
     const popText = document.getElementById('pakanPopulasi').value;
     const pop = parseInt(popText) || 762;
 
-    const feedGram = selectedOpt ? parseFloat(selectedOpt.getAttribute('data-feed') || 105) : 105;
-    const age = selectedOpt ? selectedOpt.getAttribute('data-age') : 21;
-    const feedType = selectedOpt ? selectedOpt.getAttribute('data-feedtype') : 'Layer';
+    const feedGram = parseFloat(selectedOpt.getAttribute('data-feed') || 105);
+    const age = selectedOpt.getAttribute('data-age') || 21;
+    const feedType = selectedOpt.getAttribute('data-feedtype') || 'Layer';
 
     document.getElementById('pakanStdTitle').textContent = `Umur ${age} minggu · ${feedType}`;
     document.getElementById('pakanStdGram').textContent = feedGram.toString().replace('.', ',');
@@ -1603,6 +1608,7 @@ function calcMort() {
 // 7. Details for Vaksin & Obat
 function updateMedDetails() {
     const sel = document.getElementById('obatProduk');
+    if (!sel || sel.selectedIndex < 0) return;
     const opt = sel.options[sel.selectedIndex];
     if (!opt) return;
 
@@ -1620,6 +1626,7 @@ function updateMedDetails() {
 
 function calcObatSisa() {
     const sel = document.getElementById('obatProduk');
+    if (!sel || sel.selectedIndex < 0) return;
     const opt = sel.options[sel.selectedIndex];
     const stok = opt ? parseFloat(opt.getAttribute('data-stock') || 10) : 10;
     const unit = opt ? (opt.getAttribute('data-unit') || 'Botol') : 'Botol';
@@ -1630,6 +1637,19 @@ function calcObatSisa() {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
+    // Save master copies of option elements for iOS Safari dropdown rebuilding
+    ['prod', 'pakan', 'mort', 'obat', 'bobot'].forEach(prefix => {
+        const select = document.getElementById(prefix + 'Coop');
+        if (select) {
+            masterCoopOptions[prefix] = Array.from(select.options).map(opt => opt.cloneNode(true));
+        }
+    });
+
+    const pakanWaktuSelect = document.getElementById('pakanWaktu');
+    if (pakanWaktuSelect) {
+        masterWaktuOptions.push(...Array.from(pakanWaktuSelect.options).map(opt => opt.cloneNode(true)));
+    }
+
     filterCoops('prod');
     filterCoops('pakan');
     filterCoops('mort');

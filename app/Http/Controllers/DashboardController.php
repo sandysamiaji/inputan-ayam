@@ -83,7 +83,7 @@ class DashboardController extends Controller
 
         // 3b. Ringkasan Karantina Hari Ini & Total Saat Ini
         $currentQuarantineCount = Quarantine::getCurrentCount();
-        $quarantineRecords = Quarantine::with(['coop', 'user'])->whereDate('date', $selectedDate)->get();
+        $quarantineRecords = Quarantine::getRecordsByDate($selectedDate);
         $todaySickCount = (int) $quarantineRecords->where('status', 'sakit')->sum('count');
         $todayRecoveredCount = (int) $quarantineRecords->where('status', 'sembuh')->sum('count');
 
@@ -669,6 +669,8 @@ class DashboardController extends Controller
         $batteryNumber = !empty($validated['battery_number']) ? trim($validated['battery_number']) : null;
 
         if ($type === 'sakit') {
+            Quarantine::ensureTableExists();
+
             // 1. Kurangi populasi aktif kandang
             if ($coop->active_chickens >= $count) {
                 $coop->decrement('active_chickens', $count);
@@ -701,6 +703,8 @@ class DashboardController extends Controller
             return redirect()->back()->with('success', $msg);
 
         } elseif ($type === 'sembuh') {
+            Quarantine::ensureTableExists();
+
             // 1. Tambah kembali populasi aktif kandang
             $coop->increment('active_chickens', $count);
 

@@ -130,13 +130,20 @@ class WarehouseController extends Controller
         $obatStok = round($obatMasuk - $obatKeluar, 1);
 
         // 4. Gudang Ayam Karantina (Satuan: Ekor)
-        $karantinaMasuk = (int) Quarantine::where('status', 'sakit')
-            ->whereBetween('date', [$startDate, $endDate])
-            ->sum('count');
-        $karantinaKeluar = (int) Quarantine::where('status', 'sembuh')
-            ->whereBetween('date', [$startDate, $endDate])
-            ->sum('count');
-        $karantinaStok = Quarantine::getCurrentCount();
+        try {
+            Quarantine::ensureTableExists();
+            $karantinaMasuk = (int) Quarantine::where('status', 'sakit')
+                ->whereBetween('date', [$startDate, $endDate])
+                ->sum('count');
+            $karantinaKeluar = (int) Quarantine::where('status', 'sembuh')
+                ->whereBetween('date', [$startDate, $endDate])
+                ->sum('count');
+            $karantinaStok = Quarantine::getCurrentCount();
+        } catch (\Throwable $e) {
+            $karantinaMasuk = 0;
+            $karantinaKeluar = 0;
+            $karantinaStok = 0;
+        }
 
         // Pre-query data aliran barang berdasarkan rentang tanggal
         $eggProdByDate = EggProduction::whereBetween('date', [$startDate, $endDate])

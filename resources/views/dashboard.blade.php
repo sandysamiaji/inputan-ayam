@@ -175,7 +175,7 @@
                     </div>
 
                     <!-- Split Rincian: Ayam Mati vs Ayam Afkir -->
-                    <div hidden class="grid grid-cols-2 gap-1.5 mt-2 text-[10.5px]">
+                    <!-- <div hidden class="grid grid-cols-2 gap-1.5 mt-2 text-[10.5px]">
                         <div class="flex items-center justify-between px-2 py-1 rounded-md bg-rose-50/80 border border-rose-200/70 text-rose-950">
                             <span class="font-bold flex items-center gap-1 text-[10px] text-rose-800">💀 Mati</span>
                             <b class="font-black text-rose-700 text-xs">{{ $matiHariIni ?? 0 }}</b>
@@ -184,7 +184,7 @@
                             <span class="font-bold flex items-center gap-1 text-[10px] text-amber-800">✂️ Afkir</span>
                             <b class="font-black text-amber-700 text-xs">{{ $afkirHariIni ?? 0 }}</b>
                         </div>
-                    </div>
+                    </div> -->
 
                     <div class="mt-2 pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px]">
                         <span class="text-slate-400 font-medium">Riwayat Kematian & Afkir</span>

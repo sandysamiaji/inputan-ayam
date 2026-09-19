@@ -11,6 +11,7 @@ use App\Models\EggProduction;
 use App\Models\FeedConsumption;
 use App\Models\HealthTreatment;
 use App\Models\Quarantine;
+use App\Models\Mortality;
 use App\Services\OutboundIntegrationService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -1109,6 +1110,54 @@ class WarehouseController extends Controller
 
         $collection = collect();
 
+        // 1. Data Mortalitas Harian (Mati & Afkir) dari tabel mortalities
+        if ($tab === 'semua' || $tab === 'mati' || $tab === 'afkir') {
+            $mQuery = Mortality::with(['coop', 'flock', 'user']);
+            if ($startDate && $endDate) {
+                $mQuery->whereBetween('date', [$startDate, $endDate]);
+            }
+            if ($tab === 'mati') {
+                $mQuery->where(function($q) {
+                    $q->where('type', 'mati')->orWhereNull('type');
+                });
+            } elseif ($tab === 'afkir') {
+                $mQuery->where('type', 'afkir');
+            }
+
+            foreach ($mQuery->get() as $m) {
+                $isNonaktif = str_starts_with(trim($m->notes ?? ''), '[NONAKTIF]');
+                $displayNotes = $isNonaktif ? trim(substr(trim($m->notes), strlen('[NONAKTIF]'))) : $m->notes;
+                $coopName = $m->coop ? $m->coop->name : 'Kandang';
+                $flockName = $m->flock ? $m->flock->name : ($m->coop && $m->coop->flock ? $m->coop->flock->name : null);
+                $labelStatus = $m->type === 'afkir' ? 'Ayam Afkir (Culling)' : 'Ayam Mati Harian';
+
+                $collection->push((object) [
+                    'id' => 'mort_' . $m->id,
+                    'raw_id' => $m->id,
+                    'source_type' => 'mortality',
+                    'item_name' => $labelStatus . ' - ' . $coopName,
+                    'status' => $m->type ?: 'mati',
+                    'type' => 'keluar',
+                    'quantity' => (int) $m->count,
+                    'unit' => 'Ekor',
+                    'date' => Carbon::parse($m->date),
+                    'created_at' => $m->created_at ? Carbon::parse($m->created_at) : Carbon::parse($m->date),
+                    'time' => $m->time ? substr($m->time, 0, 5) : ($m->created_at ? $m->created_at->format('H:i') : '00:00'),
+                    'source' => $coopName . ($flockName ? ' (' . $flockName . ')' : ''),
+                    'battery_number' => null,
+                    'cause' => $m->cause,
+                    'action_taken' => null,
+                    'notes' => $displayNotes,
+                    'raw_notes' => $m->notes,
+                    'user' => $m->user,
+                    'is_nonaktif' => $isNonaktif,
+                    'coop_id' => $m->coop_id,
+                    'flock_id' => $m->flock_id,
+                ]);
+            }
+        }
+
+        // 2. Data Karantina (Sakit, Sembuh, Mati Isolasi) dari tabel quarantines
         $qQuery = Quarantine::with(['coop', 'flock', 'user']);
         if ($startDate && $endDate) {
             $qQuery->whereBetween('date', [$startDate, $endDate]);
@@ -1185,18 +1234,26 @@ class WarehouseController extends Controller
         // Ringkasan Statistik
         $stokSaatIni = Quarantine::getCurrentCount();
 
-        $baseStatQ = Quarantine::query();
+        $mStatQ = Mortality::query();
+        $qStatQ = Quarantine::query();
         if ($startDate && $endDate) {
-            $baseStatQ->whereBetween('date', [$startDate, $endDate]);
+            $mStatQ->whereBetween('date', [$startDate, $endDate]);
+            $qStatQ->whereBetween('date', [$startDate, $endDate]);
         }
-        $activeOnlyQ = clone $baseStatQ;
-        $activeOnlyQ->where(function($q) {
+        $mActiveQ = clone $mStatQ;
+        $mActiveQ->where(function($q) {
+            $q->whereNull('notes')->orWhere('notes', 'not like', '[NONAKTIF]%');
+        });
+        $qActiveQ = clone $qStatQ;
+        $qActiveQ->where(function($q) {
             $q->whereNull('notes')->orWhere('notes', 'not like', '[NONAKTIF]%');
         });
 
-        $totalSakit = (int) (clone $activeOnlyQ)->where('status', 'sakit')->sum('count');
-        $totalSembuh = (int) (clone $activeOnlyQ)->where('status', 'sembuh')->sum('count');
-        $totalMati = (int) (clone $activeOnlyQ)->where('status', 'mati')->sum('count');
+        $totalMatiPure = (int) (clone $mActiveQ)->where(function($q) { $q->where('type', 'mati')->orWhereNull('type'); })->sum('count') + (int) (clone $qActiveQ)->where('status', 'mati')->sum('count');
+        $totalAfkir = (int) (clone $mActiveQ)->where('type', 'afkir')->sum('count');
+        $totalMati = $totalMatiPure + $totalAfkir; // Total Mortalitas (Mati + Afkir)
+        $totalSakit = (int) (clone $qActiveQ)->where('status', 'sakit')->sum('count');
+        $totalSembuh = (int) (clone $qActiveQ)->where('status', 'sembuh')->sum('count');
         $transactionCount = $sorted->count();
 
         $flocks = Flock::where('is_active', true)->get();
@@ -1204,7 +1261,7 @@ class WarehouseController extends Controller
 
         return view('warehouse.karantina', compact(
             'user', 'items', 'tab', 'search', 'startDate', 'endDate',
-            'stokSaatIni', 'totalSakit', 'totalSembuh', 'totalMati', 'transactionCount',
+            'stokSaatIni', 'totalSakit', 'totalSembuh', 'totalMati', 'totalMatiPure', 'totalAfkir', 'transactionCount',
             'coops', 'flocks'
         ));
     }
@@ -1471,6 +1528,44 @@ class WarehouseController extends Controller
             $quar->save();
 
             return back()->with('success', 'Data ayam karantina berhasil diperbarui!');
+        } elseif (str_starts_with($id, 'mort_')) {
+            $realId = substr($id, 5);
+            $mort = Mortality::findOrFail($realId);
+
+            $oldCoopId = $mort->coop_id;
+            $oldCount = (int) $mort->count;
+
+            $newCount = $request->has('count') ? (int) $request->count : ($request->has('quantity') ? (int) $request->quantity : $oldCount);
+            $newCoopId = $request->input('coop_id', $oldCoopId);
+
+            // Rollback populasi lama
+            if ($oldCoopId) {
+                $oldCoop = Coop::find($oldCoopId);
+                if ($oldCoop) {
+                    $oldCoop->increment('active_chickens', $oldCount);
+                }
+            }
+
+            // Terapkan populasi baru
+            if ($newCoopId) {
+                $newCoop = Coop::find($newCoopId);
+                if ($newCoop) {
+                    $mort->coop_id = $newCoop->id;
+                    $mort->flock_id = $newCoop->flock_id;
+                    $newCoop->decrement('active_chickens', $newCount);
+                }
+            }
+
+            $mort->count = max(1, $newCount);
+            if ($request->has('status')) $mort->type = $request->status;
+            elseif ($request->has('type')) $mort->type = $request->type;
+
+            if ($request->has('cause')) $mort->cause = $request->cause;
+            if ($request->has('notes')) $mort->notes = $request->notes;
+            if ($request->has('date')) $mort->date = $request->date;
+            $mort->save();
+
+            return back()->with('success', 'Data mortalitas berhasil diperbarui!');
         }
 
         $stock = FarmStock::findOrFail($id);
@@ -1505,7 +1600,7 @@ class WarehouseController extends Controller
      */
     public function toggleStatus($id)
     {
-        if (str_starts_with($id, 'ep_') || str_starts_with($id, 'fc_') || str_starts_with($id, 'ht_') || str_starts_with($id, 'quar_')) {
+        if (str_starts_with($id, 'ep_') || str_starts_with($id, 'fc_') || str_starts_with($id, 'ht_') || str_starts_with($id, 'quar_') || str_starts_with($id, 'mort_')) {
             $model = null;
             if (str_starts_with($id, 'ep_')) {
                 $realId = substr($id, 3);
@@ -1517,6 +1612,8 @@ class WarehouseController extends Controller
                 $model = HealthTreatment::find(substr($id, 3));
             } elseif (str_starts_with($id, 'quar_')) {
                 $model = Quarantine::find(substr($id, 5));
+            } elseif (str_starts_with($id, 'mort_')) {
+                $model = Mortality::find(substr($id, 5));
             }
 
             if ($model) {
@@ -1530,6 +1627,9 @@ class WarehouseController extends Controller
                             if ($model->status === 'sakit') $coop->decrement('active_chickens', (int) $model->count);
                             elseif ($model->status === 'sembuh') $coop->increment('active_chickens', (int) $model->count);
                         }
+                    } elseif ($model instanceof Mortality && $model->coop_id) {
+                        $coop = Coop::find($model->coop_id);
+                        if ($coop) $coop->decrement('active_chickens', (int) $model->count);
                     }
                 } else {
                     $model->notes = '[NONAKTIF] ' . $currentNotes;
@@ -1540,6 +1640,9 @@ class WarehouseController extends Controller
                             if ($model->status === 'sakit') $coop->increment('active_chickens', (int) $model->count);
                             elseif ($model->status === 'sembuh') $coop->decrement('active_chickens', (int) $model->count);
                         }
+                    } elseif ($model instanceof Mortality && $model->coop_id) {
+                        $coop = Coop::find($model->coop_id);
+                        if ($coop) $coop->increment('active_chickens', (int) $model->count);
                     }
                 }
                 $model->save();
@@ -1599,6 +1702,19 @@ class WarehouseController extends Controller
                 $quar->delete();
             }
             return back()->with('success', 'Data riwayat karantina berhasil dihapus!');
+        } elseif (str_starts_with($id, 'mort_')) {
+            $realId = substr($id, 5);
+            $mort = Mortality::find($realId);
+            if ($mort) {
+                if ($mort->coop_id) {
+                    $coop = Coop::find($mort->coop_id);
+                    if ($coop) {
+                        $coop->increment('active_chickens', (int) $mort->count);
+                    }
+                }
+                $mort->delete();
+            }
+            return back()->with('success', 'Data mortalitas berhasil dihapus!');
         }
 
         $stock = FarmStock::findOrFail($id);

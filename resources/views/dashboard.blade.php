@@ -149,23 +149,58 @@
 
             <!-- Card 3: Mortalitas (Rose/Red) -->
             @if(!auth()->check() || auth()->user()->canAccess('dash_card_mortality'))
-            <div class="farm-card p-3.5 sm:p-4 border-l-4 border-l-rose-600 bg-white flex flex-col justify-between">
+            @php
+                $canClickMortality = auth()->check() && (auth()->user()->canAccess('dash_card_mortality_click') || auth()->user()->canAccess('warehouse_click_quarantine') || auth()->user()->canAccess('feature_warehouse_karantina') || auth()->user()->role === 'admin');
+            @endphp
+            @if($canClickMortality)
+            <a href="{{ route('warehouse.karantina') }}" class="farm-card p-3.5 sm:p-4 border-l-4 border-l-rose-600 bg-white flex flex-col justify-between hover:border-rose-500 hover:shadow-md transition-all cursor-pointer group">
+            @else
+            <div class="farm-card p-3.5 sm:p-4 border-l-4 border-l-rose-600 bg-white flex flex-col justify-between cursor-default">
+            @endif
                 <div class="flex items-start justify-between gap-2">
-                    <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-100 shadow-xs">
+                    <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-100 shadow-xs {{ $canClickMortality ? 'group-hover:scale-105 transition-transform' : '' }}">
                         <i data-lucide="skull" class="w-5 h-5 stroke-[2.2]"></i>
                     </div>
                     <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200">Afkir/Mati</span>
                 </div>
                 <div class="mt-3">
-                    <p class="text-xs font-semibold text-slate-500">Mortalitas</p>
-                    <p class="text-lg sm:text-xl font-black text-rose-700 tracking-tight leading-tight mt-0.5">
-                        {{ $totalMortalityCount }} <span class="text-xs font-bold text-slate-500">Ekor</span>
-                    </p>
-                    <p class="text-[11px] text-slate-400 font-medium mt-0.5">
-                        Kematian Harian
-                    </p>
+                    <div class="flex items-center justify-between">
+                        <p class="text-xs font-semibold text-slate-500">Mortalitas Hari Ini</p>
+                        <p class="text-base sm:text-lg font-black text-rose-700 tracking-tight leading-tight">
+                            {{ $totalMortalityCount }} <span class="text-xs font-bold text-slate-500">Ekor</span>
+                        </p>
+                    </div>
+
+                    <!-- Split Rincian: Ayam Mati vs Ayam Afkir -->
+                    <div class="grid grid-cols-2 gap-1.5 mt-2 text-[10.5px]">
+                        <div class="flex items-center justify-between px-2 py-1 rounded-md bg-rose-50/80 border border-rose-200/70 text-rose-950">
+                            <span class="font-bold flex items-center gap-1 text-[10px] text-rose-800">💀 Mati</span>
+                            <b class="font-black text-rose-700 text-xs">{{ $matiHariIni ?? 0 }}</b>
+                        </div>
+                        <div class="flex items-center justify-between px-2 py-1 rounded-md bg-amber-50/80 border border-amber-200/70 text-amber-950">
+                            <span class="font-bold flex items-center gap-1 text-[10px] text-amber-800">✂️ Afkir</span>
+                            <b class="font-black text-amber-700 text-xs">{{ $afkirHariIni ?? 0 }}</b>
+                        </div>
+                    </div>
+
+                    <div class="mt-2 pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px]">
+                        <span class="text-slate-400 font-medium">Riwayat Kematian & Afkir</span>
+                        @if($canClickMortality)
+                            <span class="text-rose-700 font-bold group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
+                                Kelola &raquo;
+                            </span>
+                        @else
+                            <span class="text-slate-400 font-semibold flex items-center gap-1">
+                                <i data-lucide="lock" class="w-2.5 h-2.5"></i> Terkunci
+                            </span>
+                        @endif
+                    </div>
                 </div>
+            @if($canClickMortality)
+            </a>
+            @else
             </div>
+            @endif
             @endif
 
             <!-- Card 4: Berat Badan 6 Blok (Sky Blue) -->

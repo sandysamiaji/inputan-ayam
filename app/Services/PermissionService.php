@@ -77,6 +77,11 @@ class PermissionService
                         'desc' => 'Menampilkan metrik jumlah ayam mati/afkir harian',
                         'default' => true,
                     ],
+                    'dash_card_mortality_click' => [
+                        'label' => 'Klik Kartu Mortalitas (Ke Gudang Mortalitas & Karantina)',
+                        'desc' => 'Akses untuk mengklik kartu Mortalitas di dashboard untuk diarahkan ke halaman riwayat Mortalitas & Karantina',
+                        'default' => false,
+                    ],
                     'dash_card_weight' => [
                         'label' => 'Kartu Bobot Badan Ayam',
                         'desc' => 'Menampilkan ringkasan sampel bobot badan 6 blok di dashboard',

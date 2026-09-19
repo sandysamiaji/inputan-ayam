@@ -79,7 +79,9 @@ class DashboardController extends Controller
 
         // 3. Ringkasan Mortalitas Hari Ini
         $mortalityRecords = Mortality::with(['coop', 'user'])->whereDate('date', $selectedDate)->get();
-        $totalMortalityCount = (int) $mortalityRecords->whereIn('type', ['mati', 'afkir'])->sum('count');
+        $matiHariIni = (int) $mortalityRecords->where('type', 'mati')->sum('count');
+        $afkirHariIni = (int) $mortalityRecords->where('type', 'afkir')->sum('count');
+        $totalMortalityCount = $matiHariIni + $afkirHariIni;
 
         // 3b. Ringkasan Karantina Hari Ini & Total Saat Ini
         $currentQuarantineCount = Quarantine::getCurrentCount();
@@ -538,6 +540,8 @@ class DashboardController extends Controller
             'goodEggCount',
             'totalFeedKg',
             'totalMortalityCount',
+            'matiHariIni',
+            'afkirHariIni',
             'averageWeightKg',
             'totalHealthActivities',
             'activities',

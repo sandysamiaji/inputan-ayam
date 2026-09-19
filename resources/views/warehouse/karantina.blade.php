@@ -10,9 +10,9 @@
                 <i data-lucide="arrow-left" class="w-5 h-5"></i>
             </a>
             <div>
-                <h1 class="text-lg sm:text-xl font-extrabold text-slate-800 tracking-tight">Gudang Ayam Karantina</h1>
+                <h1 class="text-lg sm:text-xl font-extrabold text-slate-800 tracking-tight">Gudang Mortalitas & Karantina Ayam</h1>
                 <div class="flex flex-wrap items-center gap-1.5 mt-0.5">
-                    <p class="text-xs text-slate-400">Manajemen & pemantauan ayam sakit, sembuh, dan isolasi</p>
+                    <p class="text-xs text-slate-400">Manajemen & pemantauan kematian (mati/afkir) serta karantina (sakit/sembuh)</p>
                     @if(!empty($startDate) && !empty($endDate))
                         <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 border border-rose-200/80 text-[10px] font-extrabold text-maroon-800">
                             <i data-lucide="calendar" class="w-3 h-3"></i>
@@ -26,6 +26,16 @@
 
         <!-- Stok Quick Stat Banner -->
         <div class="flex flex-wrap items-center gap-2 sm:gap-4 bg-white px-4 py-2.5 rounded-2xl border border-slate-100 shadow-sm">
+            <div class="text-left sm:text-right">
+                <span class="text-[10px] uppercase font-bold text-slate-400 block">Total Mortalitas</span>
+                <span class="text-sm sm:text-base font-extrabold text-rose-700">
+                    {{ number_format($totalMati ?? 0, 0, ',', '.') }} Ekor
+                </span>
+                <span class="text-[10px] block font-medium text-slate-400">
+                    Mati: {{ number_format($totalMatiPure ?? 0, 0, ',', '.') }} | Afkir: {{ number_format($totalAfkir ?? 0, 0, ',', '.') }}
+                </span>
+            </div>
+            <div class="hidden sm:block h-7 w-px bg-slate-200"></div>
             <div class="text-left sm:text-right">
                 <span class="text-[10px] uppercase font-bold text-slate-400 block">Sisa Diisolasi</span>
                 <span class="text-sm sm:text-base font-extrabold {{ $stokSaatIni > 0 ? 'text-amber-600' : 'text-emerald-600' }}">
@@ -64,13 +74,13 @@
             </div>
             <div>
                 <div class="flex items-center gap-2">
-                    <h3 class="text-xs sm:text-sm font-bold text-slate-800">Pusat Isolasi & Pemulihan Farm</h3>
+                    <h3 class="text-xs sm:text-sm font-bold text-slate-800">Pusat Mortalitas & Isolasi Farm</h3>
                     <span class="px-2 py-0.5 rounded-full {{ $stokSaatIni > 0 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800' }} text-[10px] font-bold">
                         {{ $stokSaatIni > 0 ? $stokSaatIni . ' Ekor Aktif' : 'Nihil Sakit' }}
                     </span>
                 </div>
                 <p class="text-xs text-slate-500 mt-0.5">
-                    Memantau ayam sakit yang dipisahkan dari blok kandang, riwayat pengobatan, nomor baterai asal, dan pemulihan kembali ke populasi aktif.
+                    Memantau kematian harian (mati/afkir), ayam sakit yang dipisahkan dari blok kandang, riwayat pengobatan, nomor baterai asal, dan pemulihan kembali ke populasi aktif.
                 </p>
             </div>
         </div>
@@ -104,11 +114,29 @@
         </form>
     </div>
 
-    <!-- Filter Tabs: Semua | Sakit (Masuk) | Sembuh (Keluar) | Mati di Isolasi -->
+    <!-- Filter Tabs: Semua | Kematian | Afkir | Sakit | Sembuh -->
     <div class="flex items-center border-b border-slate-200 gap-4 sm:gap-8 px-1 overflow-x-auto">
         <a href="{{ route('warehouse.karantina', array_filter(['tab' => 'semua', 'q' => $search, 'start_date' => $startDate ?? null, 'end_date' => $endDate ?? null])) }}" class="pb-3 text-xs sm:text-sm font-bold transition-all relative shrink-0 {{ $tab === 'semua' ? 'text-maroon-800' : 'text-slate-400 hover:text-slate-600' }}">
             Semua Data
             @if($tab === 'semua')
+                <span class="absolute bottom-0 left-0 right-0 h-0.5 bg-maroon-800 rounded-full"></span>
+            @endif
+        </a>
+        <a href="{{ route('warehouse.karantina', array_filter(['tab' => 'mati', 'q' => $search, 'start_date' => $startDate ?? null, 'end_date' => $endDate ?? null])) }}" class="pb-3 text-xs sm:text-sm font-bold transition-all relative shrink-0 flex items-center gap-1.5 {{ $tab === 'mati' ? 'text-maroon-800' : 'text-slate-400 hover:text-slate-600' }}">
+            <span>Kematian Harian</span>
+            @if(($totalMatiPure ?? 0) > 0)
+                <span class="px-1.5 py-0.2 rounded-full text-[10px] font-extrabold {{ $tab === 'mati' ? 'bg-maroon-800 text-white' : 'bg-slate-200 text-slate-600' }}">{{ $totalMatiPure }}</span>
+            @endif
+            @if($tab === 'mati')
+                <span class="absolute bottom-0 left-0 right-0 h-0.5 bg-maroon-800 rounded-full"></span>
+            @endif
+        </a>
+        <a href="{{ route('warehouse.karantina', array_filter(['tab' => 'afkir', 'q' => $search, 'start_date' => $startDate ?? null, 'end_date' => $endDate ?? null])) }}" class="pb-3 text-xs sm:text-sm font-bold transition-all relative shrink-0 flex items-center gap-1.5 {{ $tab === 'afkir' ? 'text-maroon-800' : 'text-slate-400 hover:text-slate-600' }}">
+            <span>Ayam Afkir</span>
+            @if(($totalAfkir ?? 0) > 0)
+                <span class="px-1.5 py-0.2 rounded-full text-[10px] font-extrabold {{ $tab === 'afkir' ? 'bg-maroon-800 text-white' : 'bg-slate-200 text-slate-600' }}">{{ $totalAfkir }}</span>
+            @endif
+            @if($tab === 'afkir')
                 <span class="absolute bottom-0 left-0 right-0 h-0.5 bg-maroon-800 rounded-full"></span>
             @endif
         </a>
@@ -126,24 +154,16 @@
                 <span class="absolute bottom-0 left-0 right-0 h-0.5 bg-maroon-800 rounded-full"></span>
             @endif
         </a>
-        <a href="{{ route('warehouse.karantina', array_filter(['tab' => 'mati', 'q' => $search, 'start_date' => $startDate ?? null, 'end_date' => $endDate ?? null])) }}" class="pb-3 text-xs sm:text-sm font-bold transition-all relative shrink-0 flex items-center gap-1.5 {{ $tab === 'mati' ? 'text-maroon-800' : 'text-slate-400 hover:text-slate-600' }}">
-            <span>Mati di Isolasi</span>
-            @if($totalMati > 0)
-                <span class="px-1.5 py-0.2 rounded-full text-[10px] font-extrabold {{ $tab === 'mati' ? 'bg-maroon-800 text-white' : 'bg-slate-200 text-slate-600' }}">{{ $totalMati }}</span>
-            @endif
-            @if($tab === 'mati')
-                <span class="absolute bottom-0 left-0 right-0 h-0.5 bg-maroon-800 rounded-full"></span>
-            @endif
-        </a>
     </div>
 
-    <!-- List Data Karantina (Format Card Sesuai Gudang Telur) -->
+    <!-- List Data Karantina & Mortalitas (Format Card Sesuai Gudang Telur) -->
     <div class="space-y-2.5">
         @forelse($items as $item)
             @php
                 $isSakit = $item->status === 'sakit';
                 $isSembuh = $item->status === 'sembuh';
                 $isMati = $item->status === 'mati';
+                $isAfkir = $item->status === 'afkir';
                 $isNonaktif = $item->is_nonaktif;
                 $displayNotes = $item->notes;
             @endphp
@@ -172,21 +192,23 @@
                 ]) }})">
                     
                     <!-- Status Icon -->
-                    <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner {{ $isSakit ? 'bg-amber-50 border border-amber-200/80 text-amber-600' : ($isSembuh ? 'bg-emerald-50 border border-emerald-200/80 text-emerald-600' : 'bg-rose-50 border border-rose-200/80 text-rose-600') }}">
+                    <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner {{ $isSakit ? 'bg-amber-50 border border-amber-200/80 text-amber-600' : ($isSembuh ? 'bg-emerald-50 border border-emerald-200/80 text-emerald-600' : ($isAfkir ? 'bg-purple-50 border border-purple-200/80 text-purple-600' : 'bg-rose-50 border border-rose-200/80 text-rose-600')) }}">
                         @if($isSakit)
                             <i data-lucide="shield-alert" class="w-6 h-6 stroke-[2]"></i>
                         @elseif($isSembuh)
                             <i data-lucide="check-circle" class="w-6 h-6 stroke-[2]"></i>
+                        @elseif($isAfkir)
+                            <i data-lucide="scissors" class="w-6 h-6 stroke-[2]"></i>
                         @else
-                            <i data-lucide="alert-triangle" class="w-6 h-6 stroke-[2]"></i>
+                            <i data-lucide="skull" class="w-6 h-6 stroke-[2]"></i>
                         @endif
                     </div>
 
                     <div class="min-w-0 flex-1">
                         <!-- Badge Status -->
                         <div class="flex items-center gap-2 mb-0.5">
-                            <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase {{ $isSakit ? 'bg-amber-50 text-amber-700 border border-amber-200' : ($isSembuh ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200') }}">
-                                {{ $isSakit ? 'SAKIT (MASUK KARANTINA)' : ($isSembuh ? 'SEMBUH (KEMBALI KE KANDANG)' : 'MATI DI ISOLASI') }}
+                            <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase {{ $isSakit ? 'bg-amber-50 text-amber-700 border border-amber-200' : ($isSembuh ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : ($isAfkir ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'bg-rose-50 text-rose-700 border border-rose-200')) }}">
+                                {{ $isSakit ? 'SAKIT (MASUK KARANTINA)' : ($isSembuh ? 'SEMBUH (KEMBALI KE KANDANG)' : ($isAfkir ? 'AYAM AFKIR (CULLING)' : 'KEMATIAN HARIAN')) }}
                             </span>
                             @if($isNonaktif)
                                 <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-200 text-slate-600">NONAKTIF</span>
@@ -198,7 +220,7 @@
 
                         <!-- Jumlah & Baterai Asal -->
                         <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5 text-xs font-extrabold text-slate-800">
-                            <span class="{{ $isSakit ? 'text-amber-700' : ($isSembuh ? 'text-emerald-700' : 'text-rose-700') }}">
+                            <span class="{{ $isSakit ? 'text-amber-700' : ($isSembuh ? 'text-emerald-700' : ($isAfkir ? 'text-purple-700' : 'text-rose-700')) }}">
                                 {{ number_format($item->quantity, 0, ',', '.') }} Ekor
                             </span>
                             @if(!empty($item->battery_number))
@@ -213,7 +235,7 @@
                         @if(!empty($item->cause) || !empty($item->action_taken) || !empty($displayNotes))
                             <div class="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
                                 @if(!empty($item->cause))
-                                    <span>Gejala: <b>{{ $item->cause }}</b></span>
+                                    <span>Gejala/Sebab: <b>{{ $item->cause }}</b></span>
                                 @endif
                                 @if(!empty($item->action_taken))
                                     <span class="mx-1">•</span>
@@ -291,7 +313,7 @@
                                 <span>{{ $isNonaktif ? 'Aktifkan Data' : 'Nonaktifkan' }}</span>
                             </button>
                         </form>
-                        <form method="POST" action="{{ route('warehouse.destroy', $item->id) }}" onsubmit="return confirm('Apakah Anda yakin ingin menghapus data karantina ini? Populasi kandang akan disinkronkan kembali.');" class="w-full">
+                        <form method="POST" action="{{ route('warehouse.destroy', $item->id) }}" onsubmit="return confirm('Apakah Anda yakin ingin menghapus data mortalitas / karantina ini? Populasi kandang akan disinkronkan kembali.');" class="w-full">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="w-full px-3.5 py-2 text-left hover:bg-rose-50 flex items-center gap-2 text-rose-600">
@@ -308,8 +330,8 @@
                 <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3 text-slate-400">
                     <i data-lucide="shield-alert" class="w-6 h-6"></i>
                 </div>
-                <h3 class="text-sm font-bold text-slate-700">Tidak ada data ayam karantina</h3>
-                <p class="text-xs text-slate-400 mt-1">Belum ada catatan riwayat karantina untuk filter ini.</p>
+                <h3 class="text-sm font-bold text-slate-700">Tidak ada data mortalitas & karantina</h3>
+                <p class="text-xs text-slate-400 mt-1">Belum ada catatan riwayat mortalitas atau karantina untuk filter ini.</p>
             </div>
         @endforelse
     </div>
@@ -333,7 +355,7 @@
                 <button onclick="closeDetailModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors">
                     <i data-lucide="arrow-left" class="w-4 h-4"></i>
                 </button>
-                <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">Detail Ayam Karantina</h3>
+                <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">Detail Ayam Karantina / Mortalitas</h3>
             </div>
             <span id="detailBadge" class="px-2.5 py-0.5 rounded text-[10px] font-extrabold uppercase">
                 SAKIT (MASUK)
@@ -542,7 +564,7 @@
 </div>
 
 <!-- ========================================================================= -->
-<!-- MODAL EDIT DATA AYAM KARANTINA -->
+<!-- MODAL EDIT DATA AYAM KARANTINA & MORTALITAS -->
 <!-- ========================================================================= -->
 <div id="modalEditKarantina" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm opacity-0 invisible pointer-events-none transition-all duration-300 flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl transform translate-y-full sm:translate-y-0 transition-transform duration-300 max-h-[92vh] overflow-y-auto">
@@ -553,8 +575,8 @@
                     <i data-lucide="edit-3" class="w-5 h-5"></i>
                 </div>
                 <div>
-                    <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">Edit Data Karantina</h3>
-                    <p class="text-[10px] text-slate-400 font-medium">Perbarui informasi ayam karantina</p>
+                    <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">Edit Data Karantina / Mortalitas</h3>
+                    <p class="text-[10px] text-slate-400 font-medium">Perbarui informasi ayam karantina atau kematian</p>
                 </div>
             </div>
             <button onclick="closeModalEditKarantina()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600">
@@ -566,29 +588,36 @@
             @csrf
             @method('PUT')
 
-            <!-- Status Karantina -->
+            <!-- Status Karantina / Mortalitas -->
             <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1.5">Status Karantina *</label>
-                <div class="grid grid-cols-3 gap-2">
+                <label class="block text-xs font-bold text-slate-700 mb-1.5">Status Data *</label>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     <label class="cursor-pointer">
                         <input type="radio" name="status" id="editStatusSakit" value="sakit" class="peer sr-only">
-                        <div class="p-2.5 text-center rounded-xl border-2 border-slate-200 peer-checked:border-amber-500 peer-checked:bg-amber-50 text-slate-600 peer-checked:text-amber-800 font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all">
+                        <div class="p-2 text-center rounded-xl border-2 border-slate-200 peer-checked:border-amber-500 peer-checked:bg-amber-50 text-slate-600 peer-checked:text-amber-800 font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all">
                             <i data-lucide="shield-alert" class="w-4 h-4"></i>
-                            <span>Ayam Sakit</span>
+                            <span>Sakit</span>
                         </div>
                     </label>
                     <label class="cursor-pointer">
                         <input type="radio" name="status" id="editStatusSembuh" value="sembuh" class="peer sr-only">
-                        <div class="p-2.5 text-center rounded-xl border-2 border-slate-200 peer-checked:border-emerald-600 peer-checked:bg-emerald-50 text-slate-600 peer-checked:text-emerald-800 font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all">
+                        <div class="p-2 text-center rounded-xl border-2 border-slate-200 peer-checked:border-emerald-600 peer-checked:bg-emerald-50 text-slate-600 peer-checked:text-emerald-800 font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all">
                             <i data-lucide="check-circle" class="w-4 h-4"></i>
-                            <span>Ayam Sembuh</span>
+                            <span>Sembuh</span>
                         </div>
                     </label>
                     <label class="cursor-pointer">
                         <input type="radio" name="status" id="editStatusMati" value="mati" class="peer sr-only">
-                        <div class="p-2.5 text-center rounded-xl border-2 border-slate-200 peer-checked:border-rose-600 peer-checked:bg-rose-50 text-slate-600 peer-checked:text-rose-800 font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all">
-                            <i data-lucide="alert-triangle" class="w-4 h-4"></i>
-                            <span>Mati di Isolasi</span>
+                        <div class="p-2 text-center rounded-xl border-2 border-slate-200 peer-checked:border-rose-600 peer-checked:bg-rose-50 text-slate-600 peer-checked:text-rose-800 font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all">
+                            <i data-lucide="skull" class="w-4 h-4"></i>
+                            <span>Mati</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="status" id="editStatusAfkir" value="afkir" class="peer sr-only">
+                        <div class="p-2 text-center rounded-xl border-2 border-slate-200 peer-checked:border-purple-600 peer-checked:bg-purple-50 text-slate-600 peer-checked:text-purple-800 font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all">
+                            <i data-lucide="scissors" class="w-4 h-4"></i>
+                            <span>Afkir</span>
                         </div>
                     </label>
                 </div>
@@ -630,7 +659,7 @@
 
             <!-- Gejala / Indikasi -->
             <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Gejala / Indikasi Sakit</label>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Gejala / Indikasi Sakit / Cause</label>
                 <input type="text" name="cause" id="editCause" placeholder="Contoh: Nafsu makan drop, lemas, bersin" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm">
             </div>
 
@@ -710,13 +739,20 @@
             iconBox.className = 'w-16 h-16 rounded-2xl bg-white shadow-md flex items-center justify-center shrink-0 border border-emerald-200 text-emerald-600';
             subStatus.className = 'text-xs font-semibold text-emerald-700 mt-0.5';
             subStatus.textContent = 'Kembali ke Blok Kandang';
+        } else if (data.status === 'afkir') {
+            badge.className = 'px-2.5 py-0.5 rounded text-[10px] font-extrabold uppercase bg-purple-50 text-purple-700 border border-purple-200';
+            badge.textContent = 'AYAM AFKIR';
+            heroBox.className = 'mt-5 p-4 rounded-2xl bg-gradient-to-br from-purple-50/80 to-slate-50 border border-purple-200/60 flex items-center justify-between';
+            iconBox.className = 'w-16 h-16 rounded-2xl bg-white shadow-md flex items-center justify-center shrink-0 border border-purple-200 text-purple-600';
+            subStatus.className = 'text-xs font-semibold text-purple-700 mt-0.5';
+            subStatus.textContent = 'Pengafkiran (Culling Kandang)';
         } else {
             badge.className = 'px-2.5 py-0.5 rounded text-[10px] font-extrabold uppercase bg-rose-50 text-rose-700 border border-rose-200';
-            badge.textContent = 'MATI DI ISOLASI';
+            badge.textContent = 'KEMATIAN HARIAN';
             heroBox.className = 'mt-5 p-4 rounded-2xl bg-gradient-to-br from-rose-50/80 to-slate-50 border border-rose-200/60 flex items-center justify-between';
             iconBox.className = 'w-16 h-16 rounded-2xl bg-white shadow-md flex items-center justify-center shrink-0 border border-rose-200 text-rose-600';
             subStatus.className = 'text-xs font-semibold text-rose-700 mt-0.5';
-            subStatus.textContent = 'Meninggal di Karantina';
+            subStatus.textContent = 'Catatan Kematian Ayam';
         }
 
         modal.classList.add('modal-active');
@@ -741,6 +777,8 @@
             document.getElementById('editStatusSembuh').checked = true;
         } else if (data.status === 'mati') {
             document.getElementById('editStatusMati').checked = true;
+        } else if (data.status === 'afkir') {
+            document.getElementById('editStatusAfkir').checked = true;
         } else {
             document.getElementById('editStatusSakit').checked = true;
         }

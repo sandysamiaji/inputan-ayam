@@ -72,6 +72,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/karantina', [WarehouseController::class, 'karantina'])
             ->name('karantina')
             ->middleware('permission:warehouse_click_quarantine');
+        Route::get('/mortalitas', [WarehouseController::class, 'karantina'])
+            ->name('mortalitas');
 
         Route::post('/store', [WarehouseController::class, 'store'])
             ->name('store')

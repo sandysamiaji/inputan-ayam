@@ -161,18 +161,21 @@
                     <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-100 shadow-xs {{ $canClickMortality ? 'group-hover:scale-105 transition-transform' : '' }}">
                         <i data-lucide="skull" class="w-5 h-5 stroke-[2.2]"></i>
                     </div>
-                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200">Afkir/Mati</span>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200">Mati</span>
                 </div>
                 <div class="mt-3">
                     <div class="flex items-center justify-between">
-                        <p class="text-xs font-semibold text-slate-500">Mortalitas Hari Ini</p>
-                        <p class="text-base sm:text-lg font-black text-rose-700 tracking-tight leading-tight">
+                        <p class="text-xs font-semibold text-slate-500">💀 Mati</p>
+                        <!-- <p class="text-base sm:text-lg font-black text-rose-700 tracking-tight leading-tight">
                             {{ $totalMortalityCount }} <span class="text-xs font-bold text-slate-500">Ekor</span>
+                        </p> -->
+                        <p class="text-base sm:text-lg font-black text-rose-700 tracking-tight leading-tight">
+                            {{ $matiHariIni ?? 0 }} <span class="text-xs font-bold text-slate-500">Ekor</span>
                         </p>
                     </div>
 
                     <!-- Split Rincian: Ayam Mati vs Ayam Afkir -->
-                    <div class="grid grid-cols-2 gap-1.5 mt-2 text-[10.5px]">
+                    <div hidden class="grid grid-cols-2 gap-1.5 mt-2 text-[10.5px]">
                         <div class="flex items-center justify-between px-2 py-1 rounded-md bg-rose-50/80 border border-rose-200/70 text-rose-950">
                             <span class="font-bold flex items-center gap-1 text-[10px] text-rose-800">💀 Mati</span>
                             <b class="font-black text-rose-700 text-xs">{{ $matiHariIni ?? 0 }}</b>

@@ -28,49 +28,66 @@ class AuditController extends Controller
 
         $query = AuditLog::with(['user', 'restorer'])->latest('created_at')->latest('id');
 
+        // Dapatkan kolom yang tersedia
+        $hasModuleCol = \Illuminate\Support\Facades\Schema::hasColumn('audit_logs', 'module');
+        $hasActionCol = \Illuminate\Support\Facades\Schema::hasColumn('audit_logs', 'action');
+        $hasIsRestoredCol = \Illuminate\Support\Facades\Schema::hasColumn('audit_logs', 'is_restored');
+
         // Filter berdasarkan Tab
-        if ($tab === 'terhapus') {
-            $query->where('action', 'DELETE');
-        } elseif ($tab === 'update') {
-            $query->where('action', 'UPDATE');
-        } elseif ($tab === 'create') {
-            $query->where('action', 'CREATE');
-        } elseif ($tab === 'restored') {
-            $query->where(function ($q) {
-                $q->where('is_restored', true)->orWhere('action', 'RESTORE');
-            });
+        if ($hasActionCol) {
+            if ($tab === 'terhapus') {
+                $query->where('action', 'DELETE');
+            } elseif ($tab === 'update') {
+                $query->where('action', 'UPDATE');
+            } elseif ($tab === 'create') {
+                $query->where('action', 'CREATE');
+            } elseif ($tab === 'restored') {
+                $query->where(function ($q) use ($hasIsRestoredCol) {
+                    if ($hasIsRestoredCol) {
+                        $q->where('is_restored', true)->orWhere('action', 'RESTORE');
+                    } else {
+                        $q->where('action', 'RESTORE');
+                    }
+                });
+            }
         }
 
         // Filter berdasarkan Modul
         if (!empty($module) && $module !== 'semua') {
-            $query->where('module', $module);
+            if ($hasModuleCol) {
+                $query->where('module', $module);
+            }
         }
 
         // Filter berdasarkan Pengguna
-        if (!empty($selectedUserId)) {
+        if (!empty($selectedUserId) && \Illuminate\Support\Facades\Schema::hasColumn('audit_logs', 'user_id')) {
             $query->where('user_id', $selectedUserId);
         }
 
         // Filter berdasarkan Rentang Tanggal
-        if (!empty($startDate) && !empty($endDate)) {
-            $query->whereBetween('created_at', [
-                Carbon::parse($startDate)->startOfDay(),
-                Carbon::parse($endDate)->endOfDay(),
-            ]);
-        } elseif (!empty($startDate)) {
-            $query->where('created_at', '>=', Carbon::parse($startDate)->startOfDay());
-        } elseif (!empty($endDate)) {
-            $query->where('created_at', '<=', Carbon::parse($endDate)->endOfDay());
+        if (\Illuminate\Support\Facades\Schema::hasColumn('audit_logs', 'created_at')) {
+            if (!empty($startDate) && !empty($endDate)) {
+                $query->whereBetween('created_at', [
+                    Carbon::parse($startDate)->startOfDay(),
+                    Carbon::parse($endDate)->endOfDay(),
+                ]);
+            } elseif (!empty($startDate)) {
+                $query->where('created_at', '>=', Carbon::parse($startDate)->startOfDay());
+            } elseif (!empty($endDate)) {
+                $query->where('created_at', '<=', Carbon::parse($endDate)->endOfDay());
+            }
         }
 
         // Filter Pencarian Kata Kunci
         if (!empty($search)) {
             $s = trim($search);
-            $query->where(function ($q) use ($s) {
+            $query->where(function ($q) use ($s, $hasActionCol) {
                 $q->where('description', 'like', "%{$s}%")
                   ->orWhere('user_name', 'like', "%{$s}%")
-                  ->orWhere('table_name', 'like', "%{$s}%")
-                  ->orWhere('action', 'like', "%{$s}%");
+                  ->orWhere('table_name', 'like', "%{$s}%");
+                if ($hasActionCol) {
+                    $q->orWhere('action', 'like', "%{$s}%");
+                }
             });
         }
 
@@ -78,10 +95,14 @@ class AuditController extends Controller
 
         // Ringkasan Statistik
         $totalAktivitas = AuditLog::count();
-        $aktivitasHariIni = AuditLog::whereDate('created_at', Carbon::today())->count();
-        $totalTerhapus = AuditLog::where('action', 'DELETE')->count();
-        $totalTerhapusBelumRestore = AuditLog::where('action', 'DELETE')->where('is_restored', false)->count();
-        $totalRestored = AuditLog::where('is_restored', true)->count();
+        $aktivitasHariIni = \Illuminate\Support\Facades\Schema::hasColumn('audit_logs', 'created_at')
+            ? AuditLog::whereDate('created_at', Carbon::today())->count()
+            : $totalAktivitas;
+        $totalTerhapus = $hasActionCol ? AuditLog::where('action', 'DELETE')->count() : 0;
+        $totalTerhapusBelumRestore = ($hasActionCol && $hasIsRestoredCol) 
+            ? AuditLog::where('action', 'DELETE')->where('is_restored', false)->count() 
+            : 0;
+        $totalRestored = $hasIsRestoredCol ? AuditLog::where('is_restored', true)->count() : 0;
 
         // Daftar Pengguna untuk Filter Dropdown
         $usersList = User::select('id', 'name', 'username', 'role')->orderBy('name')->get();

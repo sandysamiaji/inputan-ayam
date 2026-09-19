@@ -670,6 +670,16 @@
                 <span class="arr" style="color: #800020;">›</span>
             </a>
 
+            <!-- 8. Audit Riwayat & Restore Data (Tergantung Hak Akses Admin) -->
+            @if(!auth()->check() || auth()->user()->role === 'admin' || auth()->user()->canAccess('feature_master_audit'))
+            <a href="{{ route('master.audit') }}" class="menu" id="menu-audit-riwayat" style="border: 1.5px solid #e9d5ff; background: #faf5ff;">
+                <div class="ico purple" style="background: #f3e8ff; color: #7e22ce; font-size: 16px;">📜</div>
+                <b style="color: #6b21a8;">Audit Riwayat</b>
+                <p>Log aktivitas & restore</p>
+                <span class="arr" style="color: #7e22ce;">›</span>
+            </a>
+            @endif
+
         </div>
     </div>
 

@@ -71,6 +71,16 @@ class AuthController extends Controller
 
             $request->session()->regenerate();
 
+            \App\Services\AuditService::log(
+                'LOGIN',
+                'auth',
+                "Pengguna {$user->name} (" . ($user->username ? '@' . ltrim($user->username, '@') : 'user') . ") berhasil masuk ke dalam sistem",
+                null,
+                null,
+                null,
+                $user
+            );
+
             return redirect()->intended(route('dashboard'))
                 ->with('success', 'Selamat datang kembali, ' . ($user->name ?: $user->username) . '!');
         }
@@ -84,6 +94,19 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
+        $user = Auth::user();
+        if ($user) {
+            \App\Services\AuditService::log(
+                'LOGOUT',
+                'auth',
+                "Pengguna {$user->name} (" . ($user->username ? '@' . ltrim($user->username, '@') : 'user') . ") keluar dari sistem",
+                null,
+                null,
+                null,
+                $user
+            );
+        }
+
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

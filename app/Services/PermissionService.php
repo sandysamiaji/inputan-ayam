@@ -396,6 +396,16 @@ class PermissionService
                         'desc' => 'Pengaturan toggle izin seluruh pengguna (Khusus Super Admin)',
                         'default' => false,
                     ],
+                    'feature_master_audit' => [
+                        'label' => 'Menu Audit Riwayat & Log Aktivitas',
+                        'desc' => 'Melihat dan memantau riwayat aktivitas transaksi serta perubahan data seluruh pengguna',
+                        'default' => false,
+                    ],
+                    'feature_audit_restore' => [
+                        'label' => 'Restore Data Terhapus (Pulihkan Data)',
+                        'desc' => 'Izin khusus untuk memulihkan / me-restore data yang telah dihapus kembali ke database (Admin / Supervisor)',
+                        'default' => false,
+                    ],
                 ],
             ],
         ];

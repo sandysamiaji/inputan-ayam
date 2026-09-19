@@ -36,5 +36,17 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('user', $user);
             }
         });
+
+        // Register AuditObserver untuk pencatatan otomatis riwayat aktivitas & restore
+        \App\Models\EggProduction::observe(\App\Observers\AuditObserver::class);
+        \App\Models\FeedConsumption::observe(\App\Observers\AuditObserver::class);
+        \App\Models\Mortality::observe(\App\Observers\AuditObserver::class);
+        \App\Models\Quarantine::observe(\App\Observers\AuditObserver::class);
+        \App\Models\WeightSample::observe(\App\Observers\AuditObserver::class);
+        \App\Models\HealthTreatment::observe(\App\Observers\AuditObserver::class);
+        \App\Models\FarmStock::observe(\App\Observers\AuditObserver::class);
+        \App\Models\Coop::observe(\App\Observers\AuditObserver::class);
+        \App\Models\Flock::observe(\App\Observers\AuditObserver::class);
+        \App\Models\User::observe(\App\Observers\AuditObserver::class);
     }
 }

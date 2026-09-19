@@ -185,6 +185,12 @@
                 <div class="flex items-center gap-2 sm:gap-3">
                     
                     @auth
+                        @if(auth()->user()->role === 'admin' || auth()->user()->canAccess('feature_master_audit'))
+                            <a href="{{ route('master.audit') }}" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 border border-purple-400/30 text-xs font-bold transition-all" title="Audit Riwayat & Restore Data">
+                                <i data-lucide="history" class="w-3.5 h-3.5 text-purple-300"></i>
+                                <span>Audit</span>
+                            </a>
+                        @endif
                         @if(auth()->user()->role === 'admin')
                             <a href="{{ route('master.permissions') }}" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-400/20 hover:bg-amber-400/30 text-amber-200 border border-amber-300/30 text-xs font-bold transition-all" title="Kelola Hak Akses Pengguna">
                                 <i data-lucide="shield-check" class="w-3.5 h-3.5 text-amber-300"></i>

@@ -8,6 +8,7 @@ use App\Http\Controllers\MasterController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\InputController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AuditController;
 
 /*
 |--------------------------------------------------------------------------
@@ -167,6 +168,22 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/users/store', [MasterController::class, 'storeUser'])->name('users.store');
         Route::put('/users/{id}/update', [MasterController::class, 'updateUser'])->name('users.update');
         Route::patch('/users/{id}/toggle-active', [MasterController::class, 'toggleActiveUser'])->name('users.toggle-active');
+
+        // Audit Riwayat & Restore Data Terhapus
+        Route::get('/audit', [AuditController::class, 'index'])
+            ->name('audit')
+            ->middleware('permission:feature_master_audit');
+        Route::get('/audit/{id}', [AuditController::class, 'show'])
+            ->name('audit.show')
+            ->middleware('permission:feature_master_audit');
+        Route::post('/audit/{id}/restore', [AuditController::class, 'restore'])
+            ->name('audit.restore')
+            ->middleware('permission:feature_audit_restore');
+    });
+
+    // Alias cepat /audit
+    Route::get('/audit', function() {
+        return redirect()->route('master.audit');
     });
 
     // 6. Modul Profil Petugas

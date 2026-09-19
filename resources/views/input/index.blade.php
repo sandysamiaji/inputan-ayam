@@ -755,7 +755,7 @@
                     <input class="readonly" id="pakanPopulasi" value="762 ekor" readonly>
                 </div>
 
-                <div class="field">
+                <div hidden class="field">
                     <label>Standar Pakan Master</label>
                     <div class="standard">
                         <div class="stdtop">

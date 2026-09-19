@@ -661,6 +661,7 @@ class MasterController extends Controller
                 'menu_dashboard', 'menu_input', 'menu_warehouse',
                 'feature_quick_egg', 'feature_quick_feed', 'feature_quick_mortality', 'feature_quick_weight', 'feature_quick_health',
                 'feature_warehouse_telur', 'feature_warehouse_pakan', 'feature_warehouse_obat',
+                'input_form_quarantine',
             ];
             foreach ($allPermissions as $cat) {
                 foreach ($cat['items'] as $key => $item) {

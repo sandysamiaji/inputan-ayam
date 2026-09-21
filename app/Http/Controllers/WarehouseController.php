@@ -42,32 +42,41 @@ class WarehouseController extends Controller
     {
         $user = Auth::user() ?? User::where('role', 'user')->orWhere('username', 'petugas')->first() ?? User::first();
 
-        // Parameter Rentang Tanggal (Default 14 Hari Terakhir)
+        // Parameter Rentang Tanggal: Default NULL (Tarik SEMUA Data Tanpa Filter jika user tidak memilih)
+        $hasDateFilter = $request->filled('start_date') && $request->filled('end_date');
         $defaultStartDate = Carbon::today()->subDays(13)->toDateString();
         $defaultEndDate = Carbon::today()->toDateString();
 
-        $startDate = $request->input('start_date', $defaultStartDate);
-        $endDate = $request->input('end_date', $defaultEndDate);
+        if ($hasDateFilter) {
+            $startDate = $request->input('start_date');
+            $endDate = $request->input('end_date');
 
-        try {
-            $startCarbon = Carbon::parse($startDate)->startOfDay();
-            $endCarbon = Carbon::parse($endDate)->endOfDay();
-        } catch (\Exception $e) {
-            $startCarbon = Carbon::parse($defaultStartDate)->startOfDay();
-            $endCarbon = Carbon::parse($defaultEndDate)->endOfDay();
-            $startDate = $defaultStartDate;
-            $endDate = $defaultEndDate;
+            try {
+                $startCarbon = Carbon::parse($startDate)->startOfDay();
+                $endCarbon = Carbon::parse($endDate)->endOfDay();
+            } catch (\Exception $e) {
+                $startCarbon = Carbon::parse($defaultStartDate)->startOfDay();
+                $endCarbon = Carbon::parse($defaultEndDate)->endOfDay();
+                $startDate = $defaultStartDate;
+                $endDate = $defaultEndDate;
+            }
+
+            if ($startCarbon->gt($endCarbon)) {
+                $temp = $startCarbon;
+                $startCarbon = $endCarbon->copy()->startOfDay();
+                $endCarbon = $temp->copy()->endOfDay();
+                $startDate = $startCarbon->toDateString();
+                $endDate = $endCarbon->toDateString();
+            }
+
+            $diffDays = $startCarbon->diffInDays($endCarbon) + 1;
+        } else {
+            $startDate = null;
+            $endDate = null;
+            $startCarbon = null;
+            $endCarbon = null;
+            $diffDays = null;
         }
-
-        if ($startCarbon->gt($endCarbon)) {
-            $temp = $startCarbon;
-            $startCarbon = $endCarbon->copy()->startOfDay();
-            $endCarbon = $temp->copy()->endOfDay();
-            $startDate = $startCarbon->toDateString();
-            $endDate = $endCarbon->toDateString();
-        }
-
-        $diffDays = $startCarbon->diffInDays($endCarbon) + 1;
 
         $namaHari = [
             'Sunday' => 'Min', 'Monday' => 'Sen', 'Tuesday' => 'Sel',
@@ -78,8 +87,8 @@ class WarehouseController extends Controller
             7 => 'Jul', 8 => 'Agt', 9 => 'Sep', 10 => 'Okt', 11 => 'Nov', 12 => 'Des'
         ];
 
-        $formattedStartDate = ($namaHari[$startCarbon->format('l')] ?? $startCarbon->format('D')) . ', ' . $startCarbon->day . ' ' . ($bulanShort[$startCarbon->month] ?? $startCarbon->format('M')) . ' ' . $startCarbon->year;
-        $formattedEndDate = ($namaHari[$endCarbon->format('l')] ?? $endCarbon->format('D')) . ', ' . $endCarbon->day . ' ' . ($bulanShort[$endCarbon->month] ?? $endCarbon->format('M')) . ' ' . $endCarbon->year;
+        $formattedStartDate = ($hasDateFilter && $startCarbon) ? (($namaHari[$startCarbon->format('l')] ?? $startCarbon->format('D')) . ', ' . $startCarbon->day . ' ' . ($bulanShort[$startCarbon->month] ?? $startCarbon->format('M')) . ' ' . $startCarbon->year) : null;
+        $formattedEndDate = ($hasDateFilter && $endCarbon) ? (($namaHari[$endCarbon->format('l')] ?? $endCarbon->format('D')) . ', ' . $endCarbon->day . ' ' . ($bulanShort[$endCarbon->month] ?? $endCarbon->format('M')) . ' ' . $endCarbon->year) : null;
 
         // 1. Gudang Telur (Terintegrasi Penjualan nochifram)
         $eggSummary = OutboundIntegrationService::getEggOutboundSummary($startDate, $endDate);
@@ -111,16 +120,20 @@ class WarehouseController extends Controller
         $pakanRevenue = $feedSummary['total_revenue'];
 
         // 3. Gudang Obat, Vaksin & Vitamin (Satuan: Item / Botol)
-        $obatMasuk = (float) FarmStock::whereIn('category', ['obat', 'vaksin', 'vitamin'])
-            ->where('type', 'masuk')
-            ->whereBetween('date', [$startDate, $endDate])
-            ->sum('quantity');
-        $obatKeluarManual = (float) FarmStock::whereIn('category', ['obat', 'vaksin', 'vitamin'])
-            ->where('type', 'keluar')
-            ->whereBetween('date', [$startDate, $endDate])
-            ->sum('quantity');
+        $obatMasukQuery = FarmStock::whereIn('category', ['obat', 'vaksin', 'vitamin'])->where('type', 'masuk');
+        $obatKeluarManualQuery = FarmStock::whereIn('category', ['obat', 'vaksin', 'vitamin'])->where('type', 'keluar');
+        $htQuery = \App\Models\HealthTreatment::query();
+
+        if ($startDate && $endDate) {
+            $obatMasukQuery->whereBetween('date', [$startDate, $endDate]);
+            $obatKeluarManualQuery->whereBetween('date', [$startDate, $endDate]);
+            $htQuery->whereBetween('date', [$startDate, $endDate]);
+        }
+
+        $obatMasuk = (float) $obatMasukQuery->sum('quantity');
+        $obatKeluarManual = (float) $obatKeluarManualQuery->sum('quantity');
         
-        $healthTreatments = \App\Models\HealthTreatment::whereBetween('date', [$startDate, $endDate])->get();
+        $healthTreatments = $htQuery->get();
         $obatKeluarKandang = 0;
         foreach ($healthTreatments as $ht) {
             $val = (float) preg_replace('/[^0-9.]/', '', $ht->dosage);
@@ -134,12 +147,14 @@ class WarehouseController extends Controller
         // 4. Gudang Ayam Karantina (Satuan: Ekor)
         try {
             Quarantine::ensureTableExists();
-            $karantinaMasuk = (int) Quarantine::where('status', 'sakit')
-                ->whereBetween('date', [$startDate, $endDate])
-                ->sum('count');
-            $karantinaKeluar = (int) Quarantine::where('status', 'sembuh')
-                ->whereBetween('date', [$startDate, $endDate])
-                ->sum('count');
+            $qMasukQuery = Quarantine::where('status', 'sakit');
+            $qKeluarQuery = Quarantine::where('status', 'sembuh');
+            if ($startDate && $endDate) {
+                $qMasukQuery->whereBetween('date', [$startDate, $endDate]);
+                $qKeluarQuery->whereBetween('date', [$startDate, $endDate]);
+            }
+            $karantinaMasuk = (int) $qMasukQuery->sum('count');
+            $karantinaKeluar = (int) $qKeluarQuery->sum('count');
             $karantinaStok = Quarantine::getCurrentCount();
         } catch (\Throwable $e) {
             $karantinaMasuk = 0;
@@ -147,8 +162,14 @@ class WarehouseController extends Controller
             $karantinaStok = 0;
         }
 
-        // Pre-query data aliran barang berdasarkan rentang tanggal
-        $eggProdByDate = EggProduction::whereBetween('date', [$startDate, $endDate])
+        // Periode tanggal untuk visualisasi grafik tren harian
+        $chartStart = $hasDateFilter ? $startCarbon->copy() : Carbon::today()->subDays(13)->startOfDay();
+        $chartEnd = $hasDateFilter ? $endCarbon->copy() : Carbon::today()->endOfDay();
+        $chartStartDate = $chartStart->toDateString();
+        $chartEndDate = $chartEnd->toDateString();
+
+        // Pre-query data aliran barang berdasarkan rentang tanggal grafik
+        $eggProdByDate = EggProduction::whereBetween('date', [$chartStartDate, $chartEndDate])
             ->select(
                 DB::raw('DATE(date) as dt'),
                 DB::raw('SUM(crates_count) as total_crates'),
@@ -159,7 +180,7 @@ class WarehouseController extends Controller
             ->get()
             ->keyBy('dt');
 
-        $feedConsByDate = FeedConsumption::whereBetween('date', [$startDate, $endDate])
+        $feedConsByDate = FeedConsumption::whereBetween('date', [$chartStartDate, $chartEndDate])
             ->select(
                 DB::raw('DATE(date) as dt'),
                 DB::raw('SUM(quantity_kg) as total_kg')
@@ -168,7 +189,7 @@ class WarehouseController extends Controller
             ->get()
             ->keyBy('dt');
 
-        $farmStockByDate = FarmStock::whereBetween('date', [$startDate, $endDate])
+        $farmStockByDate = FarmStock::whereBetween('date', [$chartStartDate, $chartEndDate])
             ->select(
                 DB::raw('DATE(date) as dt'),
                 'category',
@@ -181,7 +202,7 @@ class WarehouseController extends Controller
 
         $salesByDate = DB::table('sale_items')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
-            ->whereBetween('sales.date', [$startDate, $endDate])
+            ->whereBetween('sales.date', [$chartStartDate, $chartEndDate])
             ->select(
                 'sales.date as dt',
                 'sales.category',
@@ -192,7 +213,7 @@ class WarehouseController extends Controller
             ->get()
             ->groupBy('dt');
 
-        $healthByDate = HealthTreatment::whereBetween('date', [$startDate, $endDate])
+        $healthByDate = HealthTreatment::whereBetween('date', [$chartStartDate, $chartEndDate])
             ->get()
             ->groupBy(fn($ht) => Carbon::parse($ht->date)->toDateString());
 
@@ -216,13 +237,8 @@ class WarehouseController extends Controller
         $chartAllKeluar = [];
         $chartAllTerjual = [];
 
-        $bulanShort = [
-            1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'Mei', 6 => 'Jun',
-            7 => 'Jul', 8 => 'Agt', 9 => 'Sep', 10 => 'Okt', 11 => 'Nov', 12 => 'Des'
-        ];
-
-        $cursor = $startCarbon->copy();
-        while ($cursor->lte($endCarbon)) {
+        $cursor = $chartStart->copy();
+        while ($cursor->lte($chartEnd)) {
             $dt = $cursor->toDateString();
             $chartLabels[] = $cursor->day . ' ' . ($bulanShort[$cursor->month] ?? $cursor->format('M'));
 
@@ -314,18 +330,18 @@ class WarehouseController extends Controller
         $sumObatKonsumsi = round(array_sum($chartObatKonsumsi), 1);
 
         $streamTotals = [
-            'telur_masuk' => $sumTelurMasuk,
-            'telur_rusak_peti' => $sumTelurRusakPeti,
-            'telur_rusak_butir' => $sumTelurRusakButir,
-            'telur_terjual' => $sumTelurTerjual,
-            'pakan_masuk' => $sumPakanMasuk,
-            'pakan_konsumsi' => $sumPakanKonsumsi,
-            'pakan_terjual' => $sumPakanTerjual,
-            'obat_masuk' => $sumObatMasuk,
-            'obat_konsumsi' => $sumObatKonsumsi,
+            'telur_masuk' => $hasDateFilter ? $sumTelurMasuk : $telurMasuk,
+            'telur_rusak_peti' => $hasDateFilter ? $sumTelurRusakPeti : round(($eggSummary['total_broken_eggs'] ?? 0) / 25, 2),
+            'telur_rusak_butir' => $hasDateFilter ? $sumTelurRusakButir : ($eggSummary['total_broken_eggs'] ?? 0),
+            'telur_terjual' => $hasDateFilter ? $sumTelurTerjual : $telurPetiSold,
+            'pakan_masuk' => $hasDateFilter ? $sumPakanMasuk : $pakanMasuk,
+            'pakan_konsumsi' => $hasDateFilter ? $sumPakanKonsumsi : $pakanConsumptionKg,
+            'pakan_terjual' => $hasDateFilter ? $sumPakanTerjual : round($pakanKarungSold + ($pakanKgSold / 50), 1),
+            'obat_masuk' => $hasDateFilter ? $sumObatMasuk : $obatMasuk,
+            'obat_konsumsi' => $hasDateFilter ? $sumObatKonsumsi : $obatKeluar,
         ];
 
-        $dateParams = ['start_date' => $startDate, 'end_date' => $endDate];
+        $dateParams = array_filter(['start_date' => $startDate, 'end_date' => $endDate]);
 
         $chartDataSets = [
             'overview' => [
@@ -503,44 +519,56 @@ class WarehouseController extends Controller
             ],
         ];
 
+        $displayTelurMasuk = $hasDateFilter ? $sumTelurMasuk : $telurMasuk;
+        $displayTelurRusakPeti = $hasDateFilter ? $sumTelurRusakPeti : round(($eggSummary['total_broken_eggs'] ?? 0) / 25, 2);
+        $displayTelurRusakButir = $hasDateFilter ? $sumTelurRusakButir : ($eggSummary['total_broken_eggs'] ?? 0);
+        $displayTelurTerjual = $hasDateFilter ? $sumTelurTerjual : $telurPetiSold;
+
+        $displayPakanMasuk = $hasDateFilter ? $sumPakanMasuk : $pakanMasuk;
+        $displayPakanKonsumsi = $hasDateFilter ? $sumPakanKonsumsi : $pakanConsumptionKg;
+        $displayPakanTerjual = $hasDateFilter ? $sumPakanTerjual : round(($pakanKarungSold * 50) + $pakanKgSold, 1);
+
+        $displayObatMasuk = $hasDateFilter ? $sumObatMasuk : $obatMasuk;
+        $displayObatKonsumsi = $hasDateFilter ? $sumObatKonsumsi : $obatKeluar;
+
         $chartTotals = [
             'overview' => [
                 'masuk' => [
-                    ['label' => 'Telur', 'val' => number_format($sumTelurMasuk, 1, ',', '.') . ' Peti', 'url' => route('warehouse.telur', array_merge(['tab' => 'masuk'], $dateParams))],
-                    ['label' => 'Pakan', 'val' => number_format($sumPakanMasuk, 1, ',', '.') . ' Kg', 'url' => route('warehouse.pakan', array_merge(['tab' => 'masuk'], $dateParams))],
-                    ['label' => 'Obat', 'val' => number_format($sumObatMasuk, 1, ',', '.') . ' Item', 'url' => route('warehouse.obat', array_merge(['tab' => 'masuk'], $dateParams))],
+                    ['label' => 'Telur', 'val' => number_format($displayTelurMasuk, 1, ',', '.') . ' Peti', 'url' => route('warehouse.telur', array_merge(['tab' => 'masuk'], $dateParams))],
+                    ['label' => 'Pakan', 'val' => number_format($displayPakanMasuk, 1, ',', '.') . ' Kg', 'url' => route('warehouse.pakan', array_merge(['tab' => 'masuk'], $dateParams))],
+                    ['label' => 'Obat', 'val' => number_format($displayObatMasuk, 1, ',', '.') . ' Item', 'url' => route('warehouse.obat', array_merge(['tab' => 'masuk'], $dateParams))],
                 ],
                 'digunakan' => [
-                    ['label' => 'Pakan', 'val' => number_format($sumPakanKonsumsi, 1, ',', '.') . ' Kg', 'url' => route('warehouse.pakan', array_merge(['tab' => 'keluar'], $dateParams))],
-                    ['label' => 'Telur Rusak', 'val' => number_format($sumTelurRusakButir, 0, ',', '.') . ' Btr', 'url' => route('warehouse.telur', array_merge(['tab' => 'keluar'], $dateParams))],
-                    ['label' => 'Obat', 'val' => number_format($sumObatKonsumsi, 1, ',', '.') . ' Dosis', 'url' => route('warehouse.obat', array_merge(['tab' => 'keluar'], $dateParams))],
+                    ['label' => 'Pakan', 'val' => number_format($displayPakanKonsumsi, 1, ',', '.') . ' Kg', 'url' => route('warehouse.pakan', array_merge(['tab' => 'keluar'], $dateParams))],
+                    ['label' => 'Telur Rusak', 'val' => number_format($displayTelurRusakButir, 0, ',', '.') . ' Btr', 'url' => route('warehouse.telur', array_merge(['tab' => 'keluar'], $dateParams))],
+                    ['label' => 'Obat', 'val' => number_format($displayObatKonsumsi, 1, ',', '.') . ' Dosis', 'url' => route('warehouse.obat', array_merge(['tab' => 'keluar'], $dateParams))],
                 ],
                 'keluar' => [
-                    ['label' => 'Telur Total', 'val' => number_format($sumTelurRusakPeti + $sumTelurTerjual, 1, ',', '.') . ' Peti', 'url' => route('warehouse.telur', array_merge(['tab' => 'semua'], $dateParams))],
-                    ['label' => 'Pakan Total', 'val' => number_format($sumPakanKonsumsi + $sumPakanTerjual, 1, ',', '.') . ' Kg', 'url' => route('warehouse.pakan', array_merge(['tab' => 'semua'], $dateParams))],
-                    ['label' => 'Obat Pakai', 'val' => number_format($sumObatKonsumsi, 1, ',', '.') . ' Dosis', 'url' => route('warehouse.obat', array_merge(['tab' => 'keluar'], $dateParams))],
+                    ['label' => 'Telur Total', 'val' => number_format($displayTelurRusakPeti + $displayTelurTerjual, 1, ',', '.') . ' Peti', 'url' => route('warehouse.telur', array_merge(['tab' => 'semua'], $dateParams))],
+                    ['label' => 'Pakan Total', 'val' => number_format($displayPakanKonsumsi + $displayPakanTerjual, 1, ',', '.') . ' Kg', 'url' => route('warehouse.pakan', array_merge(['tab' => 'semua'], $dateParams))],
+                    ['label' => 'Obat Pakai', 'val' => number_format($displayObatKonsumsi, 1, ',', '.') . ' Dosis', 'url' => route('warehouse.obat', array_merge(['tab' => 'keluar'], $dateParams))],
                 ],
                 'terjual' => [
-                    ['label' => 'Telur Terjual', 'val' => number_format($sumTelurTerjual, 1, ',', '.') . ' Peti', 'url' => route('warehouse.telur', array_merge(['tab' => 'penjualan'], $dateParams))],
-                    ['label' => 'Pakan Terjual', 'val' => number_format($sumPakanTerjual, 1, ',', '.') . ' Kg', 'url' => route('warehouse.pakan', array_merge(['tab' => 'penjualan'], $dateParams))],
+                    ['label' => 'Telur Terjual', 'val' => number_format($displayTelurTerjual, 1, ',', '.') . ' Peti', 'url' => route('warehouse.telur', array_merge(['tab' => 'penjualan'], $dateParams))],
+                    ['label' => 'Pakan Terjual', 'val' => number_format($displayPakanTerjual, 1, ',', '.') . ' Kg', 'url' => route('warehouse.pakan', array_merge(['tab' => 'penjualan'], $dateParams))],
                 ],
             ],
             'telur' => [
-                'masuk' => number_format($sumTelurMasuk, 1, ',', '.') . ' Peti',
-                'digunakan' => number_format($sumTelurRusakPeti, 2, ',', '.') . ' Peti (' . number_format($sumTelurRusakButir, 0, ',', '.') . ' Btr)',
-                'keluar' => number_format($sumTelurRusakPeti + $sumTelurTerjual, 1, ',', '.') . ' Peti',
-                'terjual' => number_format($sumTelurTerjual, 1, ',', '.') . ' Peti',
+                'masuk' => number_format($displayTelurMasuk, 1, ',', '.') . ' Peti',
+                'digunakan' => number_format($displayTelurRusakPeti, 2, ',', '.') . ' Peti (' . number_format($displayTelurRusakButir, 0, ',', '.') . ' Btr)',
+                'keluar' => number_format($displayTelurRusakPeti + $displayTelurTerjual, 1, ',', '.') . ' Peti',
+                'terjual' => number_format($displayTelurTerjual, 1, ',', '.') . ' Peti',
             ],
             'pakan' => [
-                'masuk' => number_format($sumPakanMasuk, 1, ',', '.') . ' Kg',
-                'digunakan' => number_format($sumPakanKonsumsi, 1, ',', '.') . ' Kg',
-                'keluar' => number_format($sumPakanKonsumsi + $sumPakanTerjual, 1, ',', '.') . ' Kg',
-                'terjual' => number_format($sumPakanTerjual, 1, ',', '.') . ' Kg',
+                'masuk' => number_format($displayPakanMasuk, 1, ',', '.') . ' Kg',
+                'digunakan' => number_format($displayPakanKonsumsi, 1, ',', '.') . ' Kg',
+                'keluar' => number_format($displayPakanKonsumsi + $displayPakanTerjual, 1, ',', '.') . ' Kg',
+                'terjual' => number_format($displayPakanTerjual, 1, ',', '.') . ' Kg',
             ],
             'obat' => [
-                'masuk' => number_format($sumObatMasuk, 1, ',', '.') . ' Item',
-                'digunakan' => number_format($sumObatKonsumsi, 1, ',', '.') . ' Dosis',
-                'keluar' => number_format($sumObatKonsumsi, 1, ',', '.') . ' Dosis',
+                'masuk' => number_format($displayObatMasuk, 1, ',', '.') . ' Item',
+                'digunakan' => number_format($displayObatKonsumsi, 1, ',', '.') . ' Dosis',
+                'keluar' => number_format($displayObatKonsumsi, 1, ',', '.') . ' Dosis',
                 'terjual' => '0 Item',
             ],
         ];
@@ -559,7 +587,7 @@ class WarehouseController extends Controller
             'karantinaMasuk', 'karantinaKeluar', 'karantinaStok',
             'recentTransactions', 'recentSales',
             'chartLabels', 'chartDataSets', 'chartTotals', 'streamTotals',
-            'startDate', 'endDate', 'defaultStartDate', 'defaultEndDate', 'diffDays', 'formattedStartDate', 'formattedEndDate'
+            'startDate', 'endDate', 'defaultStartDate', 'defaultEndDate', 'diffDays', 'formattedStartDate', 'formattedEndDate', 'hasDateFilter'
         ));
     }
 

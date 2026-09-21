@@ -25,6 +25,7 @@
                  id="travelokaTriggerBtn"
                  class="cursor-pointer bg-white hover:bg-slate-50/90 border border-slate-200/90 hover:border-maroon-300 shadow-xs hover:shadow-md transition-all rounded-2xl p-1.5 sm:p-2 flex flex-wrap sm:flex-nowrap items-center justify-between sm:justify-start gap-1.5 sm:gap-2.5 group select-none max-w-full overflow-hidden">
                 
+                @if($hasDateFilter)
                 <!-- Start Date Segment -->
                 <div class="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-2.5 py-1 rounded-xl bg-slate-50 group-hover:bg-white transition-colors shrink-0">
                     <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-rose-50 text-maroon-800 flex items-center justify-center shrink-0">
@@ -56,6 +57,28 @@
                         </div>
                     </div>
                 </div>
+                @else
+                <!-- Default Capsule: Semua Data (Seluruh Waktu) -->
+                <div class="flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3 py-1 rounded-xl bg-slate-50 group-hover:bg-rose-50/50 transition-colors">
+                    <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-rose-100/70 text-maroon-800 flex items-center justify-center shrink-0 shadow-2xs">
+                        <i data-lucide="calendar-range" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <div class="text-[8.5px] sm:text-[9px] font-extrabold uppercase tracking-wider text-slate-400">Periode Data</div>
+                        <div class="text-xs sm:text-sm font-black text-slate-800 flex items-center gap-1.5">
+                            <span>Semua Data</span>
+                            <span class="inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                Seluruh Waktu
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 text-[10px] font-semibold">
+                    <span>Filter Tanggal</span>
+                    <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400"></i>
+                </div>
+                @endif
 
                 <!-- Toggle Dropdown Icon -->
                 <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-xl bg-slate-100 group-hover:bg-maroon-800 group-hover:text-white text-slate-500 flex items-center justify-center transition-all shrink-0">
@@ -83,6 +106,25 @@
                     </button>
                 </div>
 
+                <!-- Preset Quick Buttons (7 Hari, 14 Hari, 30 Hari, Semua Data) -->
+                <div class="mb-3">
+                    <div class="text-[9px] font-extrabold uppercase tracking-wider text-slate-400 mb-1.5">Pilihan Cepat:</div>
+                    <div class="grid grid-cols-4 gap-1.5">
+                        <button type="button" onclick="applyPresetDates(7)" class="px-2 py-1.5 rounded-lg text-[11px] font-bold bg-slate-50 hover:bg-rose-50 text-slate-600 hover:text-maroon-800 border border-slate-200/70 hover:border-maroon-300 transition-all text-center">
+                            7 Hari
+                        </button>
+                        <button type="button" onclick="applyPresetDates(14)" class="px-2 py-1.5 rounded-lg text-[11px] font-bold bg-slate-50 hover:bg-rose-50 text-slate-600 hover:text-maroon-800 border border-slate-200/70 hover:border-maroon-300 transition-all text-center">
+                            14 Hari
+                        </button>
+                        <button type="button" onclick="applyPresetDates(30)" class="px-2 py-1.5 rounded-lg text-[11px] font-bold bg-slate-50 hover:bg-rose-50 text-slate-600 hover:text-maroon-800 border border-slate-200/70 hover:border-maroon-300 transition-all text-center">
+                            30 Hari
+                        </button>
+                        <a href="{{ route('warehouse.index') }}" class="px-2 py-1.5 rounded-lg text-[11px] font-bold {{ !$hasDateFilter ? 'bg-maroon-800 text-white' : 'bg-slate-50 hover:bg-slate-100 text-slate-600' }} border border-slate-200/70 transition-all text-center flex items-center justify-center">
+                            Semua
+                        </a>
+                    </div>
+                </div>
+
                 <!-- Custom Date Inputs Form (Auto-submit saat tanggal dipilih) -->
                 <form id="travelokaDateForm" action="{{ route('warehouse.index') }}" method="GET" class="space-y-3.5">
                     <div class="grid grid-cols-2 gap-2.5">
@@ -93,7 +135,7 @@
                             <input type="date" 
                                    id="travelokaStartDate" 
                                    name="start_date" 
-                                   value="{{ $startDate }}"
+                                   value="{{ $startDate ?? '' }}"
                                    onchange="checkAndAutoSubmitDateRange()"
                                    class="w-full px-3 py-2 rounded-xl text-xs font-bold border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-maroon-800 focus:ring-2 focus:ring-rose-200 transition-all outline-hidden cursor-pointer">
                         </div>
@@ -104,19 +146,23 @@
                             <input type="date" 
                                    id="travelokaEndDate" 
                                    name="end_date" 
-                                   value="{{ $endDate }}"
+                                   value="{{ $endDate ?? '' }}"
                                    onchange="checkAndAutoSubmitDateRange()"
                                    class="w-full px-3 py-2 rounded-xl text-xs font-bold border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-maroon-800 focus:ring-2 focus:ring-rose-200 transition-all outline-hidden cursor-pointer">
                         </div>
                     </div>
 
                     <div class="flex items-center justify-between pt-2 border-t border-slate-100">
-                        @if($startDate !== $defaultStartDate || $endDate !== $defaultEndDate)
-                            <a href="{{ route('warehouse.index') }}" class="text-xs font-bold text-slate-500 hover:text-rose-700 transition-colors">
-                                Reset Default
+                        @if($hasDateFilter)
+                            <a href="{{ route('warehouse.index') }}" class="text-xs font-bold text-slate-500 hover:text-rose-700 flex items-center gap-1 transition-colors">
+                                <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                                <span>Reset (Semua Data)</span>
                             </a>
                         @else
-                            <span class="text-[10px] text-slate-400 font-medium">Periode aktif: {{ $diffDays }} hari</span>
+                            <span class="text-[10px] text-emerald-700 font-bold flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                Menampilkan Semua Data
+                            </span>
                         @endif
 
                         <button type="submit" 
@@ -132,6 +178,7 @@
         @else
         <div class="relative">
             <div class="cursor-not-allowed bg-slate-50 border border-slate-200 rounded-2xl p-1.5 sm:p-2 flex items-center gap-1.5 sm:gap-2.5 select-none opacity-80">
+                @if($hasDateFilter)
                 <div class="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-white">
                     <div class="w-7 h-7 rounded-lg bg-slate-100 text-slate-400 flex items-center justify-center shrink-0">
                         <i data-lucide="calendar" class="w-4 h-4"></i>
@@ -160,6 +207,17 @@
                         </div>
                     </div>
                 </div>
+                @else
+                <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white">
+                    <div class="w-7 h-7 rounded-lg bg-slate-100 text-slate-400 flex items-center justify-center shrink-0">
+                        <i data-lucide="calendar-range" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <div class="text-[9px] font-extrabold uppercase tracking-wider text-slate-400">Periode Data</div>
+                        <div class="text-xs sm:text-sm font-black text-slate-700">Semua Data (Seluruh Waktu)</div>
+                    </div>
+                </div>
+                @endif
             </div>
         </div>
         @endif
@@ -171,7 +229,7 @@
 
         <!-- 1. GUDANG TELUR -->
         @if(!auth()->check() || auth()->user()->canAccess('warehouse_click_telur'))
-        <a href="{{ route('warehouse.telur', ['start_date' => $startDate, 'end_date' => $endDate]) }}" class="farm-card farm-card-interactive p-3.5 sm:p-5 block group relative overflow-hidden">
+        <a href="{{ route('warehouse.telur', array_filter(['start_date' => $startDate, 'end_date' => $endDate])) }}" class="farm-card farm-card-interactive p-3.5 sm:p-5 block group relative overflow-hidden">
         @else
         <div class="farm-card p-3.5 sm:p-5 block relative overflow-hidden opacity-90 cursor-not-allowed bg-slate-50">
         @endif
@@ -228,23 +286,22 @@
                             <div class="text-[11px] sm:text-xs text-slate-600 font-semibold">& {{ $telurKeluarKg == floor($telurKeluarKg) ? number_format($telurKeluarKg, 0, ',', '.') : number_format($telurKeluarKg, 1, ',', '.') }} <span class="text-[9px] font-normal text-slate-500">Kg</span></div>
                         @endif
                     </div>
-                    <div class="text-[9px] sm:text-[10px] font-medium text-slate-400 truncate" title="{{ number_format((int) $telurPetiSold, 0, ',', '.') }} Peti • {{ $telurKgSold == floor($telurKgSold) ? number_format($telurKgSold, 0, ',', '.') : number_format($telurKgSold, 1, ',', '.') }} Kg Terjual">
-                        {{ number_format((int) $telurPetiSold, 0, ',', '.') }} Peti Terjual
+                    <div class="text-[9px] sm:text-[10px] font-medium text-slate-400 truncate">
+                        Penjualan & Rusak
                     </div>
                 </div>
 
-                <!-- 3. Stok Saat Ini (Peti & Kg - Mendukung Nilai Mines / Defisit) -->
+                <!-- 3. Stok Saat Ini (Peti & Kg) -->
                 <div class="text-right space-y-0.5 min-w-0">
                     <div class="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider">Sisa Stok</div>
-                    <div class="text-xs sm:text-sm font-black leading-tight {{ $telurStok < 0 || $telurStokKgTotal < 0 ? 'text-rose-600' : 'text-emerald-600' }}">
-                        <div>{{ number_format((int) $telurStok, 0, ',', '.') }} <span class="text-[10px] font-bold {{ $telurStok < 0 ? 'text-rose-600' : 'text-emerald-700' }}">Peti</span></div>
+                    <div class="text-xs sm:text-base font-extrabold leading-tight {{ $telurStok < 0 ? 'text-rose-600' : 'text-emerald-700' }}">
+                        <div>{{ number_format((int) $telurStok, 0, ',', '.') }} <span class="text-[10px] font-bold text-slate-600">Peti</span></div>
                         @if($telurStokKgTotal != 0)
-                            @php $absStokKg = abs($telurStokKgTotal); @endphp
-                            <div class="text-[11px] sm:text-xs font-bold {{ $telurStokKgTotal < 0 ? 'text-rose-600' : 'text-emerald-600' }}">& {{ $absStokKg == floor($absStokKg) ? number_format($absStokKg, 0, ',', '.') : number_format($absStokKg, 1, ',', '.') }} <span class="text-[9px] font-normal text-slate-500">Kg</span></div>
+                            <div class="text-[11px] sm:text-xs font-bold {{ $telurStokKgTotal < 0 ? 'text-rose-600' : 'text-emerald-700' }}">& {{ $telurStokKgTotal == floor($telurStokKgTotal) ? number_format($telurStokKgTotal, 0, ',', '.') : number_format($telurStokKgTotal, 1, ',', '.') }} <span class="text-[9px] font-normal text-slate-500">Kg</span></div>
                         @endif
                     </div>
-                    <div class="text-[9px] sm:text-[10px] font-semibold truncate {{ $telurStok < 0 || $telurStokKgTotal < 0 ? 'text-rose-600' : 'text-emerald-600' }}">
-                        {{ $telurStok < 0 || $telurStokKgTotal < 0 ? 'Defisit Stok' : 'Tersedia' }}
+                    <div class="text-[9px] sm:text-[10px] font-semibold {{ $telurStok < 0 ? 'text-rose-600' : 'text-emerald-600' }} truncate">
+                        {{ $telurStok < 0 ? 'Defisit' : 'Tersedia' }}
                     </div>
                 </div>
             </div>
@@ -256,7 +313,7 @@
 
         <!-- 2. GUDANG PAKAN -->
         @if(!auth()->check() || auth()->user()->canAccess('warehouse_click_pakan'))
-        <a href="{{ route('warehouse.pakan', ['start_date' => $startDate, 'end_date' => $endDate]) }}" class="farm-card farm-card-interactive p-3.5 sm:p-5 block group relative overflow-hidden">
+        <a href="{{ route('warehouse.pakan', array_filter(['start_date' => $startDate, 'end_date' => $endDate])) }}" class="farm-card farm-card-interactive p-3.5 sm:p-5 block group relative overflow-hidden">
         @else
         <div class="farm-card p-3.5 sm:p-5 block relative overflow-hidden opacity-90 cursor-not-allowed bg-slate-50">
         @endif
@@ -329,7 +386,7 @@
 
         <!-- 3. GUDANG OBAT, VAKSIN & VITAMIN -->
         @if(!auth()->check() || auth()->user()->canAccess('warehouse_click_obat'))
-        <a href="{{ route('warehouse.obat', ['start_date' => $startDate, 'end_date' => $endDate]) }}" class="farm-card farm-card-interactive p-4 sm:p-6 block group relative overflow-hidden">
+        <a href="{{ route('warehouse.obat', array_filter(['start_date' => $startDate, 'end_date' => $endDate])) }}" class="farm-card farm-card-interactive p-4 sm:p-6 block group relative overflow-hidden">
         @else
         <div class="farm-card p-4 sm:p-6 block relative overflow-hidden opacity-90 cursor-not-allowed bg-slate-50">
         @endif
@@ -500,7 +557,11 @@
                         GRAFIK TREN ALIRAN BARANG GUDANG
                     </h3>
                     <p class="text-[11px] text-slate-400" id="chartSubtitle">
-                        Visualisasi pergerakan {{ $diffDays }} hari ({{ $formattedStartDate }} – {{ $formattedEndDate }}): Masuk, Digunakan, Keluar & Terjual
+                        @if($hasDateFilter)
+                            Visualisasi pergerakan {{ $diffDays }} hari ({{ $formattedStartDate }} – {{ $formattedEndDate }}): Masuk, Digunakan, Keluar & Terjual
+                        @else
+                            Visualisasi tren 14 hari terakhir & akumulasi data seluruh waktu: Masuk, Digunakan, Keluar & Terjual
+                        @endif
                     </p>
                 </div>
             </div>
@@ -563,7 +624,7 @@
                     </div>
                 </div>
                 <div id="statKeluarContent" class="mt-1.5"></div>
-                <span id="statKeluarSub" class="text-[10px] text-rose-600/80 font-medium mt-1">Total Keluar Gudang</span>
+                <span id="statKeluarSub" class="text-[10px] text-rose-600/80 font-medium mt-1">Rusak & Penjualan</span>
             </div>
 
             <!-- 4. Terjual -->
@@ -577,7 +638,7 @@
                     </div>
                 </div>
                 <div id="statTerjualContent" class="mt-1.5"></div>
-                <span id="statTerjualSub" class="text-[10px] text-amber-600/80 font-medium mt-1">Penjualan nochifram</span>
+                <span id="statTerjualSub" class="text-[10px] text-amber-600/80 font-medium mt-1">Penjualan Terkoneksi</span>
             </div>
         </div>
 
@@ -587,13 +648,13 @@
             <div class="flex flex-wrap items-center justify-between gap-1 mb-2">
                 <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                     <i data-lucide="external-link" class="w-3.5 h-3.5 text-slate-400"></i>
-                    Akses Langsung 8 Aliran Data Gudang (Periode {{ $diffDays }} Hari):
+                    Akses Langsung 8 Aliran Data Gudang @if($hasDateFilter)(Periode {{ $diffDays }} Hari)@else(Akumulasi Seluruh Data)@endif:
                 </span>
                 <span class="text-[10px] text-slate-400">Klik untuk langsung membuka tab data</span>
             </div>
             <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
                 <!-- 1. Telur Masuk -->
-                <a href="{{ route('warehouse.telur', ['tab' => 'masuk', 'start_date' => $startDate, 'end_date' => $endDate]) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-emerald-50/60 border border-slate-200/80 hover:border-emerald-300 hover:shadow-xs transition-all group block">
+                <a href="{{ route('warehouse.telur', array_filter(['tab' => 'masuk', 'start_date' => $startDate, 'end_date' => $endDate])) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-emerald-50/60 border border-slate-200/80 hover:border-emerald-300 hover:shadow-xs transition-all group block">
                     <div class="flex items-center justify-between">
                         <span class="text-[10px] font-extrabold text-slate-700 group-hover:text-emerald-800">Telur Masuk</span>
                         <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
@@ -607,7 +668,7 @@
                 </a>
 
                 <!-- 2. Telur Rusak -->
-                <a href="{{ route('warehouse.telur', ['tab' => 'keluar', 'start_date' => $startDate, 'end_date' => $endDate]) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-rose-50/60 border border-slate-200/80 hover:border-rose-300 hover:shadow-xs transition-all group block">
+                <a href="{{ route('warehouse.telur', array_filter(['tab' => 'keluar', 'start_date' => $startDate, 'end_date' => $endDate])) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-rose-50/60 border border-slate-200/80 hover:border-rose-300 hover:shadow-xs transition-all group block">
                     <div class="flex items-center justify-between">
                         <span class="text-[10px] font-extrabold text-slate-700 group-hover:text-rose-800">Telur Rusak</span>
                         <span class="w-2 h-2 rounded-full bg-rose-500 shrink-0"></span>
@@ -621,7 +682,7 @@
                 </a>
 
                 <!-- 3. Telur Penjualan -->
-                <a href="{{ route('warehouse.telur', ['tab' => 'penjualan', 'start_date' => $startDate, 'end_date' => $endDate]) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-amber-50/60 border border-slate-200/80 hover:border-amber-300 hover:shadow-xs transition-all group block">
+                <a href="{{ route('warehouse.telur', array_filter(['tab' => 'penjualan', 'start_date' => $startDate, 'end_date' => $endDate])) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-amber-50/60 border border-slate-200/80 hover:border-amber-300 hover:shadow-xs transition-all group block">
                     <div class="flex items-center justify-between">
                         <span class="text-[10px] font-extrabold text-slate-700 group-hover:text-amber-800">Telur Terjual</span>
                         <span class="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
@@ -635,7 +696,7 @@
                 </a>
 
                 <!-- 4. Pakan Masuk -->
-                <a href="{{ route('warehouse.pakan', ['tab' => 'masuk', 'start_date' => $startDate, 'end_date' => $endDate]) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-sky-50/60 border border-slate-200/80 hover:border-sky-300 hover:shadow-xs transition-all group block">
+                <a href="{{ route('warehouse.pakan', array_filter(['tab' => 'masuk', 'start_date' => $startDate, 'end_date' => $endDate])) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-sky-50/60 border border-slate-200/80 hover:border-sky-300 hover:shadow-xs transition-all group block">
                     <div class="flex items-center justify-between">
                         <span class="text-[10px] font-extrabold text-slate-700 group-hover:text-sky-800">Pakan Masuk</span>
                         <span class="w-2 h-2 rounded-full bg-sky-500 shrink-0"></span>
@@ -649,7 +710,7 @@
                 </a>
 
                 <!-- 5. Pemberian Pakan -->
-                <a href="{{ route('warehouse.pakan', ['tab' => 'keluar', 'start_date' => $startDate, 'end_date' => $endDate]) }}" class="p-2 rounded-xl bg-purple-50/80 hover:bg-purple-100/60 border border-slate-200/80 hover:border-purple-300 hover:shadow-xs transition-all group block">
+                <a href="{{ route('warehouse.pakan', array_filter(['tab' => 'keluar', 'start_date' => $startDate, 'end_date' => $endDate])) }}" class="p-2 rounded-xl bg-purple-50/80 hover:bg-purple-100/60 border border-slate-200/80 hover:border-purple-300 hover:shadow-xs transition-all group block">
                     <div class="flex items-center justify-between">
                         <span class="text-[10px] font-extrabold text-slate-700 group-hover:text-purple-800">Pemberian Pakan</span>
                         <span class="w-2 h-2 rounded-full bg-purple-500 shrink-0"></span>
@@ -663,7 +724,7 @@
                 </a>
 
                 <!-- 6. Pakan Terjual -->
-                <a href="{{ route('warehouse.pakan', ['tab' => 'penjualan', 'start_date' => $startDate, 'end_date' => $endDate]) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-orange-50/60 border border-slate-200/80 hover:border-orange-300 hover:shadow-xs transition-all group block">
+                <a href="{{ route('warehouse.pakan', array_filter(['tab' => 'penjualan', 'start_date' => $startDate, 'end_date' => $endDate])) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-orange-50/60 border border-slate-200/80 hover:border-orange-300 hover:shadow-xs transition-all group block">
                     <div class="flex items-center justify-between">
                         <span class="text-[10px] font-extrabold text-slate-700 group-hover:text-orange-800">Pakan Terjual</span>
                         <span class="w-2 h-2 rounded-full bg-orange-500 shrink-0"></span>
@@ -677,7 +738,7 @@
                 </a>
 
                 <!-- 7. Obat Masuk -->
-                <a href="{{ route('warehouse.obat', ['tab' => 'masuk', 'start_date' => $startDate, 'end_date' => $endDate]) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-teal-50/60 border border-slate-200/80 hover:border-teal-300 hover:shadow-xs transition-all group block">
+                <a href="{{ route('warehouse.obat', array_filter(['tab' => 'masuk', 'start_date' => $startDate, 'end_date' => $endDate])) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-teal-50/60 border border-slate-200/80 hover:border-teal-300 hover:shadow-xs transition-all group block">
                     <div class="flex items-center justify-between">
                         <span class="text-[10px] font-extrabold text-slate-700 group-hover:text-teal-800">Obat Masuk</span>
                         <span class="w-2 h-2 rounded-full bg-teal-500 shrink-0"></span>
@@ -691,7 +752,7 @@
                 </a>
 
                 <!-- 8. Pemakaian Obat -->
-                <a href="{{ route('warehouse.obat', ['tab' => 'keluar', 'start_date' => $startDate, 'end_date' => $endDate]) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-pink-50/60 border border-slate-200/80 hover:border-pink-300 hover:shadow-xs transition-all group block">
+                <a href="{{ route('warehouse.obat', array_filter(['tab' => 'keluar', 'start_date' => $startDate, 'end_date' => $endDate])) }}" class="p-2 rounded-xl bg-slate-50/80 hover:bg-pink-50/60 border border-slate-200/80 hover:border-pink-300 hover:shadow-xs transition-all group block">
                     <div class="flex items-center justify-between">
                         <span class="text-[10px] font-extrabold text-slate-700 group-hover:text-pink-800">Pemakaian Obat</span>
                         <span class="w-2 h-2 rounded-full bg-pink-500 shrink-0"></span>
@@ -729,7 +790,7 @@
             </div>
             
             <div class="flex items-center gap-2">
-                <a href="{{ route('warehouse.telur', ['start_date' => $startDate, 'end_date' => $endDate]) }}" class="text-xs font-bold text-maroon-700 hover:text-maroon-900 transition-colors">
+                <a href="{{ route('warehouse.telur', array_filter(['start_date' => $startDate, 'end_date' => $endDate])) }}" class="text-xs font-bold text-maroon-700 hover:text-maroon-900 transition-colors">
                     Lihat Semua →
                 </a>
             </div>
@@ -787,7 +848,7 @@
                         <!-- Action Buttons -->
                         @if(!auth()->check() || auth()->user()->canAccess('warehouse_btn_manage'))
                         <div class="mt-2 flex items-center justify-end gap-2">
-                            <a href="{{ route('warehouse.' . $cat, ['start_date' => $startDate, 'end_date' => $endDate]) }}" class="px-2 py-1 bg-white border border-slate-200 text-slate-500 rounded-md hover:text-blue-600 hover:border-blue-300 transition-colors text-[10px] font-bold flex items-center gap-1" title="Lihat/Edit di Detail">
+                            <a href="{{ route('warehouse.' . $cat, array_filter(['start_date' => $startDate, 'end_date' => $endDate])) }}" class="px-2 py-1 bg-white border border-slate-200 text-slate-500 rounded-md hover:text-blue-600 hover:border-blue-300 transition-colors text-[10px] font-bold flex items-center gap-1" title="Lihat/Edit di Detail">
                                 <i data-lucide="edit" class="w-3 h-3"></i> Edit
                             </a>
                             <form action="{{ route('warehouse.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Hapus data transaksi ini?');">
@@ -828,7 +889,7 @@
             </div>
             
             <div class="flex items-center gap-2">
-                <a href="{{ route('warehouse.telur', ['tab' => 'penjualan', 'start_date' => $startDate, 'end_date' => $endDate]) }}" class="text-xs font-bold text-maroon-700 hover:text-maroon-900 transition-colors">
+                <a href="{{ route('warehouse.telur', array_filter(['tab' => 'penjualan', 'start_date' => $startDate, 'end_date' => $endDate])) }}" class="text-xs font-bold text-maroon-700 hover:text-maroon-900 transition-colors">
                     Semua Penjualan →
                 </a>
             </div>
@@ -927,15 +988,15 @@
 
             cMasuk.innerHTML = `
                 <div class="space-y-1 text-xs">
-                    <a href="{{ route('warehouse.telur', ['tab' => 'masuk']) }}" class="flex justify-between items-center text-slate-700 hover:text-emerald-700 transition-colors">
+                    <a href="{{ route('warehouse.telur', array_filter(['tab' => 'masuk', 'start_date' => $startDate, 'end_date' => $endDate])) }}" class="flex justify-between items-center text-slate-700 hover:text-emerald-700 transition-colors">
                         <span class="text-slate-500">Telur:</span>
                         <span class="font-extrabold text-slate-800">${Number(warehouseStreamTotals.telur_masuk).toLocaleString('id-ID', {maximumFractionDigits: 1})} Peti</span>
                     </a>
-                    <a href="{{ route('warehouse.pakan', ['tab' => 'masuk']) }}" class="flex justify-between items-center text-slate-700 hover:text-emerald-700 transition-colors">
+                    <a href="{{ route('warehouse.pakan', array_filter(['tab' => 'masuk', 'start_date' => $startDate, 'end_date' => $endDate])) }}" class="flex justify-between items-center text-slate-700 hover:text-emerald-700 transition-colors">
                         <span class="text-slate-500">Pakan:</span>
                         <span class="font-extrabold text-slate-800">${Number(warehouseStreamTotals.pakan_masuk).toLocaleString('id-ID', {maximumFractionDigits: 1})} Kg</span>
                     </a>
-                    <a href="{{ route('warehouse.obat', ['tab' => 'masuk']) }}" class="flex justify-between items-center text-slate-700 hover:text-emerald-700 transition-colors">
+                    <a href="{{ route('warehouse.obat', array_filter(['tab' => 'masuk', 'start_date' => $startDate, 'end_date' => $endDate])) }}" class="flex justify-between items-center text-slate-700 hover:text-emerald-700 transition-colors">
                         <span class="text-slate-500">Obat:</span>
                         <span class="font-extrabold text-slate-800">${Number(warehouseStreamTotals.obat_masuk).toLocaleString('id-ID', {maximumFractionDigits: 1})} Item</span>
                     </a>
@@ -944,15 +1005,15 @@
 
             cDigunakan.innerHTML = `
                 <div class="space-y-1 text-xs">
-                    <a href="{{ route('warehouse.pakan', ['tab' => 'keluar']) }}" class="flex justify-between items-center text-slate-700 hover:text-indigo-700 transition-colors">
+                    <a href="{{ route('warehouse.pakan', array_filter(['tab' => 'keluar', 'start_date' => $startDate, 'end_date' => $endDate])) }}" class="flex justify-between items-center text-slate-700 hover:text-indigo-700 transition-colors">
                         <span class="text-slate-500">Pakan:</span>
                         <span class="font-extrabold text-slate-800">${Number(warehouseStreamTotals.pakan_konsumsi).toLocaleString('id-ID', {maximumFractionDigits: 1})} Kg</span>
                     </a>
-                    <a href="{{ route('warehouse.telur', ['tab' => 'keluar']) }}" class="flex justify-between items-center text-slate-700 hover:text-indigo-700 transition-colors">
+                    <a href="{{ route('warehouse.telur', array_filter(['tab' => 'keluar', 'start_date' => $startDate, 'end_date' => $endDate])) }}" class="flex justify-between items-center text-slate-700 hover:text-indigo-700 transition-colors">
                         <span class="text-slate-500">Telur Rusak:</span>
                         <span class="font-extrabold text-slate-800">${Number(warehouseStreamTotals.telur_rusak_butir).toLocaleString('id-ID')} Btr</span>
                     </a>
-                    <a href="{{ route('warehouse.obat', ['tab' => 'keluar']) }}" class="flex justify-between items-center text-slate-700 hover:text-indigo-700 transition-colors">
+                    <a href="{{ route('warehouse.obat', array_filter(['tab' => 'keluar', 'start_date' => $startDate, 'end_date' => $endDate])) }}" class="flex justify-between items-center text-slate-700 hover:text-indigo-700 transition-colors">
                         <span class="text-slate-500">Obat Dipakai:</span>
                         <span class="font-extrabold text-slate-800">${Number(warehouseStreamTotals.obat_konsumsi).toLocaleString('id-ID', {maximumFractionDigits: 1})} Dosis</span>
                     </a>
@@ -964,15 +1025,15 @@
 
             cKeluar.innerHTML = `
                 <div class="space-y-1 text-xs">
-                    <a href="{{ route('warehouse.telur', ['tab' => 'semua']) }}" class="flex justify-between items-center text-slate-700 hover:text-rose-700 transition-colors">
+                    <a href="{{ route('warehouse.telur', array_filter(['tab' => 'semua', 'start_date' => $startDate, 'end_date' => $endDate])) }}" class="flex justify-between items-center text-slate-700 hover:text-rose-700 transition-colors">
                         <span class="text-slate-500">Telur Total:</span>
                         <span class="font-extrabold text-slate-800">${Number(totalTelurKeluar).toLocaleString('id-ID')} Peti</span>
                     </a>
-                    <a href="{{ route('warehouse.pakan', ['tab' => 'semua']) }}" class="flex justify-between items-center text-slate-700 hover:text-rose-700 transition-colors">
+                    <a href="{{ route('warehouse.pakan', array_filter(['tab' => 'semua', 'start_date' => $startDate, 'end_date' => $endDate])) }}" class="flex justify-between items-center text-slate-700 hover:text-rose-700 transition-colors">
                         <span class="text-slate-500">Pakan Total:</span>
                         <span class="font-extrabold text-slate-800">${Number(totalPakanKeluar).toLocaleString('id-ID')} Kg</span>
                     </a>
-                    <a href="{{ route('warehouse.obat', ['tab' => 'keluar']) }}" class="flex justify-between items-center text-slate-700 hover:text-rose-700 transition-colors">
+                    <a href="{{ route('warehouse.obat', array_filter(['tab' => 'keluar', 'start_date' => $startDate, 'end_date' => $endDate])) }}" class="flex justify-between items-center text-slate-700 hover:text-rose-700 transition-colors">
                         <span class="text-slate-500">Obat Pakai:</span>
                         <span class="font-extrabold text-slate-800">${Number(warehouseStreamTotals.obat_konsumsi).toLocaleString('id-ID', {maximumFractionDigits: 1})} Dosis</span>
                     </a>
@@ -981,11 +1042,11 @@
 
             cTerjual.innerHTML = `
                 <div class="space-y-1 text-xs">
-                    <a href="{{ route('warehouse.telur', ['tab' => 'penjualan']) }}" class="flex justify-between items-center text-slate-700 hover:text-amber-700 transition-colors">
+                    <a href="{{ route('warehouse.telur', array_filter(['tab' => 'penjualan', 'start_date' => $startDate, 'end_date' => $endDate])) }}" class="flex justify-between items-center text-slate-700 hover:text-amber-700 transition-colors">
                         <span class="text-slate-500">Telur:</span>
                         <span class="font-extrabold text-slate-800">${Number(warehouseStreamTotals.telur_terjual).toLocaleString('id-ID', {maximumFractionDigits: 1})} Peti</span>
                     </a>
-                    <a href="{{ route('warehouse.pakan', ['tab' => 'penjualan']) }}" class="flex justify-between items-center text-slate-700 hover:text-amber-700 transition-colors">
+                    <a href="{{ route('warehouse.pakan', array_filter(['tab' => 'penjualan', 'start_date' => $startDate, 'end_date' => $endDate])) }}" class="flex justify-between items-center text-slate-700 hover:text-amber-700 transition-colors">
                         <span class="text-slate-500">Pakan:</span>
                         <span class="font-extrabold text-slate-800">${Number(warehouseStreamTotals.pakan_terjual).toLocaleString('id-ID', {maximumFractionDigits: 1})} Kg</span>
                     </a>
@@ -1191,6 +1252,27 @@
             if (sInput.value > eInput.value) {
                 eInput.value = sInput.value;
             }
+            document.getElementById('travelokaDateForm').submit();
+        }
+    }
+
+    function applyPresetDates(days) {
+        const end = new Date();
+        const start = new Date();
+        start.setDate(end.getDate() - (days - 1));
+
+        const formatYMD = (d) => {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        const sInput = document.getElementById('travelokaStartDate');
+        const eInput = document.getElementById('travelokaEndDate');
+        if (sInput && eInput) {
+            sInput.value = formatYMD(start);
+            eInput.value = formatYMD(end);
             document.getElementById('travelokaDateForm').submit();
         }
     }

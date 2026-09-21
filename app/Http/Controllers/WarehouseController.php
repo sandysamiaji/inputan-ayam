@@ -103,6 +103,8 @@ class WarehouseController extends Controller
         $telurStokButir = $eggSummary['current_stock_eggs'];
         $telurPetiSold = $eggSummary['peti_sold'];
         $telurKgSold = $eggSummary['kg_sold'];
+        $telurRusakPeti = $eggSummary['total_broken_peti'] ?? 0;
+        $telurRusakButir = $eggSummary['total_broken_eggs'] ?? 0;
         $telurRevenue = $eggSummary['total_revenue'];
 
         // 2. Gudang Pakan (Terintegrasi Konsumsi Kandang & Penjualan Luar)
@@ -330,15 +332,15 @@ class WarehouseController extends Controller
         $sumObatKonsumsi = round(array_sum($chartObatKonsumsi), 1);
 
         $streamTotals = [
-            'telur_masuk' => $hasDateFilter ? $sumTelurMasuk : $telurMasuk,
-            'telur_rusak_peti' => $hasDateFilter ? $sumTelurRusakPeti : round(($eggSummary['total_broken_eggs'] ?? 0) / 25, 2),
-            'telur_rusak_butir' => $hasDateFilter ? $sumTelurRusakButir : ($eggSummary['total_broken_eggs'] ?? 0),
-            'telur_terjual' => $hasDateFilter ? $sumTelurTerjual : $telurPetiSold,
-            'pakan_masuk' => $hasDateFilter ? $sumPakanMasuk : $pakanMasuk,
-            'pakan_konsumsi' => $hasDateFilter ? $sumPakanKonsumsi : $pakanConsumptionKg,
-            'pakan_terjual' => $hasDateFilter ? $sumPakanTerjual : round($pakanKarungSold + ($pakanKgSold / 50), 1),
-            'obat_masuk' => $hasDateFilter ? $sumObatMasuk : $obatMasuk,
-            'obat_konsumsi' => $hasDateFilter ? $sumObatKonsumsi : $obatKeluar,
+            'telur_masuk' => $telurMasuk,
+            'telur_rusak_peti' => $telurRusakPeti,
+            'telur_rusak_butir' => $telurRusakButir,
+            'telur_terjual' => $telurPetiSold,
+            'pakan_masuk' => $pakanMasuk,
+            'pakan_konsumsi' => $pakanConsumptionKg,
+            'pakan_terjual' => round($pakanKarungSold + ($pakanKgSold / 50), 1),
+            'obat_masuk' => $obatMasuk,
+            'obat_konsumsi' => $obatKeluar,
         ];
 
         $dateParams = array_filter(['start_date' => $startDate, 'end_date' => $endDate]);
@@ -519,17 +521,17 @@ class WarehouseController extends Controller
             ],
         ];
 
-        $displayTelurMasuk = $hasDateFilter ? $sumTelurMasuk : $telurMasuk;
-        $displayTelurRusakPeti = $hasDateFilter ? $sumTelurRusakPeti : round(($eggSummary['total_broken_eggs'] ?? 0) / 25, 2);
-        $displayTelurRusakButir = $hasDateFilter ? $sumTelurRusakButir : ($eggSummary['total_broken_eggs'] ?? 0);
-        $displayTelurTerjual = $hasDateFilter ? $sumTelurTerjual : $telurPetiSold;
+        $displayTelurMasuk = $telurMasuk;
+        $displayTelurRusakPeti = $telurRusakPeti;
+        $displayTelurRusakButir = $telurRusakButir;
+        $displayTelurTerjual = $telurPetiSold;
 
-        $displayPakanMasuk = $hasDateFilter ? $sumPakanMasuk : $pakanMasuk;
-        $displayPakanKonsumsi = $hasDateFilter ? $sumPakanKonsumsi : $pakanConsumptionKg;
-        $displayPakanTerjual = $hasDateFilter ? $sumPakanTerjual : round(($pakanKarungSold * 50) + $pakanKgSold, 1);
+        $displayPakanMasuk = $pakanMasuk;
+        $displayPakanKonsumsi = $pakanConsumptionKg;
+        $displayPakanTerjual = round(($pakanKarungSold * 50) + $pakanKgSold, 1);
 
-        $displayObatMasuk = $hasDateFilter ? $sumObatMasuk : $obatMasuk;
-        $displayObatKonsumsi = $hasDateFilter ? $sumObatKonsumsi : $obatKeluar;
+        $displayObatMasuk = $obatMasuk;
+        $displayObatKonsumsi = $obatKeluar;
 
         $chartTotals = [
             'overview' => [
@@ -581,7 +583,7 @@ class WarehouseController extends Controller
 
         return view('warehouse.index', compact(
             'user',
-            'telurMasuk', 'telurMasukButir', 'telurMasukKg', 'telurKeluar', 'telurKeluarKg', 'telurKeluarEggs', 'telurStok', 'telurStokKgTotal', 'telurStokButir', 'telurPetiSold', 'telurKgSold', 'telurRevenue',
+            'telurMasuk', 'telurMasukButir', 'telurMasukKg', 'telurKeluar', 'telurKeluarKg', 'telurKeluarEggs', 'telurStok', 'telurStokKgTotal', 'telurStokButir', 'telurPetiSold', 'telurKgSold', 'telurRusakPeti', 'telurRusakButir', 'telurRevenue',
             'pakanMasuk', 'pakanMasukKarung', 'pakanKeluar', 'pakanTotalKarungKeluar', 'pakanStok', 'pakanStokKarung', 'pakanKarungSold', 'pakanKgSold', 'pakanConsumptionKg', 'pakanConsumptionKarung', 'pakanRevenue', 'feedSummary',
             'obatMasuk', 'obatKeluar', 'obatStok',
             'karantinaMasuk', 'karantinaKeluar', 'karantinaStok',
@@ -834,6 +836,8 @@ class WarehouseController extends Controller
         $totalRevenue = $eggSummary['total_revenue'];
         $transactionCount = $eggSummary['transaction_count'];
         $totalEggsCount = $eggSummary['total_produced_eggs'];
+        $totalBrokenEggs = $eggSummary['total_broken_eggs'] ?? 0;
+        $totalBrokenPeti = $eggSummary['total_broken_peti'] ?? 0;
 
         // Data Penjualan Telur dari aplikasi nochifram
         $salesList = OutboundIntegrationService::getSalesTransactions('telur', $startDate, $endDate, 50);
@@ -844,7 +848,7 @@ class WarehouseController extends Controller
 
         return view('warehouse.telur', compact(
             'user', 'items', 'tab', 'search', 'startDate', 'endDate',
-            'totalMasuk', 'totalMasukKg', 'totalKeluar', 'totalKeluarKg', 'stokSaatIni', 'stokSaatIniKg', 'stokSaatIniButir',
+            'totalMasuk', 'totalMasukKg', 'totalKeluar', 'totalKeluarKg', 'totalBrokenEggs', 'totalBrokenPeti', 'stokSaatIni', 'stokSaatIniKg', 'stokSaatIniButir',
             'petiSold', 'kgSold', 'totalRevenue', 'transactionCount', 'totalEggsCount',
             'salesList', 'tripList', 'coops', 'flocks'
         ));

@@ -50,6 +50,16 @@
                     {{ number_format((int) $petiSold, 0, ',', '.') }} Peti{{ $kgSold > 0 ? ' & ' . ($kgSold == floor($kgSold) ? number_format($kgSold, 0, ',', '.') : number_format($kgSold, 1, ',', '.')) . ' Kg' : '' }}
                 </span>
             </div>
+            <div class="hidden sm:block h-7 w-px bg-slate-200"></div>
+            <div class="text-left sm:text-right">
+                <span class="text-[10px] uppercase font-bold text-rose-600 block flex items-center gap-1">
+                    <i data-lucide="alert-triangle" class="w-3 h-3 text-rose-600"></i> Rusak
+                </span>
+                <span class="text-xs sm:text-sm font-extrabold text-rose-600">
+                    {{ number_format($totalBrokenPeti ?? 0, 2, ',', '.') }} Peti
+                </span>
+                <span class="text-[10px] block text-slate-400 font-medium">({{ number_format($totalBrokenEggs ?? 0, 0, ',', '.') }} Btr)</span>
+            </div>
         </div>
     </div>
 
@@ -65,7 +75,7 @@
                     <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">1 DB nochifram</span>
                 </div>
                 <p class="text-xs text-slate-500 mt-0.5">
-                    Data barang keluar otomatis memotong stok telur berdasarkan penjualan <b>{{ number_format($petiSold, 0, ',', '.') }} Peti</b> dan <b>{{ number_format($kgSold, 1, ',', '.') }} Kg</b> di kasir/toko.
+                    Data barang keluar otomatis memotong stok telur berdasarkan penjualan <b>{{ number_format($petiSold, 0, ',', '.') }} Peti</b> dan telur rusak <b>{{ number_format($totalBrokenPeti ?? 0, 2, ',', '.') }} Peti ({{ number_format($totalBrokenEggs ?? 0, 0, ',', '.') }} btr)</b>.
                 </p>
             </div>
         </div>

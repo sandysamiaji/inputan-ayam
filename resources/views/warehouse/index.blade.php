@@ -305,6 +305,31 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Rincian Keluar: Terjual vs Rusak (Transparan & Sesuai Filter) -->
+            <div class="mt-2.5 pt-2 border-t border-slate-100 grid grid-cols-2 gap-1.5 sm:gap-2 text-xs">
+                <div class="p-2 rounded-xl bg-amber-50/80 border border-amber-200/70 flex flex-col justify-between">
+                    <span class="text-[9px] sm:text-[9.5px] font-extrabold text-amber-800 uppercase tracking-wider flex items-center gap-1">
+                        <i data-lucide="shopping-cart" class="w-3 h-3 text-amber-600 shrink-0"></i> Terjual
+                    </span>
+                    <div class="text-xs sm:text-sm font-black text-amber-900 mt-1 leading-tight">
+                        {{ number_format((int) $telurPetiSold, 0, ',', '.') }} <span class="text-[10px] font-semibold text-amber-700">Peti</span>
+                        @if($telurKgSold > 0)
+                            <div class="text-[10px] text-amber-800 font-semibold mt-0.5">& {{ $telurKgSold == floor($telurKgSold) ? number_format($telurKgSold, 0, ',', '.') : number_format($telurKgSold, 1, ',', '.') }} kg</div>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="p-2 rounded-xl bg-rose-50/80 border border-rose-200/70 flex flex-col justify-between">
+                    <span class="text-[9px] sm:text-[9.5px] font-extrabold text-rose-800 uppercase tracking-wider flex items-center gap-1">
+                        <i data-lucide="alert-triangle" class="w-3 h-3 text-rose-600 shrink-0"></i> Rusak / Pecah
+                    </span>
+                    <div class="text-xs sm:text-sm font-black text-rose-900 mt-1 leading-tight">
+                        {{ number_format($telurRusakPeti, 2, ',', '.') }} <span class="text-[10px] font-semibold text-rose-700">Peti</span>
+                        <div class="text-[10px] text-rose-700 font-semibold mt-0.5">({{ number_format($telurRusakButir, 0, ',', '.') }} Btr)</div>
+                    </div>
+                </div>
+            </div>
         @if(!auth()->check() || auth()->user()->canAccess('warehouse_click_telur'))
         </a>
         @else

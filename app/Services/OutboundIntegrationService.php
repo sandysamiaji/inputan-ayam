@@ -53,7 +53,7 @@ class OutboundIntegrationService
         $manualKeluarPeti = (float) $manualKeluarPetiQuery->sum('quantity');
         $manualKeluarKg = (float) $manualKeluarKgQuery->sum('quantity');
 
-        // Total produksi telur kandang (Barang Masuk)
+        // Total produksi telur kandang (Barang Masuk & Telur Rusak)
         $prodQuery = EggProduction::query();
         if ($startDate && $endDate) {
             $prodQuery->whereBetween('date', [$startDate, $endDate]);
@@ -61,6 +61,18 @@ class OutboundIntegrationService
         $totalProducedCrates = (float) $prodQuery->sum('crates_count');
         $totalProducedEggs = (int) $prodQuery->sum('total_eggs');
         $totalProducedWeightKg = (float) $prodQuery->sum('weight_kg');
+        $totalBrokenEggs = (int) $prodQuery->sum('broken_eggs');
+
+        // Mutasi manual FarmStock telur (Butir rusak) jika ada
+        $manualKeluarButirQuery = FarmStock::where('category', 'telur')->where('type', 'keluar')->where(function ($q) {
+            $q->where('unit', 'Butir')->orWhere('unit', 'butir')->orWhere('unit', 'Btr');
+        });
+        if ($startDate && $endDate) {
+            $manualKeluarButirQuery->whereBetween('date', [$startDate, $endDate]);
+        }
+        $manualKeluarButir = (int) $manualKeluarButirQuery->sum('quantity');
+        $totalBrokenEggs += $manualKeluarButir;
+        $totalBrokenPeti = round($totalBrokenEggs / 25, 2);
 
         // Mutasi masuk manual farm_stocks jika ada (Peti & Kg terpisah)
         $farmStockMasukPetiQuery = FarmStock::where('category', 'telur')->where('type', 'masuk')->where(function ($q) {
@@ -109,7 +121,8 @@ class OutboundIntegrationService
         }
 
         // Total telur keluar bersih (10 kg = 1 Peti, Peti bilangan bulat)
-        $rawKeluarPeti = (float) ($petiSold + $manualKeluarPeti);
+        // Menggabungkan Penjualan + Telur Rusak + Mutasi Keluar Manual
+        $rawKeluarPeti = (float) ($petiSold + $manualKeluarPeti + $totalBrokenPeti);
         $rawKeluarKg = (float) ($kgSold + $manualKeluarKg);
         if ($rawKeluarKg >= 10) {
             $extraKeluarPeti = (int) floor($rawKeluarKg / 10);
@@ -146,6 +159,8 @@ class OutboundIntegrationService
             'total_produced_crates' => $totalMasukPeti,
             'total_produced_eggs' => $totalProducedEggs,
             'total_produced_kg' => $totalMasukKg,
+            'total_broken_eggs' => $totalBrokenEggs,
+            'total_broken_peti' => $totalBrokenPeti,
             'current_stock_peti' => $currentStockPeti,
             'current_stock_kg_total' => $currentStockKgTotal,
             'current_stock_eggs' => $currentStockEggs,

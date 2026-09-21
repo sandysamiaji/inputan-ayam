@@ -386,14 +386,14 @@
                     <div class="p-2.5 rounded-xl bg-emerald-50/80 border border-emerald-200/80">
                         <span class="text-[9.5px] font-extrabold text-emerald-800 uppercase tracking-wider block">🌾 Stok Pakan Layer</span>
                         <div class="text-xs sm:text-sm font-black leading-tight mt-0.5 {{ $stokLayer < 0 ? 'text-rose-600' : 'text-emerald-700' }}">
-                            {{ number_format($stokLayer, 0, ',', '.') }} kg <span class="text-[10px] font-bold">({{ number_format($stokLayerKrg, 1, ',', '.') }} krg)</span>
+                            {{ number_format($stokLayer, 0, ',', '.') }} kg <span class="text-[10px] font-bold">({{ \App\Models\Setting::formatKarungKg($stokLayer) }})</span>
                         </div>
                     </div>
 
                     <div class="p-2.5 rounded-xl bg-sky-50/80 border border-sky-200/80">
                         <span class="text-[9.5px] font-extrabold text-sky-800 uppercase tracking-wider block">🌾 Stok Pakan Grower</span>
                         <div class="text-xs sm:text-sm font-black leading-tight mt-0.5 {{ $stokGrower < 0 ? 'text-rose-600' : 'text-sky-700' }}">
-                            {{ number_format($stokGrower, 0, ',', '.') }} kg <span class="text-[10px] font-bold">({{ number_format($stokGrowerKrg, 1, ',', '.') }} krg)</span>
+                            {{ number_format($stokGrower, 0, ',', '.') }} kg <span class="text-[10px] font-bold">({{ \App\Models\Setting::formatKarungKg($stokGrower) }})</span>
                         </div>
                     </div>
                 </div>
@@ -402,7 +402,7 @@
                 <div class="p-2 px-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between text-xs">
                     <span class="text-[10.5px] font-bold text-slate-500 uppercase tracking-wider">Sisa Stok Total</span>
                     <span class="text-xs sm:text-sm font-black {{ $pakanStok < 0 ? 'text-rose-600' : 'text-slate-800' }}">
-                        {{ number_format($pakanStok, 0, ',', '.') }} Kg <span class="text-[10px] font-bold">({{ number_format($pakanStokKarung, 0, ',', '.') }} Krg)</span>
+                        {{ number_format($pakanStok, 0, ',', '.') }} Kg <span class="text-[10px] font-bold">({{ \App\Models\Setting::formatKarungKg($pakanStok) }})</span>
                     </span>
                 </div>
             </div>

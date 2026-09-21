@@ -66,4 +66,47 @@ class Setting extends Model
         $kg = static::getFloat('berat_telur', 0.06);
         return $kg > 0 ? $kg : 0.06;
     }
+
+    /**
+     * Format kuantitas pakan dalam kg menjadi representasi karung bulat + sisa kg (tanpa koma di karung)
+     * Contoh:
+     * - 5.500 kg => "110 krg"
+     * - 1.403 kg => "28 krg + 3 kg"
+     * - 4.097 kg => "81 krg + 47 kg"
+     * - 2.550 kg => "51 krg"
+     * - 485 kg   => "9 krg + 35 kg"
+     * - 2.065 kg => "41 krg + 15 kg"
+     */
+    public static function formatKarungKg(float|int|string|null $kg, ?float $kgPerKarung = null, string $krgUnit = 'krg'): string
+    {
+        $numKg = (float) $kg;
+        $kPerKrg = $kgPerKarung ?: static::getKgPerKarung();
+        if ($kPerKrg <= 0) $kPerKrg = 50.0;
+
+        $isNegative = $numKg < 0;
+        $absKg = abs($numKg);
+
+        $krg = (int) floor($absKg / $kPerKrg);
+        $sisaKg = round(fmod($absKg, $kPerKrg), 1);
+        if ($sisaKg >= $kPerKrg) {
+            $krg += 1;
+            $sisaKg = 0.0;
+        }
+
+        $krgFormatted = number_format($krg, 0, ',', '.');
+        $sisaKgFormatted = $sisaKg == floor($sisaKg) ? number_format($sisaKg, 0, ',', '.') : number_format($sisaKg, 1, ',', '.');
+
+        if ($krg > 0 && $sisaKg > 0) {
+            $result = "{$krgFormatted} {$krgUnit} + {$sisaKgFormatted} kg";
+            return $isNegative ? "-({$result})" : $result;
+        } elseif ($krg > 0) {
+            $result = "{$krgFormatted} {$krgUnit}";
+            return $isNegative ? "-{$result}" : $result;
+        } elseif ($sisaKg > 0) {
+            $result = "0 {$krgUnit} + {$sisaKgFormatted} kg";
+            return $isNegative ? "-({$result})" : $result;
+        } else {
+            return "0 {$krgUnit}";
+        }
+    }
 }

@@ -31,17 +31,17 @@
         <div class="flex flex-wrap items-center gap-2 sm:gap-4 bg-white px-4 py-2.5 rounded-2xl border border-slate-100 shadow-sm">
             <div class="text-left sm:text-right">
                 <span class="text-[10px] uppercase font-bold text-slate-400 block">Sisa Stok</span>
-                <span class="text-sm sm:text-base font-extrabold {{ $stokSaatIni < 0 ? 'text-rose-600' : 'text-emerald-600' }}">{{ number_format($stokSaatIni, 0, ',', '.') }} Kg <span class="text-xs font-semibold {{ $stokSaatIni < 0 ? 'text-rose-600' : 'text-emerald-700' }}">({{ number_format($currentStockKarung, 1, ',', '.') }} Krg)</span></span>
+                <span class="text-sm sm:text-base font-extrabold {{ $stokSaatIni < 0 ? 'text-rose-600' : 'text-emerald-600' }}">{{ number_format($stokSaatIni, 0, ',', '.') }} Kg <span class="text-xs font-semibold {{ $stokSaatIni < 0 ? 'text-rose-600' : 'text-emerald-700' }}">({{ \App\Models\Setting::formatKarungKg($stokSaatIni) }})</span></span>
             </div>
             <div class="hidden sm:block h-7 w-px bg-slate-200"></div>
             <div class="text-left sm:text-right">
                 <span class="text-[10px] uppercase font-bold text-slate-400 block">Total Masuk</span>
-                <span class="text-xs sm:text-sm font-bold text-slate-700">{{ number_format($totalMasuk, 0, ',', '.') }} Kg ({{ number_format($purchasedKarung, 1, ',', '.') }} Krg)</span>
+                <span class="text-xs sm:text-sm font-bold text-slate-700">{{ number_format($totalMasuk, 0, ',', '.') }} Kg ({{ \App\Models\Setting::formatKarungKg($totalMasuk) }})</span>
             </div>
             <div class="hidden sm:block h-7 w-px bg-slate-200"></div>
             <div class="text-left sm:text-right">
                 <span class="text-[10px] uppercase font-bold text-slate-500 block">Konsumsi Kandang</span>
-                <span class="text-xs sm:text-sm font-bold text-slate-700">{{ number_format($consumptionKg, 0, ',', '.') }} Kg ({{ number_format($consumptionKarung, 1, ',', '.') }} Krg)</span>
+                <span class="text-xs sm:text-sm font-bold text-slate-700">{{ number_format($consumptionKg, 0, ',', '.') }} Kg ({{ \App\Models\Setting::formatKarungKg($consumptionKg) }})</span>
             </div>
             <div class="hidden md:block h-7 w-px bg-slate-200"></div>
             <div class="hidden md:block text-right">
@@ -72,7 +72,7 @@
             <div class="space-y-0.5">
                 <span class="text-[10px] font-extrabold text-emerald-800 uppercase tracking-wider block">🌾 Stok Pakan Layer</span>
                 <div class="text-sm sm:text-base font-black {{ $stokLayer < 0 ? 'text-rose-600' : 'text-emerald-700' }}">
-                    {{ number_format($stokLayer, 0, ',', '.') }} kg <span class="text-xs font-bold">({{ number_format($stokLayerKrg, 1, ',', '.') }} Krg)</span>
+                    {{ number_format($stokLayer, 0, ',', '.') }} kg <span class="text-xs font-bold">({{ \App\Models\Setting::formatKarungKg($stokLayer) }})</span>
                 </div>
                 <div class="text-[10px] text-slate-500 font-medium">
                     Konsumsi: <b>{{ number_format($consLayer, 0, ',', '.') }} kg</b> • Terjual: <b>{{ number_format($soldLayerKrg, 0, ',', '.') }} Krg</b>
@@ -86,7 +86,7 @@
             <div class="space-y-0.5">
                 <span class="text-[10px] font-extrabold text-sky-800 uppercase tracking-wider block">🌾 Stok Pakan Grower / Starter</span>
                 <div class="text-sm sm:text-base font-black {{ $stokGrower < 0 ? 'text-rose-600' : 'text-sky-700' }}">
-                    {{ number_format($stokGrower, 0, ',', '.') }} kg <span class="text-xs font-bold">({{ number_format($stokGrowerKrg, 1, ',', '.') }} Krg)</span>
+                    {{ number_format($stokGrower, 0, ',', '.') }} kg <span class="text-xs font-bold">({{ \App\Models\Setting::formatKarungKg($stokGrower) }})</span>
                 </div>
                 <div class="text-[10px] text-slate-500 font-medium">
                     Konsumsi: <b>{{ number_format($consGrower, 0, ',', '.') }} kg</b> • Terjual: <b>{{ number_format($soldGrowerKrg, 0, ',', '.') }} Krg</b>
@@ -100,7 +100,7 @@
             <div class="space-y-0.5">
                 <span class="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">📦 Total Sisa Stok Pakan</span>
                 <div class="text-sm sm:text-base font-black {{ $stokSaatIni < 0 ? 'text-rose-600' : 'text-slate-800' }}">
-                    {{ number_format($stokSaatIni, 0, ',', '.') }} kg <span class="text-xs font-bold">({{ number_format($currentStockKarung, 1, ',', '.') }} Krg)</span>
+                    {{ number_format($stokSaatIni, 0, ',', '.') }} kg <span class="text-xs font-bold">({{ \App\Models\Setting::formatKarungKg($stokSaatIni) }})</span>
                 </div>
                 <div class="text-[10px] text-slate-500 font-medium">
                     Gabungan Pakan Layer & Pakan Grower

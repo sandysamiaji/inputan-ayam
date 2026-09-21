@@ -867,16 +867,16 @@
                                 <div class="space-y-1 text-[10.5px]">
                                     <div class="flex justify-between text-slate-600">
                                         <span>Masuk:</span>
-                                        <b class="text-slate-800">{{ number_format($dashMasukLayer, 0, ',', '.') }} kg <span class="text-[9px] font-normal text-slate-400">({{ number_format($dashMasukLayerKrg, 1, ',', '.') }} krg)</span></b>
+                                        <b class="text-slate-800">{{ number_format($dashMasukLayer, 0, ',', '.') }} kg <span class="text-[9px] font-normal text-slate-400">({{ \App\Models\Setting::formatKarungKg($dashMasukLayer) }})</span></b>
                                     </div>
                                     <div class="flex justify-between text-slate-600">
                                         <span>Keluar:</span>
-                                        <b class="text-rose-700">{{ number_format($dashKeluarLayer, 0, ',', '.') }} kg <span class="text-[9px] font-normal text-slate-400">({{ number_format($dashKeluarLayerKrg, 1, ',', '.') }} krg)</span></b>
+                                        <b class="text-rose-700">{{ number_format($dashKeluarLayer, 0, ',', '.') }} kg <span class="text-[9px] font-normal text-slate-400">({{ \App\Models\Setting::formatKarungKg($dashKeluarLayer) }})</span></b>
                                     </div>
                                     <div class="flex justify-between pt-1 border-t border-dashed border-slate-100 font-extrabold text-[11px]">
                                         <span class="text-slate-700">Sisa Stok Layer:</span>
                                         <span class="{{ $dashStokLayer < 0 ? 'text-rose-600 font-black' : 'text-emerald-700 font-black' }}">
-                                            {{ number_format($dashStokLayer, 0, ',', '.') }} kg <span class="text-[9px] font-bold text-slate-500">({{ number_format($dashStokLayerKrg, 1, ',', '.') }} krg)</span>
+                                            {{ number_format($dashStokLayer, 0, ',', '.') }} kg <span class="text-[9px] font-bold text-slate-500">({{ \App\Models\Setting::formatKarungKg($dashStokLayer) }})</span>
                                         </span>
                                     </div>
                                 </div>
@@ -895,16 +895,16 @@
                                 <div class="space-y-1 text-[10.5px]">
                                     <div class="flex justify-between text-slate-600">
                                         <span>Masuk:</span>
-                                        <b class="text-slate-800">{{ number_format($dashMasukGrower, 0, ',', '.') }} kg <span class="text-[9px] font-normal text-slate-400">({{ number_format($dashMasukGrowerKrg, 1, ',', '.') }} krg)</span></b>
+                                        <b class="text-slate-800">{{ number_format($dashMasukGrower, 0, ',', '.') }} kg <span class="text-[9px] font-normal text-slate-400">({{ \App\Models\Setting::formatKarungKg($dashMasukGrower) }})</span></b>
                                     </div>
                                     <div class="flex justify-between text-slate-600">
                                         <span>Keluar:</span>
-                                        <b class="text-rose-700">{{ number_format($dashKeluarGrower, 0, ',', '.') }} kg <span class="text-[9px] font-normal text-slate-400">({{ number_format($dashKeluarGrowerKrg, 1, ',', '.') }} krg)</span></b>
+                                        <b class="text-rose-700">{{ number_format($dashKeluarGrower, 0, ',', '.') }} kg <span class="text-[9px] font-normal text-slate-400">({{ \App\Models\Setting::formatKarungKg($dashKeluarGrower) }})</span></b>
                                     </div>
                                     <div class="flex justify-between pt-1 border-t border-dashed border-slate-100 font-extrabold text-[11px]">
                                         <span class="text-slate-700">Sisa Stok Grower:</span>
                                         <span class="{{ $dashStokGrower < 0 ? 'text-rose-600 font-black' : 'text-sky-700 font-black' }}">
-                                            {{ number_format($dashStokGrower, 0, ',', '.') }} kg <span class="text-[9px] font-bold text-slate-500">({{ number_format($dashStokGrowerKrg, 1, ',', '.') }} krg)</span>
+                                            {{ number_format($dashStokGrower, 0, ',', '.') }} kg <span class="text-[9px] font-bold text-slate-500">({{ \App\Models\Setting::formatKarungKg($dashStokGrower) }})</span>
                                         </span>
                                     </div>
                                 </div>
@@ -924,14 +924,14 @@
                                     {{ number_format($currentFeedStockKg, 0, ',', '.') }} <span class="text-xs font-bold text-white">Kg</span>
                                 </div>
                                 <span class="text-[9.5px] text-emerald-200 font-bold block">
-                                    ({{ number_format($dashStokTotalKrg, 1, ',', '.') }} Krg)
+                                    ({{ \App\Models\Setting::formatKarungKg($currentFeedStockKg) }})
                                 </span>
                             </div>
                         </div>
 
                         <!-- Rincian Konsumsi Kandang vs Penjualan -->
                         <div class="flex flex-col sm:flex-row sm:justify-between text-[10.5px] text-slate-600 pt-1 border-t border-emerald-200/60 gap-1 bg-white/70 p-2 rounded-lg border border-emerald-100">
-                            <span>🐔 Konsumsi Kandang: <b class="text-slate-800 font-bold">{{ number_format($totalFeedUsedAllTime, 0, ',', '.') }} Kg</b> <span class="text-slate-400 text-[9.5px]">({{ number_format($dashKonsumsiKrg, 1, ',', '.') }} Krg)</span></span>
+                            <span>🐔 Konsumsi Kandang: <b class="text-slate-800 font-bold">{{ number_format($totalFeedUsedAllTime, 0, ',', '.') }} Kg</b> <span class="text-slate-400 text-[9.5px]">({{ \App\Models\Setting::formatKarungKg($totalFeedUsedAllTime) }})</span></span>
                             <span>🛒 Terjual Luar: <b class="text-emerald-800 font-bold">{{ number_format($feedKarungSold, 0, ',', '.') }} Krg ({{ number_format($feedKgSoldTotal, 0, ',', '.') }} Kg)</b></span>
                         </div>
                     </div>

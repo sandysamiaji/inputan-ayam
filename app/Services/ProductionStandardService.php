@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Coop;
 use App\Models\WeeklyStandard;
+use App\Models\Setting;
 
 class ProductionStandardService
 {
@@ -246,5 +247,46 @@ class ProductionStandardService
             'coop_standards' => $coopStandards,
             'dynamic_ages' => $dynamicAges,
         ];
+    }
+
+    /**
+     * Ambil Target Berat Telur (dalam Kg) dari Master Standar Produksi (https://input.nochifarm.com/master/standar-produksi)
+     * berdasarkan umur minggu ayam pada kandang dan tanggal tertentu.
+     * Jika kandang tidak ditentukan, menggunakan umur dominan farm pada tanggal tersebut.
+     *
+     * @param Coop|null $coop
+     * @param string|\Carbon\Carbon|null $referenceDate
+     * @return float Berat telur dalam Kg (misal 60 gram = 0.060 Kg)
+     */
+    public static function getTargetEggWeightKgForCoop(?Coop $coop = null, $referenceDate = null): float
+    {
+        $week = null;
+        if ($coop) {
+            $week = self::getDynamicAgeWeeks($coop, $referenceDate);
+        } else {
+            $farmCond = self::getActiveFarmCondition($referenceDate);
+            $week = $farmCond['dominant_week'] ?? 21;
+        }
+
+        if ($week) {
+            $std = self::getStandardForWeek((int) $week);
+            if (!empty($std['berat_telur_val']) && (float) $std['berat_telur_val'] > 0) {
+                // berat_telur_val dalam satuan gram dari database master / weekly_standards
+                // Konversi gram ke Kg: gram / 1000
+                return (float) $std['berat_telur_val'] / 1000;
+            }
+        }
+
+        // Fallback ke setting jika ada, atau default 0.06 Kg (60 gram)
+        $fallback = Setting::getFloat('berat_telur', 0.06);
+        return $fallback > 0 ? $fallback : 0.06;
+    }
+
+    /**
+     * Alias untuk getTargetEggWeightKgForCoop
+     */
+    public static function getTargetEggWeightKg(?Coop $coop = null, $referenceDate = null): float
+    {
+        return self::getTargetEggWeightKgForCoop($coop, $referenceDate);
     }
 }

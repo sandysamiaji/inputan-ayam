@@ -54,14 +54,29 @@ class OutboundIntegrationService
         $manualKeluarKg = (float) $manualKeluarKgQuery->sum('quantity');
 
         // Total produksi telur kandang (Barang Masuk & Telur Rusak)
-        $prodQuery = EggProduction::query();
+        $prodQuery = EggProduction::with(['coop.flock', 'flock']);
         if ($startDate && $endDate) {
             $prodQuery->whereBetween('date', [$startDate, $endDate]);
         }
-        $totalProducedCrates = (float) $prodQuery->sum('crates_count');
-        $totalProducedEggs = (int) $prodQuery->sum('total_eggs');
-        $totalProducedWeightKg = (float) $prodQuery->sum('weight_kg');
-        $totalBrokenEggs = (int) $prodQuery->sum('broken_eggs');
+        $eggProductions = $prodQuery->get();
+
+        $totalProducedCrates = (float) $eggProductions->sum('crates_count');
+        $totalProducedEggs = (int) $eggProductions->sum('total_eggs');
+        $totalProducedWeightKg = (float) $eggProductions->sum('weight_kg');
+
+        $totalBrokenEggs = 0;
+        $totalBrokenKgFromEggs = 0.0;
+
+        foreach ($eggProductions as $ep) {
+            $bEggs = (int) $ep->broken_eggs;
+            if ($bEggs > 0) {
+                $totalBrokenEggs += $bEggs;
+                // Ambil Target Berat Telur dari data master Standar Produksi (https://input.nochifarm.com/master/standar-produksi)
+                // berdasarkan umur minggu ayam pada tanggal produksi tersebut
+                $targetWeightKg = \App\Services\ProductionStandardService::getTargetEggWeightKgForCoop($ep->coop, $ep->date);
+                $totalBrokenKgFromEggs += ($bEggs * $targetWeightKg);
+            }
+        }
 
         // Mutasi manual FarmStock telur (Butir rusak) jika ada
         $manualKeluarButirQuery = FarmStock::where('category', 'telur')->where('type', 'keluar')->where(function ($q) {
@@ -70,9 +85,17 @@ class OutboundIntegrationService
         if ($startDate && $endDate) {
             $manualKeluarButirQuery->whereBetween('date', [$startDate, $endDate]);
         }
-        $manualKeluarButir = (int) $manualKeluarButirQuery->sum('quantity');
-        $totalBrokenEggs += $manualKeluarButir;
-        $totalBrokenPeti = round($totalBrokenEggs / 25, 2);
+        $manualKeluarButirList = $manualKeluarButirQuery->get();
+        foreach ($manualKeluarButirList as $fsb) {
+            $qty = (int) $fsb->quantity;
+            if ($qty > 0) {
+                $totalBrokenEggs += $qty;
+                $targetWeightKg = \App\Services\ProductionStandardService::getTargetEggWeightKgForCoop(null, $fsb->date);
+                $totalBrokenKgFromEggs += ($qty * $targetWeightKg);
+            }
+        }
+
+        $brokenEggsToKg = round($totalBrokenKgFromEggs, 1);
 
         // Mutasi masuk manual farm_stocks jika ada (Peti & Kg terpisah)
         $farmStockMasukPetiQuery = FarmStock::where('category', 'telur')->where('type', 'masuk')->where(function ($q) {
@@ -98,14 +121,16 @@ class OutboundIntegrationService
             $kgSold = round($kgSold, 1);
         }
 
-        // Normalisasi Manual Keluar
-        if ($manualKeluarKg >= 10) {
-            $extraManKeluarPeti = (int) floor($manualKeluarKg / 10);
-            $manualKeluarPeti = (int) round($manualKeluarPeti + $extraManKeluarPeti);
-            $manualKeluarKg = round($manualKeluarKg - ($extraManKeluarPeti * 10), 1);
+        // Normalisasi Telur Rusak (10 kg = 1 Peti, Peti selalu bilangan bulat tanpa koma)
+        $rawBrokenPeti = (float) $manualKeluarPeti;
+        $rawBrokenKg = (float) ($manualKeluarKg + $brokenEggsToKg);
+        if ($rawBrokenKg >= 10) {
+            $extraBrokenPeti = (int) floor($rawBrokenKg / 10);
+            $totalBrokenPeti = (int) round($rawBrokenPeti + $extraBrokenPeti);
+            $totalBrokenKg = round($rawBrokenKg - ($extraBrokenPeti * 10), 1);
         } else {
-            $manualKeluarPeti = (int) round($manualKeluarPeti);
-            $manualKeluarKg = round($manualKeluarKg, 1);
+            $totalBrokenPeti = (int) round($rawBrokenPeti);
+            $totalBrokenKg = round($rawBrokenKg, 1);
         }
 
         // Total telur masuk bersih (10 kg = 1 Peti, Peti bilangan bulat)
@@ -121,9 +146,9 @@ class OutboundIntegrationService
         }
 
         // Total telur keluar bersih (10 kg = 1 Peti, Peti bilangan bulat)
-        // Menggabungkan Penjualan + Telur Rusak + Mutasi Keluar Manual
-        $rawKeluarPeti = (float) ($petiSold + $manualKeluarPeti + $totalBrokenPeti);
-        $rawKeluarKg = (float) ($kgSold + $manualKeluarKg);
+        // Menggabungkan Penjualan + Telur Rusak
+        $rawKeluarPeti = (float) ($petiSold + $totalBrokenPeti);
+        $rawKeluarKg = (float) ($kgSold + $totalBrokenKg);
         if ($rawKeluarKg >= 10) {
             $extraKeluarPeti = (int) floor($rawKeluarKg / 10);
             $totalKeluarPeti = (int) round($rawKeluarPeti + $extraKeluarPeti);
@@ -132,7 +157,7 @@ class OutboundIntegrationService
             $totalKeluarPeti = (int) round($rawKeluarPeti);
             $totalKeluarKg = round($rawKeluarKg, 1);
         }
-        $totalKeluarEggs = 0;
+        $totalKeluarEggs = $totalBrokenEggs;
 
         // Stok saat ini (Peti selalu integer, konversi 10 kg = 1 Peti)
         $netTotalKg = round((($totalMasukPeti * 10) + $totalMasukKg) - (($totalKeluarPeti * 10) + $totalKeluarKg), 1);
@@ -161,6 +186,7 @@ class OutboundIntegrationService
             'total_produced_kg' => $totalMasukKg,
             'total_broken_eggs' => $totalBrokenEggs,
             'total_broken_peti' => $totalBrokenPeti,
+            'total_broken_kg' => $totalBrokenKg,
             'current_stock_peti' => $currentStockPeti,
             'current_stock_kg_total' => $currentStockKgTotal,
             'current_stock_eggs' => $currentStockEggs,

@@ -104,6 +104,7 @@ class WarehouseController extends Controller
         $telurPetiSold = $eggSummary['peti_sold'];
         $telurKgSold = $eggSummary['kg_sold'];
         $telurRusakPeti = $eggSummary['total_broken_peti'] ?? 0;
+        $telurRusakKg = $eggSummary['total_broken_kg'] ?? 0;
         $telurRusakButir = $eggSummary['total_broken_eggs'] ?? 0;
         $telurRevenue = $eggSummary['total_revenue'];
 
@@ -252,13 +253,15 @@ class WarehouseController extends Controller
 
             $eggMasukPeti = ($ep ? (float) $ep->total_crates : 0.0) + $fsEggMasuk;
             $eggRusakButir = $ep ? (int) $ep->total_broken : 0;
-            $eggRusakPeti = round($eggRusakButir / 25, 2);
+            $targetEggWeightKg = \App\Services\ProductionStandardService::getTargetEggWeightKgForCoop(null, $dt);
+            $eggRusakKg = round($eggRusakButir * $targetEggWeightKg, 2);
+            $eggRusakPeti = round($eggRusakKg / 10, 2);
 
             $salesListDay = $salesByDate->get($dt, collect());
             $eggSalesDay = $salesListDay->where('category', 'telur');
             $eggPetiSold = (float) $eggSalesDay->where('unit', 'Peti')->sum('total_qty');
             $eggKgSold = (float) $eggSalesDay->where('unit', 'Kg')->sum('total_qty');
-            $eggTotalSoldPeti = $eggPetiSold + round($eggKgSold / 15, 2);
+            $eggTotalSoldPeti = $eggPetiSold + round($eggKgSold / 10, 2);
 
             $eggTotalKeluarPeti = $eggTotalSoldPeti + $eggRusakPeti + $fsEggKeluar;
 
@@ -333,9 +336,12 @@ class WarehouseController extends Controller
 
         $streamTotals = [
             'telur_masuk' => $telurMasuk,
+            'telur_masuk_kg' => $telurMasukKg,
             'telur_rusak_peti' => $telurRusakPeti,
+            'telur_rusak_kg' => $telurRusakKg,
             'telur_rusak_butir' => $telurRusakButir,
             'telur_terjual' => $telurPetiSold,
+            'telur_terjual_kg' => $telurKgSold,
             'pakan_masuk' => $pakanMasuk,
             'pakan_konsumsi' => $pakanConsumptionKg,
             'pakan_terjual' => round($pakanKarungSold + ($pakanKgSold / 50), 1),
@@ -536,30 +542,30 @@ class WarehouseController extends Controller
         $chartTotals = [
             'overview' => [
                 'masuk' => [
-                    ['label' => 'Telur', 'val' => number_format($displayTelurMasuk, 1, ',', '.') . ' Peti', 'url' => route('warehouse.telur', array_merge(['tab' => 'masuk'], $dateParams))],
+                    ['label' => 'Telur', 'val' => number_format((int) $telurMasuk, 0, ',', '.') . ' Peti' . ($telurMasukKg > 0 ? ' & ' . number_format($telurMasukKg, 1, ',', '.') . ' Kg' : ''), 'url' => route('warehouse.telur', array_merge(['tab' => 'masuk'], $dateParams))],
                     ['label' => 'Pakan', 'val' => number_format($displayPakanMasuk, 1, ',', '.') . ' Kg', 'url' => route('warehouse.pakan', array_merge(['tab' => 'masuk'], $dateParams))],
                     ['label' => 'Obat', 'val' => number_format($displayObatMasuk, 1, ',', '.') . ' Item', 'url' => route('warehouse.obat', array_merge(['tab' => 'masuk'], $dateParams))],
                 ],
                 'digunakan' => [
                     ['label' => 'Pakan', 'val' => number_format($displayPakanKonsumsi, 1, ',', '.') . ' Kg', 'url' => route('warehouse.pakan', array_merge(['tab' => 'keluar'], $dateParams))],
-                    ['label' => 'Telur Rusak', 'val' => number_format($displayTelurRusakButir, 0, ',', '.') . ' Btr', 'url' => route('warehouse.telur', array_merge(['tab' => 'keluar'], $dateParams))],
+                    ['label' => 'Telur Rusak', 'val' => number_format((int) $telurRusakPeti, 0, ',', '.') . ' Peti' . ($telurRusakKg > 0 ? ' & ' . number_format($telurRusakKg, 1, ',', '.') . ' Kg' : '') . ' (' . number_format($telurRusakButir, 0, ',', '.') . ' Btr)', 'url' => route('warehouse.telur', array_merge(['tab' => 'keluar'], $dateParams))],
                     ['label' => 'Obat', 'val' => number_format($displayObatKonsumsi, 1, ',', '.') . ' Dosis', 'url' => route('warehouse.obat', array_merge(['tab' => 'keluar'], $dateParams))],
                 ],
                 'keluar' => [
-                    ['label' => 'Telur Total', 'val' => number_format($displayTelurRusakPeti + $displayTelurTerjual, 1, ',', '.') . ' Peti', 'url' => route('warehouse.telur', array_merge(['tab' => 'semua'], $dateParams))],
+                    ['label' => 'Telur Total', 'val' => number_format((int) $telurKeluar, 0, ',', '.') . ' Peti' . ($telurKeluarKg > 0 ? ' & ' . number_format($telurKeluarKg, 1, ',', '.') . ' Kg' : ''), 'url' => route('warehouse.telur', array_merge(['tab' => 'semua'], $dateParams))],
                     ['label' => 'Pakan Total', 'val' => number_format($displayPakanKonsumsi + $displayPakanTerjual, 1, ',', '.') . ' Kg', 'url' => route('warehouse.pakan', array_merge(['tab' => 'semua'], $dateParams))],
                     ['label' => 'Obat Pakai', 'val' => number_format($displayObatKonsumsi, 1, ',', '.') . ' Dosis', 'url' => route('warehouse.obat', array_merge(['tab' => 'keluar'], $dateParams))],
                 ],
                 'terjual' => [
-                    ['label' => 'Telur Terjual', 'val' => number_format($displayTelurTerjual, 1, ',', '.') . ' Peti', 'url' => route('warehouse.telur', array_merge(['tab' => 'penjualan'], $dateParams))],
+                    ['label' => 'Telur Terjual', 'val' => number_format((int) $telurPetiSold, 0, ',', '.') . ' Peti' . ($telurKgSold > 0 ? ' & ' . number_format($telurKgSold, 1, ',', '.') . ' Kg' : ''), 'url' => route('warehouse.telur', array_merge(['tab' => 'penjualan'], $dateParams))],
                     ['label' => 'Pakan Terjual', 'val' => number_format($displayPakanTerjual, 1, ',', '.') . ' Kg', 'url' => route('warehouse.pakan', array_merge(['tab' => 'penjualan'], $dateParams))],
                 ],
             ],
             'telur' => [
-                'masuk' => number_format($displayTelurMasuk, 1, ',', '.') . ' Peti',
-                'digunakan' => number_format($displayTelurRusakPeti, 2, ',', '.') . ' Peti (' . number_format($displayTelurRusakButir, 0, ',', '.') . ' Btr)',
-                'keluar' => number_format($displayTelurRusakPeti + $displayTelurTerjual, 1, ',', '.') . ' Peti',
-                'terjual' => number_format($displayTelurTerjual, 1, ',', '.') . ' Peti',
+                'masuk' => number_format((int) $telurMasuk, 0, ',', '.') . ' Peti' . ($telurMasukKg > 0 ? ' & ' . number_format($telurMasukKg, 1, ',', '.') . ' Kg' : ''),
+                'digunakan' => number_format((int) $telurRusakPeti, 0, ',', '.') . ' Peti' . ($telurRusakKg > 0 ? ' & ' . number_format($telurRusakKg, 1, ',', '.') . ' Kg' : '') . ' (' . number_format($telurRusakButir, 0, ',', '.') . ' Btr)',
+                'keluar' => number_format((int) $telurKeluar, 0, ',', '.') . ' Peti' . ($telurKeluarKg > 0 ? ' & ' . number_format($telurKeluarKg, 1, ',', '.') . ' Kg' : ''),
+                'terjual' => number_format((int) $telurPetiSold, 0, ',', '.') . ' Peti' . ($telurKgSold > 0 ? ' & ' . number_format($telurKgSold, 1, ',', '.') . ' Kg' : ''),
             ],
             'pakan' => [
                 'masuk' => number_format($displayPakanMasuk, 1, ',', '.') . ' Kg',
@@ -583,7 +589,7 @@ class WarehouseController extends Controller
 
         return view('warehouse.index', compact(
             'user',
-            'telurMasuk', 'telurMasukButir', 'telurMasukKg', 'telurKeluar', 'telurKeluarKg', 'telurKeluarEggs', 'telurStok', 'telurStokKgTotal', 'telurStokButir', 'telurPetiSold', 'telurKgSold', 'telurRusakPeti', 'telurRusakButir', 'telurRevenue',
+            'telurMasuk', 'telurMasukButir', 'telurMasukKg', 'telurKeluar', 'telurKeluarKg', 'telurKeluarEggs', 'telurStok', 'telurStokKgTotal', 'telurStokButir', 'telurPetiSold', 'telurKgSold', 'telurRusakPeti', 'telurRusakKg', 'telurRusakButir', 'telurRevenue',
             'pakanMasuk', 'pakanMasukKarung', 'pakanKeluar', 'pakanTotalKarungKeluar', 'pakanStok', 'pakanStokKarung', 'pakanKarungSold', 'pakanKgSold', 'pakanConsumptionKg', 'pakanConsumptionKarung', 'pakanRevenue', 'feedSummary',
             'obatMasuk', 'obatKeluar', 'obatStok',
             'karantinaMasuk', 'karantinaKeluar', 'karantinaStok',
@@ -838,6 +844,7 @@ class WarehouseController extends Controller
         $totalEggsCount = $eggSummary['total_produced_eggs'];
         $totalBrokenEggs = $eggSummary['total_broken_eggs'] ?? 0;
         $totalBrokenPeti = $eggSummary['total_broken_peti'] ?? 0;
+        $totalBrokenKg = $eggSummary['total_broken_kg'] ?? 0;
 
         // Data Penjualan Telur dari aplikasi nochifram
         $salesList = OutboundIntegrationService::getSalesTransactions('telur', $startDate, $endDate, 50);
@@ -848,7 +855,7 @@ class WarehouseController extends Controller
 
         return view('warehouse.telur', compact(
             'user', 'items', 'tab', 'search', 'startDate', 'endDate',
-            'totalMasuk', 'totalMasukKg', 'totalKeluar', 'totalKeluarKg', 'totalBrokenEggs', 'totalBrokenPeti', 'stokSaatIni', 'stokSaatIniKg', 'stokSaatIniButir',
+            'totalMasuk', 'totalMasukKg', 'totalKeluar', 'totalKeluarKg', 'totalBrokenEggs', 'totalBrokenPeti', 'totalBrokenKg', 'stokSaatIni', 'stokSaatIniKg', 'stokSaatIniButir',
             'petiSold', 'kgSold', 'totalRevenue', 'transactionCount', 'totalEggsCount',
             'salesList', 'tripList', 'coops', 'flocks'
         ));

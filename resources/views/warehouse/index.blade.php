@@ -325,7 +325,10 @@
                         <i data-lucide="alert-triangle" class="w-3 h-3 text-rose-600 shrink-0"></i> Rusak / Pecah
                     </span>
                     <div class="text-xs sm:text-sm font-black text-rose-900 mt-1 leading-tight">
-                        {{ number_format($telurRusakPeti, 2, ',', '.') }} <span class="text-[10px] font-semibold text-rose-700">Peti</span>
+                        {{ number_format((int) $telurRusakPeti, 0, ',', '.') }} <span class="text-[10px] font-semibold text-rose-700">Peti</span>
+                        @if($telurRusakKg > 0)
+                            <span class="text-[11px] text-rose-800 font-bold">& {{ $telurRusakKg == floor($telurRusakKg) ? number_format($telurRusakKg, 0, ',', '.') : number_format($telurRusakKg, 1, ',', '.') }} Kg</span>
+                        @endif
                         <div class="text-[10px] text-rose-700 font-semibold mt-0.5">({{ number_format($telurRusakButir, 0, ',', '.') }} Btr)</div>
                     </div>
                 </div>
@@ -685,7 +688,10 @@
                         <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
                     </div>
                     <div class="text-xs sm:text-sm font-black text-slate-900 mt-1">
-                        {{ number_format($streamTotals['telur_masuk'], 1, ',', '.') }} <span class="text-[10px] font-normal text-slate-500">Peti</span>
+                        <div>{{ number_format((int) ($streamTotals['telur_masuk'] ?? 0), 0, ',', '.') }} <span class="text-[10px] font-normal text-slate-500">Peti</span></div>
+                        @if(($streamTotals['telur_masuk_kg'] ?? 0) > 0)
+                            <div class="text-[10px] font-semibold text-slate-600">& {{ number_format($streamTotals['telur_masuk_kg'], 1, ',', '.') }} <span class="text-[9px] font-normal text-slate-500">Kg</span></div>
+                        @endif
                     </div>
                     <div class="text-[9px] text-emerald-600 font-semibold group-hover:underline flex items-center gap-0.5 mt-0.5">
                         Produksi <i data-lucide="arrow-up-right" class="w-2.5 h-2.5"></i>
@@ -699,7 +705,10 @@
                         <span class="w-2 h-2 rounded-full bg-rose-500 shrink-0"></span>
                     </div>
                     <div class="text-xs sm:text-sm font-black text-slate-900 mt-1">
-                        {{ number_format($streamTotals['telur_rusak_peti'], 2, ',', '.') }} <span class="text-[10px] font-normal text-slate-500">Peti</span>
+                        <div>{{ number_format((int) ($streamTotals['telur_rusak_peti'] ?? 0), 0, ',', '.') }} <span class="text-[10px] font-normal text-slate-500">Peti</span></div>
+                        @if(($streamTotals['telur_rusak_kg'] ?? 0) > 0)
+                            <div class="text-[10px] font-semibold text-slate-600">& {{ number_format($streamTotals['telur_rusak_kg'], 1, ',', '.') }} <span class="text-[9px] font-normal text-slate-500">Kg</span></div>
+                        @endif
                     </div>
                     <div class="text-[9px] text-rose-600 font-semibold group-hover:underline flex items-center gap-0.5 mt-0.5">
                         {{ number_format($streamTotals['telur_rusak_butir'], 0, ',', '.') }} Btr <i data-lucide="arrow-up-right" class="w-2.5 h-2.5"></i>
@@ -713,7 +722,10 @@
                         <span class="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
                     </div>
                     <div class="text-xs sm:text-sm font-black text-slate-900 mt-1">
-                        {{ number_format($streamTotals['telur_terjual'], 1, ',', '.') }} <span class="text-[10px] font-normal text-slate-500">Peti</span>
+                        <div>{{ number_format((int) ($streamTotals['telur_terjual'] ?? 0), 0, ',', '.') }} <span class="text-[10px] font-normal text-slate-500">Peti</span></div>
+                        @if(($streamTotals['telur_terjual_kg'] ?? 0) > 0)
+                            <div class="text-[10px] font-semibold text-slate-600">& {{ number_format($streamTotals['telur_terjual_kg'], 1, ',', '.') }} <span class="text-[9px] font-normal text-slate-500">Kg</span></div>
+                        @endif
                     </div>
                     <div class="text-[9px] text-amber-600 font-semibold group-hover:underline flex items-center gap-0.5 mt-0.5">
                         Penjualan <i data-lucide="arrow-up-right" class="w-2.5 h-2.5"></i>

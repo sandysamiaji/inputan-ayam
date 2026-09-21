@@ -56,7 +56,7 @@
                     <i data-lucide="alert-triangle" class="w-3 h-3 text-rose-600"></i> Rusak
                 </span>
                 <span class="text-xs sm:text-sm font-extrabold text-rose-600">
-                    {{ number_format($totalBrokenPeti ?? 0, 2, ',', '.') }} Peti
+                    {{ number_format((int) ($totalBrokenPeti ?? 0), 0, ',', '.') }} Peti{{ ($totalBrokenKg ?? 0) > 0 ? ' & ' . number_format($totalBrokenKg, 1, ',', '.') . ' Kg' : '' }}
                 </span>
                 <span class="text-[10px] block text-slate-400 font-medium">({{ number_format($totalBrokenEggs ?? 0, 0, ',', '.') }} Btr)</span>
             </div>
@@ -75,7 +75,7 @@
                     <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">1 DB nochifram</span>
                 </div>
                 <p class="text-xs text-slate-500 mt-0.5">
-                    Data barang keluar otomatis memotong stok telur berdasarkan penjualan <b>{{ number_format($petiSold, 0, ',', '.') }} Peti</b> dan telur rusak <b>{{ number_format($totalBrokenPeti ?? 0, 2, ',', '.') }} Peti ({{ number_format($totalBrokenEggs ?? 0, 0, ',', '.') }} btr)</b>.
+                    Data barang keluar otomatis memotong stok telur berdasarkan penjualan <b>{{ number_format((int) $petiSold, 0, ',', '.') }} Peti{{ $kgSold > 0 ? ' & ' . number_format($kgSold, 1, ',', '.') . ' Kg' : '' }}</b> dan telur rusak <b>{{ number_format((int) ($totalBrokenPeti ?? 0), 0, ',', '.') }} Peti{{ ($totalBrokenKg ?? 0) > 0 ? ' & ' . number_format($totalBrokenKg, 1, ',', '.') . ' Kg' : '' }} ({{ number_format($totalBrokenEggs ?? 0, 0, ',', '.') }} btr)</b>.
                 </p>
             </div>
         </div>

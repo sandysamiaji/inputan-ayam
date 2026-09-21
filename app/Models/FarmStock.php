@@ -19,6 +19,8 @@ class FarmStock extends Model
         'unit',
         'source',
         'notes',
+        'created_at',
+        'updated_at',
     ];
 
     protected $casts = [

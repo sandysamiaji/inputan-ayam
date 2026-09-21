@@ -193,17 +193,29 @@ class OutboundIntegrationService
         $consumptionKg = (float) $consQuery->sum('quantity_kg');
         $consumptionKarung = round($consumptionKg / $kgPerKarung, 1);
 
+        // Helper konversi kuantitas stok pakan ke Kg sesuai satuan (Karung/Sak = x kgPerKarung, Ton = x 1000, Kg = x 1)
+        $convertStockToKg = function ($item) use ($kgPerKarung) {
+            $qty = (float) $item->quantity;
+            $u = strtolower(trim($item->unit ?? ''));
+            if (in_array($u, ['karung', 'sak', 'krg'])) {
+                return $qty * $kgPerKarung;
+            } elseif ($u === 'ton') {
+                return $qty * 1000;
+            }
+            return $qty;
+        };
+
         // 3. Pakan Masuk MURNI dari input riil FarmStock (tanpa hardcoded fake baseline)
-        $stockMasukQuery = FarmStock::where('category', 'pakan')->where('type', 'masuk');
+        $stockMasukQuery = FarmStock::whereRaw('LOWER(category) = ?', ['pakan'])->whereRaw('LOWER(type) = ?', ['masuk']);
         if ($startDate && $endDate) {
             $stockMasukQuery->whereBetween('date', [$startDate, $endDate]);
         }
-        $purchasedKg = (float) $stockMasukQuery->sum('quantity');
+        $purchasedKg = (float) $stockMasukQuery->get()->sum($convertStockToKg);
         $purchasedKarung = round($purchasedKg / $kgPerKarung, 1);
 
         // 4. Mutasi manual keluar di FarmStock jika ada
-        $stockKeluarQuery = FarmStock::where('category', 'pakan')
-            ->where('type', 'keluar')
+        $stockKeluarQuery = FarmStock::whereRaw('LOWER(category) = ?', ['pakan'])
+            ->whereRaw('LOWER(type) = ?', ['keluar'])
             ->where(function($q) {
                 $q->whereNull('notes')
                   ->orWhere('notes', 'not like', '[AUTO-KONSUMSI]%');
@@ -212,7 +224,7 @@ class OutboundIntegrationService
         if ($startDate && $endDate) {
             $stockKeluarQuery->whereBetween('date', [$startDate, $endDate]);
         }
-        $manualKeluarKg = (float) $stockKeluarQuery->sum('quantity');
+        $manualKeluarKg = (float) $stockKeluarQuery->get()->sum($convertStockToKg);
 
         // Total Pakan Keluar (Konsumsi Kandang + Penjualan Luar + Manual Keluar Gudang)
         $totalKeluarKg = $consumptionKg + $soldInKg + $manualKeluarKg;
@@ -252,21 +264,23 @@ class OutboundIntegrationService
         $consumptionKarungLayer = round($consumptionKgLayer / $kgPerKarung, 1);
 
         // C. Pembelian / Masuk Grower vs Layer
-        $purchasedKgGrower = (float) (FarmStock::where('category', 'pakan')->where('type', 'masuk')
+        $purchasedKgGrower = (float) (FarmStock::whereRaw('LOWER(category) = ?', ['pakan'])->whereRaw('LOWER(type) = ?', ['masuk'])
             ->where(function($q){ $q->where('item_name', 'like', '%grower%')->orWhere('item_name', 'like', '%starter%')->orWhere('item_name', 'like', '%pullet%'); })
             ->when($startDate && $endDate, function($q) use ($startDate, $endDate) { $q->whereBetween('date', [$startDate, $endDate]); })
-            ->sum('quantity'));
+            ->get()
+            ->sum($convertStockToKg));
         $purchasedKarungGrower = round($purchasedKgGrower / $kgPerKarung, 1);
 
         $purchasedKgLayer = max(0, $purchasedKg - $purchasedKgGrower);
         $purchasedKarungLayer = round($purchasedKgLayer / $kgPerKarung, 1);
 
         // D. Manual Keluar Grower vs Layer
-        $manualKeluarKgGrower = (float) (FarmStock::where('category', 'pakan')->where('type', 'keluar')
+        $manualKeluarKgGrower = (float) (FarmStock::whereRaw('LOWER(category) = ?', ['pakan'])->whereRaw('LOWER(type) = ?', ['keluar'])
             ->where(function($q){ $q->whereNull('notes')->orWhere('notes', 'not like', '[AUTO-KONSUMSI]%'); })
             ->where(function($q){ $q->where('item_name', 'like', '%grower%')->orWhere('item_name', 'like', '%starter%')->orWhere('item_name', 'like', '%pullet%'); })
             ->when($startDate && $endDate, function($q) use ($startDate, $endDate) { $q->whereBetween('date', [$startDate, $endDate]); })
-            ->sum('quantity'));
+            ->get()
+            ->sum($convertStockToKg));
 
         $manualKeluarKgLayer = max(0, $manualKeluarKg - $manualKeluarKgGrower);
 

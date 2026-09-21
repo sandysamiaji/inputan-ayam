@@ -837,14 +837,14 @@ class WarehouseController extends Controller
         $collection = collect();
 
         // 1. Data Pembelian & Mutasi Pakan dari FarmStock
-        $fsQuery = FarmStock::with('user')->where('category', 'pakan');
+        $fsQuery = FarmStock::with('user')->whereRaw('LOWER(category) = ?', ['pakan']);
         if ($startDate && $endDate) {
             $fsQuery->whereBetween('date', [$startDate, $endDate]);
         }
         if ($tab === 'masuk') {
-            $fsQuery->where('type', 'masuk');
+            $fsQuery->whereRaw('LOWER(type) = ?', ['masuk']);
         } elseif ($tab === 'keluar') {
-            $fsQuery->where('type', 'keluar')
+            $fsQuery->whereRaw('LOWER(type) = ?', ['keluar'])
                     ->where(function($q) {
                         $q->whereNull('notes')->orWhere('notes', 'not like', '[AUTO-KONSUMSI]%');
                     });
@@ -950,11 +950,27 @@ class WarehouseController extends Controller
         $flocks = \App\Models\Flock::where('is_active', true)->get();
         $coops = Coop::where('is_active', true)->get();
 
+        // Hitung total data untuk badge tab
+        $countMasukQuery = FarmStock::whereRaw('LOWER(category) = ?', ['pakan'])->whereRaw('LOWER(type) = ?', ['masuk']);
+        $countKeluarQuery = FarmStock::whereRaw('LOWER(category) = ?', ['pakan'])->whereRaw('LOWER(type) = ?', ['keluar'])
+            ->where(function($q) { $q->whereNull('notes')->orWhere('notes', 'not like', '[AUTO-KONSUMSI]%'); });
+        $countFeedQuery = FeedConsumption::query();
+
+        if ($startDate && $endDate) {
+            $countMasukQuery->whereBetween('date', [$startDate, $endDate]);
+            $countKeluarQuery->whereBetween('date', [$startDate, $endDate]);
+            $countFeedQuery->whereBetween('date', [$startDate, $endDate]);
+        }
+
+        $countMasuk = $countMasukQuery->count();
+        $countKeluar = $countKeluarQuery->count() + $countFeedQuery->count();
+        $countSemua = $countMasuk + $countKeluar;
+
         return view('warehouse.pakan', compact(
             'user', 'items', 'tab', 'search', 'startDate', 'endDate',
             'totalMasuk', 'totalKeluar', 'stokSaatIni', 'currentStockKarung',
             'karungSold', 'kgSold', 'soldRevenue', 'consumptionKg', 'consumptionKarung', 'purchasedKarung', 'feedSummary',
-            'salesList', 'tripList', 'coops', 'flocks'
+            'salesList', 'tripList', 'coops', 'flocks', 'countMasuk', 'countKeluar', 'countSemua'
         ));
     }
 
@@ -1355,6 +1371,39 @@ class WarehouseController extends Controller
         ]);
 
         $namaJenis = ucfirst($validated['category']);
+        $targetTab = $validated['type'] === 'masuk' ? 'masuk' : 'keluar';
+
+        $redirectParams = ['tab' => $targetTab];
+
+        // Jika ada filter tanggal yang aktif, pastikan transaksi baru tidak tersembunyi
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $startDate = $request->input('start_date');
+            $endDate = $request->input('end_date');
+            $transDate = $validated['date'];
+
+            if ($transDate < $startDate) {
+                $startDate = $transDate;
+            }
+            if ($transDate > $endDate) {
+                $endDate = $transDate;
+            }
+
+            $redirectParams['start_date'] = $startDate;
+            $redirectParams['end_date'] = $endDate;
+        }
+
+        if ($validated['category'] === 'pakan') {
+            $labelType = $validated['type'] === 'masuk' ? 'Pakan Masuk (Beli)' : 'Pakan Keluar';
+            return redirect()->route('warehouse.pakan', $redirectParams)
+                ->with('success', "Transaksi {$labelType} berhasil disimpan!");
+        } elseif ($validated['category'] === 'telur') {
+            return redirect()->route('warehouse.telur', $redirectParams)
+                ->with('success', "Transaksi Gudang Telur berhasil disimpan!");
+        } elseif (in_array($validated['category'], ['obat', 'vaksin', 'vitamin'])) {
+            return redirect()->route('warehouse.obat', $redirectParams)
+                ->with('success', "Transaksi Gudang Obat & Vaksin berhasil disimpan!");
+        }
+
         return back()->with('success', "Transaksi Gudang {$namaJenis} berhasil disimpan!");
     }
 

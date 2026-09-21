@@ -14,10 +14,13 @@
                 <div class="flex flex-wrap items-center gap-1.5 mt-0.5">
                     <p class="text-xs text-slate-400">Manajemen stok & konsumsi pakan ayam</p>
                     @if(!empty($startDate) && !empty($endDate))
-                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-[10px] font-extrabold text-emerald-800">
-                            <i data-lucide="calendar" class="w-3 h-3"></i>
-                            Periode: {{ \Carbon\Carbon::parse($startDate)->translatedFormat('d M Y') }} – {{ \Carbon\Carbon::parse($endDate)->translatedFormat('d M Y') }}
-                            <a href="{{ route('warehouse.pakan', ['tab' => $tab, 'q' => $search]) }}" class="hover:text-emerald-600 ml-0.5" title="Hapus Filter Tanggal">×</a>
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-[10px] font-extrabold text-emerald-800 shadow-2xs">
+                            <i data-lucide="calendar" class="w-3 h-3 text-emerald-600"></i>
+                            <span>Periode: {{ \Carbon\Carbon::parse($startDate)->translatedFormat('d M Y') }} – {{ \Carbon\Carbon::parse($endDate)->translatedFormat('d M Y') }}</span>
+                            <a href="{{ route('warehouse.pakan', ['tab' => $tab, 'q' => $search]) }}" class="inline-flex items-center gap-0.5 bg-emerald-200/60 hover:bg-rose-100 hover:text-rose-700 px-1.5 py-0.2 rounded-md font-bold text-[9px] transition-colors ml-0.5" title="Hapus Filter Tanggal & Tampilkan Semua Data">
+                                <span>Lihat Semua Tanggal</span>
+                                <i data-lucide="x" class="w-2.5 h-2.5"></i>
+                            </a>
                         </span>
                     @endif
                 </div>
@@ -152,7 +155,7 @@
             @endif
         </form>
 
-        <button onclick="openModalInputPakan()" class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-maroon-800 hover:bg-maroon-900 text-white text-xs sm:text-sm font-bold shadow-md shadow-maroon-900/20 transition-all active:scale-95 shrink-0">
+        <button onclick="openModalInputPakan('{{ $tab === 'keluar' ? 'keluar' : 'masuk' }}')" class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-maroon-800 hover:bg-maroon-900 text-white text-xs sm:text-sm font-bold shadow-md shadow-maroon-900/20 transition-all active:scale-95 shrink-0">
             <i data-lucide="plus" class="w-4 h-4 stroke-[2.5]"></i>
             <span>Input Pakan</span>
         </button>
@@ -160,20 +163,23 @@
 
     <!-- Filter Tabs: Semua | Masuk | Keluar | Penjualan -->
     <div class="flex items-center border-b border-slate-200 gap-4 sm:gap-8 px-1 overflow-x-auto">
-        <a href="{{ route('warehouse.pakan', array_filter(['tab' => 'semua', 'q' => $search, 'start_date' => $startDate ?? null, 'end_date' => $endDate ?? null])) }}" class="pb-3 text-xs sm:text-sm font-bold transition-all relative shrink-0 {{ $tab === 'semua' ? 'text-maroon-800' : 'text-slate-400 hover:text-slate-600' }}">
-            Semua Data
+        <a href="{{ route('warehouse.pakan', array_filter(['tab' => 'semua', 'q' => $search, 'start_date' => $startDate ?? null, 'end_date' => $endDate ?? null])) }}" class="pb-3 text-xs sm:text-sm font-bold transition-all relative shrink-0 flex items-center gap-1.5 {{ $tab === 'semua' ? 'text-maroon-800' : 'text-slate-400 hover:text-slate-600' }}">
+            <span>Semua Data</span>
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] font-extrabold {{ $tab === 'semua' ? 'bg-maroon-800 text-white' : 'bg-slate-200 text-slate-600' }}">{{ $countSemua ?? 0 }}</span>
             @if($tab === 'semua')
                 <span class="absolute bottom-0 left-0 right-0 h-0.5 bg-maroon-800 rounded-full"></span>
             @endif
         </a>
-        <a href="{{ route('warehouse.pakan', array_filter(['tab' => 'masuk', 'q' => $search, 'start_date' => $startDate ?? null, 'end_date' => $endDate ?? null])) }}" class="pb-3 text-xs sm:text-sm font-bold transition-all relative shrink-0 {{ $tab === 'masuk' ? 'text-maroon-800' : 'text-slate-400 hover:text-slate-600' }}">
-            Masuk (Beli)
+        <a href="{{ route('warehouse.pakan', array_filter(['tab' => 'masuk', 'q' => $search, 'start_date' => $startDate ?? null, 'end_date' => $endDate ?? null])) }}" class="pb-3 text-xs sm:text-sm font-bold transition-all relative shrink-0 flex items-center gap-1.5 {{ $tab === 'masuk' ? 'text-maroon-800' : 'text-slate-400 hover:text-slate-600' }}">
+            <span>Masuk (Beli)</span>
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] font-extrabold {{ $tab === 'masuk' ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-600' }}">{{ $countMasuk ?? 0 }}</span>
             @if($tab === 'masuk')
                 <span class="absolute bottom-0 left-0 right-0 h-0.5 bg-maroon-800 rounded-full"></span>
             @endif
         </a>
-        <a href="{{ route('warehouse.pakan', array_filter(['tab' => 'keluar', 'q' => $search, 'start_date' => $startDate ?? null, 'end_date' => $endDate ?? null])) }}" class="pb-3 text-xs sm:text-sm font-bold transition-all relative shrink-0 {{ $tab === 'keluar' ? 'text-maroon-800' : 'text-slate-400 hover:text-slate-600' }}">
-            Pemberian Pakan
+        <a href="{{ route('warehouse.pakan', array_filter(['tab' => 'keluar', 'q' => $search, 'start_date' => $startDate ?? null, 'end_date' => $endDate ?? null])) }}" class="pb-3 text-xs sm:text-sm font-bold transition-all relative shrink-0 flex items-center gap-1.5 {{ $tab === 'keluar' ? 'text-maroon-800' : 'text-slate-400 hover:text-slate-600' }}">
+            <span>Pemberian Pakan</span>
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] font-extrabold {{ $tab === 'keluar' ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-600' }}">{{ $countKeluar ?? 0 }}</span>
             @if($tab === 'keluar')
                 <span class="absolute bottom-0 left-0 right-0 h-0.5 bg-maroon-800 rounded-full"></span>
             @endif
@@ -304,9 +310,19 @@
                         <!-- Judul Transaksi (Pembelian Pakan / Pemberian Pakan) -->
                         <h2 class="text-xs sm:text-sm font-bold text-slate-800 truncate">{{ $item->item_name }}</h2>
 
-                        <!-- Jumlah Kg -->
+                        <!-- Jumlah & Satuan -->
+                        @php
+                            $kgPerKarungSetting = \App\Models\Setting::getKgPerKarung();
+                            $uLower = strtolower(trim($item->unit ?? ''));
+                            $convertedKgDisplay = '';
+                            if (in_array($uLower, ['karung', 'sak', 'krg'])) {
+                                $convertedKgDisplay = ' (~' . number_format($item->quantity * $kgPerKarungSetting, 0, ',', '.') . ' Kg)';
+                            } elseif ($uLower === 'ton') {
+                                $convertedKgDisplay = ' (~' . number_format($item->quantity * 1000, 0, ',', '.') . ' Kg)';
+                            }
+                        @endphp
                         <p class="text-xs font-extrabold text-slate-800">
-                            {{ number_format($item->quantity, 0, ',', '.') }} {{ $item->unit }}
+                            {{ number_format($item->quantity, fmod((float)$item->quantity, 1) !== 0.0 ? 1 : 0, ',', '.') }} {{ $item->unit }}<span class="text-xs font-semibold text-slate-500">{{ $convertedKgDisplay }}</span>
                         </p>
 
                         <!-- Tanggal & Petugas -->
@@ -548,20 +564,23 @@
         <form method="POST" action="{{ route('warehouse.store') }}" class="mt-4 space-y-4">
             @csrf
             <input type="hidden" name="category" value="pakan">
+            <input type="hidden" name="tab" value="{{ $tab }}">
+            @if(!empty($startDate)) <input type="hidden" name="start_date" value="{{ $startDate }}"> @endif
+            @if(!empty($endDate)) <input type="hidden" name="end_date" value="{{ $endDate }}"> @endif
 
             <!-- Pilihan Jenis: Masuk / Keluar -->
             <div>
                 <label class="block text-xs font-bold text-slate-700 mb-1.5">Jenis Transaksi *</label>
                 <div class="grid grid-cols-2 gap-3">
                     <label class="cursor-pointer">
-                        <input type="radio" name="type" value="masuk" checked class="peer sr-only">
+                        <input type="radio" name="type" id="modalPakanTypeMasuk" value="masuk" checked onchange="updatePakanTypeUI()" class="peer sr-only">
                         <div class="p-3 text-center rounded-xl border-2 border-slate-200 peer-checked:border-emerald-600 peer-checked:bg-emerald-50 text-slate-600 peer-checked:text-emerald-800 font-bold text-xs flex items-center justify-center gap-2 transition-all">
                             <i data-lucide="arrow-down-left" class="w-4 h-4"></i>
-                            <span>Pakan Masuk</span>
+                            <span>Pakan Masuk (Beli)</span>
                         </div>
                     </label>
                     <label class="cursor-pointer">
-                        <input type="radio" name="type" value="keluar" class="peer sr-only">
+                        <input type="radio" name="type" id="modalPakanTypeKeluar" value="keluar" onchange="updatePakanTypeUI()" class="peer sr-only">
                         <div class="p-3 text-center rounded-xl border-2 border-slate-200 peer-checked:border-rose-600 peer-checked:bg-rose-50 text-slate-600 peer-checked:text-rose-800 font-bold text-xs flex items-center justify-center gap-2 transition-all">
                             <i data-lucide="arrow-up-right" class="w-4 h-4"></i>
                             <span>Pakan Keluar</span>
@@ -600,15 +619,15 @@
             <!-- Jumlah & Satuan -->
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Jumlah (Kg) *</label>
+                    <label class="block text-xs font-bold text-slate-700 mb-1" id="modalPakanQtyLabel">Jumlah Masuk / Beli *</label>
                     <input type="number" step="0.01" name="quantity" required placeholder="0" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm focus:ring-2 focus:ring-maroon-800/20 focus:border-maroon-800 font-bold">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Satuan *</label>
-                    <select name="unit" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white">
-                        <option value="Kg" selected>Kg</option>
-                        <option value="Karung">Karung (Sak)</option>
-                        <option value="Ton">Ton</option>
+                    <select name="unit" id="modalPakanUnitSelect" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white font-medium">
+                        <option value="Karung" selected>Karung / Sak (50 Kg)</option>
+                        <option value="Kg">Kg (Kilogram)</option>
+                        <option value="Ton">Ton (1.000 Kg)</option>
                     </select>
                 </div>
             </div>
@@ -627,14 +646,14 @@
 
             <!-- Kandang / Supplier -->
             <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Kandang / Supplier</label>
-                <input type="text" name="source" placeholder="Contoh: A1, A2, A3 atau PT Pakan Ternak" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm">
+                <label class="block text-xs font-bold text-slate-700 mb-1" id="modalPakanSourceLabel">Supplier / Asal Pembelian</label>
+                <input type="text" name="source" id="modalPakanSourceInput" placeholder="Contoh: PT Charoen Pokphand, Toko Ternak, dll" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm">
             </div>
 
             <!-- Keterangan -->
             <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">Keterangan / Jenis Pakan</label>
-                <textarea name="notes" rows="2" placeholder="Contoh: Pakan Layer Dewasa (Pemakaian pagi hari)" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm"></textarea>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Keterangan / Catatan Transaksi</label>
+                <textarea name="notes" rows="2" placeholder="Contoh: Pembelian pakan layer dari distributor" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm"></textarea>
             </div>
 
             <div class="pt-2">
@@ -858,9 +877,19 @@
     }
 
     // 2. INPUT MODAL (PAKAN)
-    function openModalInputPakan() {
+    function openModalInputPakan(defaultType = 'masuk') {
         const modal = document.getElementById('modalInputPakan');
         const content = modal.querySelector('div');
+
+        if (defaultType === 'keluar') {
+            const rKeluar = document.getElementById('modalPakanTypeKeluar');
+            if (rKeluar) rKeluar.checked = true;
+        } else {
+            const rMasuk = document.getElementById('modalPakanTypeMasuk');
+            if (rMasuk) rMasuk.checked = true;
+        }
+        updatePakanTypeUI();
+
         modal.classList.add('modal-active');
         content.classList.add('modal-content-active');
     }
@@ -870,6 +899,23 @@
         const content = modal.querySelector('div');
         modal.classList.remove('modal-active');
         content.classList.remove('modal-content-active');
+    }
+
+    function updatePakanTypeUI() {
+        const isMasuk = document.getElementById('modalPakanTypeMasuk')?.checked ?? true;
+        const qtyLabel = document.getElementById('modalPakanQtyLabel');
+        const sourceLabel = document.getElementById('modalPakanSourceLabel');
+        const sourceInput = document.getElementById('modalPakanSourceInput');
+
+        if (qtyLabel) {
+            qtyLabel.textContent = isMasuk ? 'Jumlah Masuk / Beli *' : 'Jumlah Keluar / Pemakaian *';
+        }
+        if (sourceLabel) {
+            sourceLabel.textContent = isMasuk ? 'Supplier / Asal Pembelian' : 'Kandang / Tujuan Pemakaian';
+        }
+        if (sourceInput) {
+            sourceInput.placeholder = isMasuk ? 'Contoh: PT Charoen Pokphand, Toko Ternak, dll' : 'Contoh: Blok A1, Blok B2, atau Konsumsi';
+        }
     }
 
     // 3. EDIT MODAL (PAKAN) - Matches /input form card

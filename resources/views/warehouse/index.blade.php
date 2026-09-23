@@ -767,7 +767,10 @@
                         <span class="w-2 h-2 rounded-full bg-orange-500 shrink-0"></span>
                     </div>
                     <div class="text-xs sm:text-sm font-black text-slate-900 mt-1">
-                        {{ number_format($streamTotals['pakan_terjual'], 1, ',', '.') }} <span class="text-[10px] font-normal text-slate-500">Kg</span>
+                        <div>{{ number_format((int) ($streamTotals['pakan_terjual'] ?? 0), 0, ',', '.') }} <span class="text-[10px] font-normal text-slate-500">Karung</span></div>
+                        @if(($streamTotals['pakan_terjual_kg'] ?? 0) > 0)
+                            <div class="text-[10px] font-semibold text-slate-600">& {{ number_format($streamTotals['pakan_terjual_kg'], 1, ',', '.') }} <span class="text-[9px] font-normal text-slate-500">Kg</span></div>
+                        @endif
                     </div>
                     <div class="text-[9px] text-orange-600 font-semibold group-hover:underline flex items-center gap-0.5 mt-0.5">
                         Penjualan <i data-lucide="arrow-up-right" class="w-2.5 h-2.5"></i>
@@ -1058,7 +1061,7 @@
             `;
 
             const totalTelurKeluar = (Number(warehouseStreamTotals.telur_rusak_peti) + Number(warehouseStreamTotals.telur_terjual)).toFixed(1);
-            const totalPakanKeluar = (Number(warehouseStreamTotals.pakan_konsumsi) + Number(warehouseStreamTotals.pakan_terjual)).toFixed(1);
+            const totalPakanKeluarKg = (Number(warehouseStreamTotals.pakan_konsumsi) + Number(warehouseStreamTotals.pakan_terjual_total_kg || (warehouseStreamTotals.pakan_terjual * 50))).toFixed(1);
 
             cKeluar.innerHTML = `
                 <div class="space-y-1 text-xs">
@@ -1068,7 +1071,7 @@
                     </a>
                     <a href="{{ route('warehouse.pakan', array_filter(['tab' => 'semua', 'start_date' => $startDate, 'end_date' => $endDate])) }}" class="flex justify-between items-center text-slate-700 hover:text-rose-700 transition-colors">
                         <span class="text-slate-500">Pakan Total:</span>
-                        <span class="font-extrabold text-slate-800">${Number(totalPakanKeluar).toLocaleString('id-ID')} Kg</span>
+                        <span class="font-extrabold text-slate-800">${Number(totalPakanKeluarKg).toLocaleString('id-ID')} Kg</span>
                     </a>
                     <a href="{{ route('warehouse.obat', array_filter(['tab' => 'keluar', 'start_date' => $startDate, 'end_date' => $endDate])) }}" class="flex justify-between items-center text-slate-700 hover:text-rose-700 transition-colors">
                         <span class="text-slate-500">Obat Pakai:</span>
@@ -1085,7 +1088,7 @@
                     </a>
                     <a href="{{ route('warehouse.pakan', array_filter(['tab' => 'penjualan', 'start_date' => $startDate, 'end_date' => $endDate])) }}" class="flex justify-between items-center text-slate-700 hover:text-amber-700 transition-colors">
                         <span class="text-slate-500">Pakan:</span>
-                        <span class="font-extrabold text-slate-800">${Number(warehouseStreamTotals.pakan_terjual).toLocaleString('id-ID', {maximumFractionDigits: 1})} Kg</span>
+                        <span class="font-extrabold text-slate-800">${Number(warehouseStreamTotals.pakan_terjual).toLocaleString('id-ID')} Karung${Number(warehouseStreamTotals.pakan_terjual_kg || 0) > 0 ? ' & ' + Number(warehouseStreamTotals.pakan_terjual_kg).toLocaleString('id-ID', {maximumFractionDigits: 1}) + ' Kg' : ''}</span>
                     </a>
                     <div class="flex justify-between items-center text-[10px] text-amber-700/70 pt-0.5 border-t border-amber-200/50">
                         <span>Platform:</span>

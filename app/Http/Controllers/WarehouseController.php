@@ -344,7 +344,9 @@ class WarehouseController extends Controller
             'telur_terjual_kg' => $telurKgSold,
             'pakan_masuk' => $pakanMasuk,
             'pakan_konsumsi' => $pakanConsumptionKg,
-            'pakan_terjual' => round($pakanKarungSold + ($pakanKgSold / 50), 1),
+            'pakan_terjual' => (int) $pakanKarungSold,
+            'pakan_terjual_kg' => (float) $pakanKgSold,
+            'pakan_terjual_total_kg' => round(($pakanKarungSold * 50) + $pakanKgSold, 1),
             'obat_masuk' => $obatMasuk,
             'obat_konsumsi' => $obatKeluar,
         ];
@@ -534,7 +536,10 @@ class WarehouseController extends Controller
 
         $displayPakanMasuk = $pakanMasuk;
         $displayPakanKonsumsi = $pakanConsumptionKg;
-        $displayPakanTerjual = round(($pakanKarungSold * 50) + $pakanKgSold, 1);
+        $displayPakanTerjual = (int) $pakanKarungSold;
+        $displayPakanTerjualKg = (float) $pakanKgSold;
+        $displayPakanTerjualTotalKg = round(($pakanKarungSold * 50) + $pakanKgSold, 1);
+        $displayPakanTerjualFormatted = number_format((int) $pakanKarungSold, 0, ',', '.') . ' Karung' . ($pakanKgSold > 0 ? ' & ' . number_format($pakanKgSold, 1, ',', '.') . ' Kg' : '');
 
         $displayObatMasuk = $obatMasuk;
         $displayObatKonsumsi = $obatKeluar;
@@ -553,12 +558,12 @@ class WarehouseController extends Controller
                 ],
                 'keluar' => [
                     ['label' => 'Telur Total', 'val' => number_format((int) $telurKeluar, 0, ',', '.') . ' Peti' . ($telurKeluarKg > 0 ? ' & ' . number_format($telurKeluarKg, 1, ',', '.') . ' Kg' : ''), 'url' => route('warehouse.telur', array_merge(['tab' => 'semua'], $dateParams))],
-                    ['label' => 'Pakan Total', 'val' => number_format($displayPakanKonsumsi + $displayPakanTerjual, 1, ',', '.') . ' Kg', 'url' => route('warehouse.pakan', array_merge(['tab' => 'semua'], $dateParams))],
+                    ['label' => 'Pakan Total', 'val' => number_format($displayPakanKonsumsi + $displayPakanTerjualTotalKg, 1, ',', '.') . ' Kg', 'url' => route('warehouse.pakan', array_merge(['tab' => 'semua'], $dateParams))],
                     ['label' => 'Obat Pakai', 'val' => number_format($displayObatKonsumsi, 1, ',', '.') . ' Dosis', 'url' => route('warehouse.obat', array_merge(['tab' => 'keluar'], $dateParams))],
                 ],
                 'terjual' => [
                     ['label' => 'Telur Terjual', 'val' => number_format((int) $telurPetiSold, 0, ',', '.') . ' Peti' . ($telurKgSold > 0 ? ' & ' . number_format($telurKgSold, 1, ',', '.') . ' Kg' : ''), 'url' => route('warehouse.telur', array_merge(['tab' => 'penjualan'], $dateParams))],
-                    ['label' => 'Pakan Terjual', 'val' => number_format($displayPakanTerjual, 1, ',', '.') . ' Kg', 'url' => route('warehouse.pakan', array_merge(['tab' => 'penjualan'], $dateParams))],
+                    ['label' => 'Pakan Terjual', 'val' => $displayPakanTerjualFormatted, 'url' => route('warehouse.pakan', array_merge(['tab' => 'penjualan'], $dateParams))],
                 ],
             ],
             'telur' => [
@@ -570,8 +575,8 @@ class WarehouseController extends Controller
             'pakan' => [
                 'masuk' => number_format($displayPakanMasuk, 1, ',', '.') . ' Kg',
                 'digunakan' => number_format($displayPakanKonsumsi, 1, ',', '.') . ' Kg',
-                'keluar' => number_format($displayPakanKonsumsi + $displayPakanTerjual, 1, ',', '.') . ' Kg',
-                'terjual' => number_format($displayPakanTerjual, 1, ',', '.') . ' Kg',
+                'keluar' => number_format($displayPakanKonsumsi + $displayPakanTerjualTotalKg, 1, ',', '.') . ' Kg',
+                'terjual' => $displayPakanTerjualFormatted,
             ],
             'obat' => [
                 'masuk' => number_format($displayObatMasuk, 1, ',', '.') . ' Item',

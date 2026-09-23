@@ -372,8 +372,8 @@ class ExcelRestoreService
             elseif (str_contains($val, 'petug') || str_contains($val, 'petugas') || $val === 'user') $colMap['petugas'] = $cIdx;
             elseif (str_contains($val, 'catat') || str_contains($val, 'notes')) $colMap['catatan'] = $cIdx;
             elseif (str_contains($val, 'jam') || str_contains($val, 'time')) $colMap['jam'] = $cIdx;
-            elseif (str_contains($val, 'pagi') && str_contains($val, 'pakan')) $colMap['pakan_pagi'] = $cIdx;
-            elseif (str_contains($val, 'sore') && str_contains($val, 'pakan')) $colMap['pakan_sore'] = $cIdx;
+            elseif ((str_contains($val, 'pagi') && str_contains($val, 'pakan')) || ($val === 'pakan pagi')) $colMap['pakan_pagi'] = $cIdx;
+            elseif ((str_contains($val, 'sore') && str_contains($val, 'pakan')) || ($val === 'pakan sore')) $colMap['pakan_sore'] = $cIdx;
             elseif (str_contains($val, 'mati') || str_contains($val, 'mortalitas')) $colMap['mati'] = $cIdx;
             elseif (str_contains($val, 'afkir')) $colMap['afkir'] = $cIdx;
         }
@@ -394,8 +394,10 @@ class ExcelRestoreService
         if (!isset($colMap['petugas'])) $colMap['petugas'] = 15;
         if (!isset($colMap['catatan'])) $colMap['catatan'] = 16;
         if (!isset($colMap['jam'])) $colMap['jam'] = 17;
-        if (!isset($colMap['pakan_pagi'])) $colMap['pakan_pagi'] = 19;
-        if (!isset($colMap['pakan_sore'])) $colMap['pakan_sore'] = 20;
+        // PAKSA kolom T (index 19) untuk Pakan Pagi dan kolom U (index 20) untuk Pakan Sore
+        // sesuai template resmi NF-DAT-002 — tidak boleh di-override oleh header detection
+        $colMap['pakan_pagi'] = 19;
+        $colMap['pakan_sore'] = 20;
         if (!isset($colMap['mati'])) $colMap['mati'] = 25;
 
         // Cache Master Data
@@ -590,72 +592,78 @@ class ExcelRestoreService
 
                 // ========================================================
                 // 2. DATA PEMAKAIAN PAKAN (Pakan Pagi & Pakan Sore)
+                // Kolom T (index 19) = Pakan Pagi, Kolom U (index 20) = Pakan Sore
+                // Sesuai template resmi NF-DAT-002
                 // ========================================================
-                $pakanPagi = self::parseNumeric($row[$colMap['pakan_pagi']] ?? 0);
-                $pakanSore = self::parseNumeric($row[$colMap['pakan_sore']] ?? 0);
+                $rawPakanPagi = $row[19] ?? null; // Kolom T
+                $rawPakanSore = $row[20] ?? null; // Kolom U
+                $pakanPagi = self::parseNumeric($rawPakanPagi);
+                $pakanSore = self::parseNumeric($rawPakanSore);
 
-                if ($pakanPagi > 0) {
-                    $existingPagi = FeedConsumption::where('coop_id', $coop->id)
-                        ->whereDate('date', $formattedDate)
-                        ->whereRaw('LOWER(feeding_time) = ?', ['pagi'])
-                        ->first();
+                // Pakan Pagi: Update jika record sudah ada (terlepas nilainya), Insert hanya jika nilai > 0
+                $existingPagi = FeedConsumption::where('coop_id', $coop->id)
+                    ->whereDate('date', $formattedDate)
+                    ->whereRaw('LOWER(feeding_time) = ?', ['pagi'])
+                    ->first();
 
-                    if ($existingPagi) {
-                        if ($overwrite) {
-                            $existingPagi->update([
-                                'flock_id' => $coop->flock_id,
-                                'user_id' => $userId,
-                                'quantity_kg' => $pakanPagi,
-                                'notes' => $notes ?: $existingPagi->notes,
-                            ]);
-                            $stats['feed_updated']++;
-                        }
-                    } else {
-                        FeedConsumption::create([
+                if ($existingPagi) {
+                    // Update record yang sudah ada dengan nilai dari kolom T
+                    if ($overwrite && $rawPakanPagi !== null) {
+                        $existingPagi->update([
                             'flock_id' => $coop->flock_id,
-                            'coop_id' => $coop->id,
                             'user_id' => $userId,
-                            'date' => $formattedDate,
-                            'time' => '07:30:00',
-                            'feeding_time' => 'Pagi',
-                            'feed_name' => 'Pakan Layer',
                             'quantity_kg' => $pakanPagi,
-                            'notes' => $notes ?: 'Import Excel Pakan Pagi',
+                            'notes' => $notes ?: $existingPagi->notes,
                         ]);
-                        $stats['feed_created']++;
+                        $stats['feed_updated']++;
                     }
+                } elseif ($pakanPagi > 0) {
+                    // Insert hanya jika nilai pakan > 0
+                    FeedConsumption::create([
+                        'flock_id' => $coop->flock_id,
+                        'coop_id' => $coop->id,
+                        'user_id' => $userId,
+                        'date' => $formattedDate,
+                        'time' => '07:30:00',
+                        'feeding_time' => 'Pagi',
+                        'feed_name' => 'Pakan Layer',
+                        'quantity_kg' => $pakanPagi,
+                        'notes' => $notes ?: 'Import Excel Pakan Pagi',
+                    ]);
+                    $stats['feed_created']++;
                 }
 
-                if ($pakanSore > 0) {
-                    $existingSore = FeedConsumption::where('coop_id', $coop->id)
-                        ->whereDate('date', $formattedDate)
-                        ->whereRaw('LOWER(feeding_time) = ?', ['sore'])
-                        ->first();
+                // Pakan Sore: Update jika record sudah ada (terlepas nilainya), Insert hanya jika nilai > 0
+                $existingSore = FeedConsumption::where('coop_id', $coop->id)
+                    ->whereDate('date', $formattedDate)
+                    ->whereRaw('LOWER(feeding_time) = ?', ['sore'])
+                    ->first();
 
-                    if ($existingSore) {
-                        if ($overwrite) {
-                            $existingSore->update([
-                                'flock_id' => $coop->flock_id,
-                                'user_id' => $userId,
-                                'quantity_kg' => $pakanSore,
-                                'notes' => $notes ?: $existingSore->notes,
-                            ]);
-                            $stats['feed_updated']++;
-                        }
-                    } else {
-                        FeedConsumption::create([
+                if ($existingSore) {
+                    // Update record yang sudah ada dengan nilai dari kolom U
+                    if ($overwrite && $rawPakanSore !== null) {
+                        $existingSore->update([
                             'flock_id' => $coop->flock_id,
-                            'coop_id' => $coop->id,
                             'user_id' => $userId,
-                            'date' => $formattedDate,
-                            'time' => '15:30:00',
-                            'feeding_time' => 'Sore',
-                            'feed_name' => 'Pakan Layer',
                             'quantity_kg' => $pakanSore,
-                            'notes' => $notes ?: 'Import Excel Pakan Sore',
+                            'notes' => $notes ?: $existingSore->notes,
                         ]);
-                        $stats['feed_created']++;
+                        $stats['feed_updated']++;
                     }
+                } elseif ($pakanSore > 0) {
+                    // Insert hanya jika nilai pakan > 0
+                    FeedConsumption::create([
+                        'flock_id' => $coop->flock_id,
+                        'coop_id' => $coop->id,
+                        'user_id' => $userId,
+                        'date' => $formattedDate,
+                        'time' => '15:30:00',
+                        'feeding_time' => 'Sore',
+                        'feed_name' => 'Pakan Layer',
+                        'quantity_kg' => $pakanSore,
+                        'notes' => $notes ?: 'Import Excel Pakan Sore',
+                    ]);
+                    $stats['feed_created']++;
                 }
 
                 // ========================================================

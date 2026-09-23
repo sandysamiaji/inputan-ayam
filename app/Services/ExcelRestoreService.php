@@ -339,27 +339,9 @@ class ExcelRestoreService
                     continue; // Lewati baris tanpa tanggal valid
                 }
 
-                // B. Identifikasi Flock (Kloter)
-                $rawFlock = trim((string)($row[$colMap['flock']] ?? 'Kloter 1'));
-                if (empty($rawFlock)) $rawFlock = 'Kloter 1';
-
-                $flock = $allFlocks->first(function($f) use ($rawFlock) {
-                    return stripos($f->name, $rawFlock) !== false || stripos($rawFlock, $f->name) !== false || $f->code === $rawFlock;
-                });
-
-                if (!$flock) {
-                    $flock = Flock::create([
-                        'name' => $rawFlock,
-                        'code' => 'K1',
-                        'start_date' => $formattedDate,
-                        'initial_population' => 2250,
-                        'current_population' => 2250,
-                        'is_active' => true,
-                    ]);
-                    $allFlocks->push($flock);
-                }
-
-                // C. Identifikasi Blok (Kandang)
+                // B. Identifikasi Blok (Kandang)
+                // Di aplikasi kita, tiap Blok (Blok A, B, C, dst.) sudah terdaftar dan sudah memiliki kloternya masing-masing.
+                // Tidak perlu melihat kloter dari Excel ataupun membuat kloter baru.
                 $rawBlok = trim((string)($row[$colMap['blok']] ?? ''));
                 $rawUmur = trim((string)($row[$colMap['umur']] ?? ''));
 
@@ -368,25 +350,28 @@ class ExcelRestoreService
                     $blockLetter = 'A'; // Default jika tidak terdeteksi
                 }
 
-                $coop = $allCoops->first(function($c) use ($flock, $blockLetter) {
-                    return ($c->flock_id == $flock->id || empty($c->flock_id))
-                        && (strtoupper($c->code) === strtoupper($blockLetter) || stripos($c->name, $blockLetter) !== false);
+                // Cari kandang yang sudah ada di database berdasarkan kode blok (A, B, C, dst.) atau nama
+                $coop = $allCoops->first(function($c) use ($blockLetter) {
+                    return strtoupper(trim($c->code)) === strtoupper($blockLetter)
+                        || preg_match('/\b' . preg_quote($blockLetter, '/') . '\b/i', $c->name);
                 });
 
-                $rawPopulasi = self::parseNumeric($row[$colMap['populasi']] ?? 0);
+                if (!$coop) {
+                    $coop = $allCoops->first(function($c) use ($blockLetter) {
+                        return stripos($c->name, $blockLetter) !== false;
+                    });
+                }
 
                 if (!$coop) {
-                    $coop = Coop::create([
-                        'flock_id' => $flock->id,
-                        'name' => 'Blok ' . $blockLetter,
-                        'code' => $blockLetter,
-                        'capacity' => $rawPopulasi > 0 ? (int)$rawPopulasi : 750,
-                        'active_chickens' => $rawPopulasi > 0 ? (int)$rawPopulasi : 750,
-                        'chicken_age_weeks' => 18,
-                        'is_active' => true,
-                    ]);
-                    $allCoops->push($coop);
-                } elseif ($rawPopulasi > 0 && ($coop->capacity <= 0 || $coop->active_chickens <= 0)) {
+                    $coop = $allCoops->first();
+                }
+
+                if (!$coop) {
+                    continue; // Lewati jika tidak ada kandang di database
+                }
+
+                $rawPopulasi = self::parseNumeric($row[$colMap['populasi']] ?? 0);
+                if ($rawPopulasi > 0 && ($coop->capacity <= 0 || $coop->active_chickens <= 0)) {
                     $coop->update([
                         'capacity' => (int)$rawPopulasi,
                         'active_chickens' => (int)$rawPopulasi,

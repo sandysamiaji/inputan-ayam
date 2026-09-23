@@ -1625,14 +1625,14 @@ function handleExcelRestoreSubmit(e) {
             </div>
             <div style="display:flex; flex-wrap:wrap; gap:6px;">
                 <span style="font-size:10px; font-weight:700; background:#e0f2fe; color:#0369a1; padding:3px 8px; border-radius:6px;">📅 Tanggal</span>
-                <span style="font-size:10px; font-weight:700; background:#f3e8ff; color:#7e22ce; padding:3px 8px; border-radius:6px;">🐔 Blok & Kloter</span>
+                <span style="font-size:10px; font-weight:700; background:#f3e8ff; color:#7e22ce; padding:3px 8px; border-radius:6px;">🐔 Blok Kandang (A, B, C...)</span>
                 <span style="font-size:10px; font-weight:700; background:#dcfce7; color:#15803d; padding:3px 8px; border-radius:6px;">🥚 Baik · Retak · Pecah</span>
                 <span style="font-size:10px; font-weight:700; background:#fef3c7; color:#92400e; padding:3px 8px; border-radius:6px;">🌾 Pakan Pagi & Sore</span>
                 <span style="font-size:10px; font-weight:700; background:#fee2e2; color:#b91c1c; padding:3px 8px; border-radius:6px;">💀 Ayam Mati</span>
                 <span style="font-size:10px; font-weight:700; background:#f1f5f9; color:#475569; padding:3px 8px; border-radius:6px;">⏰ Jam Input</span>
             </div>
             <p style="margin:8px 0 0; font-size:10px; color:#64748b; line-height:1.4;">
-                Mendukung format kolom template <b>NF-DAT-002</b>, desimal koma Indonesia (misal 28,3 kg), dan pembacaan multi-blok otomatis.
+                Mendukung format template <b>NF-DAT-002</b>. Data langsung dimasukkan ke Blok Kandang yang sudah ada di sistem (Blok A, B, C otomatis ke Kloter 1), tanpa perlu mencocokkan kloter dari Excel.
             </p>
         </div>
 

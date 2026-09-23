@@ -923,26 +923,59 @@ class WarehouseController extends Controller
                 $fcQuery->whereBetween('date', [$startDate, $endDate]);
             }
             $feedConsumptions = $fcQuery->get();
-            foreach ($feedConsumptions as $fc) {
+
+            // Kelompokkan per [Tanggal + Blok] agar sesi pagi & sore terintegrasi rapi per blok
+            $groupedByDateCoop = $feedConsumptions->groupBy(function($fc) {
+                return Carbon::parse($fc->date)->toDateString() . '_' . ($fc->coop_id ?? '0');
+            });
+
+            foreach ($groupedByDateCoop as $group) {
+                $first = $group->first();
+                $totalQty = (float) $group->sum('quantity_kg');
+                $coop = $first->coop;
+                $flock = $first->flock;
+
+                $sessionsList = [];
+                $subRecords = [];
+                foreach ($group as $item) {
+                    $timeStr = $item->feeding_time ?: 'Harian';
+                    $sessionsList[] = $timeStr . ': ' . number_format($item->quantity_kg, 1, ',', '.') . ' Kg';
+                    $subRecords[] = [
+                        'id' => 'fc_' . $item->id,
+                        'raw_id' => $item->id,
+                        'feeding_time' => $item->feeding_time,
+                        'quantity_kg' => (float) $item->quantity_kg,
+                        'feed_name' => $item->feed_name,
+                        'notes' => $item->notes,
+                        'date' => $item->date,
+                        'user' => $item->user,
+                    ];
+                }
+                $sessionsStr = implode(' • ', $sessionsList);
+
                 $collection->push((object) [
-                    'id' => 'fc_' . $fc->id,
-                    'raw_id' => $fc->id,
+                    'id' => 'fc_' . $first->id,
+                    'raw_id' => $first->id,
                     'source_type' => 'feed_consumption',
-                    'item_name' => 'Pemberian Pakan: ' . $fc->feed_name . ' (' . ($fc->feeding_time ?? 'Harian') . ')',
+                    'item_name' => 'Pemberian Pakan - ' . ($coop ? $coop->name : 'Kandang'),
                     'type' => 'keluar',
-                    'quantity' => (float) $fc->quantity_kg,
+                    'quantity' => $totalQty,
                     'unit' => 'Kg',
-                    'date' => Carbon::parse($fc->date),
-                    'created_at' => $fc->created_at ? Carbon::parse($fc->created_at) : Carbon::parse($fc->date),
-                    'source' => $fc->coop ? ($fc->coop->name . ($fc->flock ? ' (' . $fc->flock->name . ')' : '')) : 'Kandang',
-                    'notes' => 'Pemberian pakan ' . ($fc->feeding_time ?? 'pagi/sore') . ' untuk ayam kandang' . ($fc->notes ? ' • ' . $fc->notes : ''),
-                    'user' => $fc->user,
-                    'is_nonaktif' => str_starts_with(trim($fc->notes ?? ''), '[NONAKTIF]'),
-                    'coop_id' => $fc->coop_id,
-                    'flock_id' => $fc->flock_id,
-                    'feed_name' => $fc->feed_name,
-                    'feeding_time' => $fc->feeding_time,
-                    'quantity_kg' => (float) $fc->quantity_kg,
+                    'date' => Carbon::parse($first->date),
+                    'created_at' => $first->created_at ? Carbon::parse($first->created_at) : Carbon::parse($first->date),
+                    'source' => $coop ? ($coop->name . ($flock ? ' (' . $flock->name . ')' : '')) : 'Kandang',
+                    'notes' => 'Rincian: ' . $sessionsStr . ($first->notes ? ' • ' . $first->notes : ''),
+                    'user' => $first->user,
+                    'is_nonaktif' => str_starts_with(trim($first->notes ?? ''), '[NONAKTIF]'),
+                    'coop_id' => $first->coop_id,
+                    'coop_name' => $coop ? $coop->name : 'Tanpa Blok',
+                    'flock_id' => $first->flock_id,
+                    'flock_name' => $flock ? $flock->name : '',
+                    'feed_name' => $first->feed_name,
+                    'feeding_time' => $sessionsStr,
+                    'quantity_kg' => $totalQty,
+                    'sub_records' => $subRecords,
+                    'has_multiple_sessions' => $group->count() > 1,
                 ]);
             }
         }
@@ -994,27 +1027,86 @@ class WarehouseController extends Controller
         $flocks = \App\Models\Flock::where('is_active', true)->get();
         $coops = Coop::where('is_active', true)->get();
 
-        // Hitung total data untuk badge tab
-        $countMasukQuery = FarmStock::whereRaw('LOWER(category) = ?', ['pakan'])->whereRaw('LOWER(type) = ?', ['masuk']);
-        $countKeluarQuery = FarmStock::whereRaw('LOWER(category) = ?', ['pakan'])->whereRaw('LOWER(type) = ?', ['keluar'])
-            ->where(function($q) { $q->whereNull('notes')->orWhere('notes', 'not like', '[AUTO-KONSUMSI]%'); });
-        $countFeedQuery = FeedConsumption::query();
+        // PENGELOMPOKAN DATA PER BLOK (Untuk Tampilan Semua Data & Keluar)
+        $selectedBlock = $request->query('block', 'all');
+        $groupedByBlock = [];
 
-        if ($startDate && $endDate) {
-            $countMasukQuery->whereBetween('date', [$startDate, $endDate]);
-            $countKeluarQuery->whereBetween('date', [$startDate, $endDate]);
-            $countFeedQuery->whereBetween('date', [$startDate, $endDate]);
+        // 1. Kelompokkan per Blok Kandang (Blok A, Blok B, Blok C, Blok D, Blok E, Blok F)
+        foreach ($coops as $coop) {
+            $coopItems = $collection->filter(function($it) use ($coop) {
+                return (int) ($it->coop_id ?? 0) === (int) $coop->id;
+            })->sortByDesc(function ($item) {
+                return $item->date->toDateString() . ' ' . ($item->created_at ? $item->created_at->format('H:i:s') : '00:00:00');
+            })->values();
+
+            $totalKg = (float) $coopItems->sum('quantity');
+
+            $groupedByBlock['coop_' . $coop->id] = (object) [
+                'key' => 'coop_' . $coop->id,
+                'type' => 'coop',
+                'coop_id' => $coop->id,
+                'name' => $coop->name,
+                'code' => $coop->code ?: str_replace('Blok ', '', $coop->name),
+                'flock_name' => $coop->flock ? $coop->flock->name : '',
+                'flock_code' => $coop->flock ? $coop->flock->code : '',
+                'active_chickens' => (int) $coop->active_chickens,
+                'total_kg' => $totalKg,
+                'record_count' => $coopItems->count(),
+                'items' => $coopItems,
+            ];
         }
 
-        $countMasuk = $countMasukQuery->count();
-        $countKeluar = $countKeluarQuery->count() + $countFeedQuery->count();
-        $countSemua = $countMasuk + $countKeluar;
+        // 2. Pembelian & Mutasi Pakan Masuk (Gudang)
+        $masukItems = $collection->filter(fn($it) => $it->type === 'masuk')->sortByDesc(function ($item) {
+            return $item->date->toDateString() . ' ' . ($item->created_at ? $item->created_at->format('H:i:s') : '00:00:00');
+        })->values();
+        if ($masukItems->isNotEmpty() || $tab === 'masuk') {
+            $groupedByBlock['masuk'] = (object) [
+                'key' => 'masuk',
+                'type' => 'masuk',
+                'coop_id' => null,
+                'name' => 'Pembelian & Pakan Masuk (Gudang)',
+                'code' => 'Gudang',
+                'flock_name' => 'Pakan Masuk',
+                'flock_code' => 'IN',
+                'active_chickens' => 0,
+                'total_kg' => (float) $masukItems->sum('quantity'),
+                'record_count' => $masukItems->count(),
+                'items' => $masukItems,
+            ];
+        }
+
+        // 3. Pengeluaran Umum Tanpa Blok (bila ada)
+        $otherItems = $collection->filter(function($it) {
+            return $it->type === 'keluar' && empty($it->coop_id);
+        })->sortByDesc('date')->values();
+        if ($otherItems->isNotEmpty()) {
+            $groupedByBlock['other'] = (object) [
+                'key' => 'other',
+                'type' => 'other',
+                'coop_id' => null,
+                'name' => 'Pemakaian Umum / Non-Blok',
+                'code' => 'Lainnya',
+                'flock_name' => 'Kandang',
+                'flock_code' => 'ETC',
+                'active_chickens' => 0,
+                'total_kg' => (float) $otherItems->sum('quantity'),
+                'record_count' => $otherItems->count(),
+                'items' => $otherItems,
+            ];
+        }
+
+        // Hitung total data untuk badge tab
+        $countMasuk = $collection->where('type', 'masuk')->count();
+        $countKeluar = $collection->where('type', 'keluar')->count();
+        $countSemua = $collection->count();
 
         return view('warehouse.pakan', compact(
             'user', 'items', 'tab', 'search', 'startDate', 'endDate',
             'totalMasuk', 'totalKeluar', 'stokSaatIni', 'currentStockKarung',
             'karungSold', 'kgSold', 'soldRevenue', 'consumptionKg', 'consumptionKarung', 'purchasedKarung', 'feedSummary',
-            'salesList', 'tripList', 'coops', 'flocks', 'countMasuk', 'countKeluar', 'countSemua'
+            'salesList', 'tripList', 'coops', 'flocks', 'countMasuk', 'countKeluar', 'countSemua',
+            'groupedByBlock', 'selectedBlock'
         ));
     }
 
@@ -1664,6 +1756,7 @@ class WarehouseController extends Controller
         $stock = FarmStock::findOrFail($id);
 
         $itemName = $request->input('item_name') ?: ($request->input('feed_name') ?: ($request->input('medicine_name') ?: $stock->item_name));
+        $oldType = $stock->type;
         $type = $request->input('type') ?: $stock->type;
         $quantity = $request->input('quantity_kg') ?: ($request->input('quantity') ?: ($request->input('dosage') ? (float) preg_replace('/[^0-9.]/', '', $request->input('dosage')) : $stock->quantity));
         $unit = $request->input('unit') ?: $stock->unit;
@@ -1684,6 +1777,12 @@ class WarehouseController extends Controller
         if ($request->has('source')) $stock->source = $request->source;
         if ($request->has('notes')) $stock->notes = $request->notes;
         $stock->save();
+
+        if ($request->has('redirect_tab') || ($oldType !== $type)) {
+            $targetTab = $request->input('redirect_tab', ($type === 'masuk' ? 'masuk' : 'keluar'));
+            return redirect()->route('warehouse.' . $stock->category, array_merge(['tab' => $targetTab], $request->only(['start_date', 'end_date'])))
+                ->with('success', "Data transaksi {$stock->item_name} berhasil diperbarui (Status: " . ($stock->type === 'masuk' ? 'Masuk / Beli' : 'Keluar') . ")!");
+        }
 
         return back()->with('success', 'Data transaksi berhasil diperbarui!');
     }

@@ -261,8 +261,297 @@
         </div>
     @else
 
-    <!-- List Data Pakan (Sesuai Gambar Mockup 2 Layar 3) -->
-    <div class="space-y-2.5">
+    <!-- Filter Bar Per Blok & Toggle Mode Tampilan -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar flex-1">
+            <button type="button" onclick="setBlockFilter('all')" class="block-pill active px-3 py-1.5 rounded-xl font-bold transition-all bg-maroon-800 text-white shrink-0 shadow-2xs" data-block="all">
+                Semua Blok ({{ count($coops) }} Blok)
+            </button>
+            @foreach($coops as $c)
+                @php
+                    $blockSummary = $groupedByBlock['coop_' . $c->id] ?? null;
+                    $blockKg = $blockSummary ? $blockSummary->total_kg : 0;
+                @endphp
+                <button type="button" onclick="setBlockFilter('coop_{{ $c->id }}')" class="block-pill px-3 py-1.5 rounded-xl font-semibold transition-all bg-slate-100 hover:bg-slate-200 text-slate-700 shrink-0" data-block="coop_{{ $c->id }}">
+                    🌾 {{ $c->name }} <span class="font-bold text-[10px] {{ $blockKg > 0 ? 'text-maroon-800' : 'text-slate-400' }}">({{ number_format($blockKg, 0, ',', '.') }} kg)</span>
+                </button>
+            @endforeach
+            @if(isset($groupedByBlock['masuk']) && $groupedByBlock['masuk']->record_count > 0)
+                <button type="button" onclick="setBlockFilter('masuk')" class="block-pill px-3 py-1.5 rounded-xl font-semibold transition-all bg-slate-100 hover:bg-slate-200 text-slate-700 shrink-0" data-block="masuk">
+                    📦 Masuk ({{ number_format($groupedByBlock['masuk']->total_kg, 0, ',', '.') }} kg)
+                </button>
+            @endif
+            @if(isset($groupedByBlock['other']) && $groupedByBlock['other']->record_count > 0)
+                <button type="button" onclick="setBlockFilter('other')" class="block-pill px-3 py-1.5 rounded-xl font-semibold transition-all bg-amber-50 border border-amber-200 hover:bg-amber-100 text-amber-900 shrink-0" data-block="other">
+                    📋 Non-Blok ({{ number_format($groupedByBlock['other']->total_kg, 0, ',', '.') }} kg)
+                </button>
+            @endif
+        </div>
+        
+        <!-- Toggle Tampilan: Per Blok vs Timeline -->
+        <div class="flex items-center bg-slate-100 p-1 rounded-xl self-end sm:self-center shrink-0 text-xs">
+            <button type="button" id="btnViewBlock" onclick="switchPakanView('grouped')" class="px-2.5 py-1 rounded-lg font-bold transition-all bg-white text-maroon-800 shadow-2xs flex items-center gap-1.5">
+                <i data-lucide="layers" class="w-3.5 h-3.5"></i>
+                <span>Grup Per Blok</span>
+            </button>
+            <button type="button" id="btnViewTimeline" onclick="switchPakanView('timeline')" class="px-2.5 py-1 rounded-lg font-semibold transition-all text-slate-500 hover:text-slate-800 flex items-center gap-1.5">
+                <i data-lucide="list" class="w-3.5 h-3.5"></i>
+                <span>Timeline Tanggal</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 1. TAMPILAN GRUP PER BLOK (DEFAULT & REKOMENDASI USER) -->
+    <div id="viewGroupedBlocks" class="space-y-4">
+        @php
+            $hasAnyBlockData = false;
+        @endphp
+        @foreach($groupedByBlock as $bKey => $bData)
+            @php
+                if ($bData->record_count > 0) $hasAnyBlockData = true;
+                $isMasukBlock = ($bData->type === 'masuk');
+                $isOtherBlock = ($bData->type === 'other');
+                $headerColor = $isMasukBlock ? 'text-emerald-800' : ($isOtherBlock ? 'text-amber-800' : 'text-slate-800');
+                $iconBg = $isMasukBlock ? 'bg-emerald-100 text-emerald-700' : ($isOtherBlock ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-amber-50 text-amber-700 border border-amber-200/80');
+                $blockIcon = $isMasukBlock ? '📦' : ($isOtherBlock ? '📋' : '🌾');
+            @endphp
+            <div class="block-group-section farm-card p-4 space-y-3 transition-all {{ $bData->record_count == 0 ? 'hidden' : '' }}" data-block-key="{{ $bKey }}" data-count="{{ $bData->record_count }}">
+                <!-- Header Blok -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-2xl {{ $iconBg }} flex items-center justify-center font-black text-sm shrink-0 shadow-inner">
+                            {{ $blockIcon }}
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h2 class="text-xs sm:text-sm font-extrabold {{ $headerColor }}">
+                                    {{ $bData->name }}
+                                </h2>
+                                @if(!empty($bData->flock_name))
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                                        {{ $bData->flock_name }}
+                                    </span>
+                                @endif
+                                @if($bData->active_chickens > 0)
+                                    <span class="text-[11px] text-slate-400 font-medium">
+                                        ({{ number_format($bData->active_chickens, 0, ',', '.') }} ekor)
+                                    </span>
+                                @endif
+                            </div>
+                            <p class="text-[11px] text-slate-400 mt-0.5">
+                                Terdiri dari <b>{{ $bData->record_count }} catatan</b> transaksi pakan
+                            </p>
+                        </div>
+                    </div>
+                    <!-- Total Konsumsi Blok -->
+                    <div class="text-left sm:text-right bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 self-start sm:self-center">
+                        <span class="text-[9px] uppercase font-bold text-slate-400 block">{{ $isMasukBlock ? 'Total Pakan Masuk' : 'Total Konsumsi Blok' }}</span>
+                        <span class="text-xs sm:text-sm font-black {{ $isMasukBlock ? 'text-emerald-700' : 'text-maroon-800' }}">
+                            {{ number_format($bData->total_kg, 1, ',', '.') }} Kg
+                            <span class="text-[11px] font-semibold text-slate-500">({{ \App\Models\Setting::formatKarungKg($bData->total_kg) }})</span>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Daftar Transaksi Blok Ini -->
+                <div class="space-y-2">
+                    @foreach($bData->items as $item)
+                        @php
+                            $isMasuk = $item->type === 'masuk';
+                            $isNonaktif = str_starts_with(trim($item->notes ?? ''), '[NONAKTIF]');
+                            $displayNotes = $isNonaktif ? trim(substr(trim($item->notes), strlen('[NONAKTIF]'))) : $item->notes;
+                            $kgPerKarungSetting = \App\Models\Setting::getKgPerKarung();
+                            $uLower = strtolower(trim($item->unit ?? ''));
+                            $convertedKgDisplay = '';
+                            if (in_array($uLower, ['karung', 'sak', 'krg'])) {
+                                $convertedKgDisplay = ' (~' . number_format($item->quantity * $kgPerKarungSetting, 0, ',', '.') . ' Kg)';
+                            } elseif ($uLower === 'ton') {
+                                $convertedKgDisplay = ' (~' . number_format($item->quantity * 1000, 0, ',', '.') . ' Kg)';
+                            } elseif ($uLower === 'kg') {
+                                $convertedKgDisplay = ' (~' . \App\Models\Setting::formatKarungKg($item->quantity) . ')';
+                            }
+                        @endphp
+                        <div class="p-3 sm:p-3.5 rounded-xl border border-slate-100 bg-slate-50/60 hover:bg-white hover:border-maroon-200 transition-all flex items-center justify-between gap-3 {{ $isNonaktif ? 'opacity-60' : '' }}">
+                            
+                            <!-- Left Detail (Click to Open Detail Modal) -->
+                            <div class="flex items-center gap-3 min-w-0 cursor-pointer flex-1" onclick="openDetailPakanModal({{ json_encode([
+                                'id' => $item->id,
+                                'title' => $item->item_name,
+                                'type' => $item->type,
+                                'quantity' => number_format($item->quantity, fmod((float)$item->quantity, 1) !== 0.0 ? 1 : 0, ',', '.') . ' ' . $item->unit,
+                                'raw_quantity' => $item->quantity,
+                                'unit' => $item->unit,
+                                'notes' => $displayNotes,
+                                'date' => \Carbon\Carbon::parse($item->date)->translatedFormat('d F Y'),
+                                'raw_date' => $item->date->format('Y-m-d'),
+                                'time' => $item->created_at ? $item->created_at->format('H:i') : '07:10',
+                                'petugas' => $item->user ? ($item->user->username ? '@' . ltrim($item->user->username, '@') : $item->user->name) : 'Petugas',
+                                'kandang' => $item->source ?? 'Semua Blok',
+                                'jenis_pakan' => $item->feed_name ?? (str_contains(strtolower($item->notes ?? ''), 'layer') ? 'Pakan Layer' : (str_contains(strtolower($item->notes ?? ''), 'starter') ? 'Pakan Starter' : 'Pakan Komplit')),
+                                'is_nonaktif' => $isNonaktif,
+                                'sub_records' => $item->sub_records ?? [],
+                                'has_multiple_sessions' => $item->has_multiple_sessions ?? false,
+                            ]) }})">
+                                <!-- Feed Icon -->
+                                <div class="w-10 h-10 rounded-xl {{ $isMasuk ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-blue-50 text-blue-600 border border-blue-200' }} flex items-center justify-center shrink-0">
+                                    <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M19 6h-2.28a4.99 4.99 0 0 0-9.44 0H5a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V9a3 3 0 0 0-3-3zm-7-2c1.3 0 2.4.84 2.82 2h-5.64A3.003 3.003 0 0 1 12 4zm0 13a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
+                                    </svg>
+                                </div>
+
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-center gap-1.5 mb-0.5">
+                                        <span class="px-1.5 py-0.2 rounded text-[9.5px] font-extrabold uppercase {{ $isMasuk ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800' }}">
+                                            {{ $isMasuk ? 'MASUK (BELI)' : 'PEMBERIAN PAKAN' }}
+                                        </span>
+                                        @if(!empty($item->feeding_time))
+                                            <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                                {{ $item->feeding_time }}
+                                            </span>
+                                        @endif
+                                        @if($isNonaktif)
+                                            <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-slate-200 text-slate-600">NONAKTIF</span>
+                                        @endif
+                                    </div>
+
+                                    <h4 class="text-xs sm:text-sm font-bold text-slate-800 truncate">
+                                        {{ $item->item_name }}
+                                    </h4>
+
+                                    <div class="text-[10px] sm:text-[11px] text-slate-400 flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+                                        <span class="font-bold text-slate-600">{{ \Carbon\Carbon::parse($item->date)->translatedFormat('d M Y') }}</span>
+                                        <span>•</span>
+                                        <span>{{ $item->user ? ($item->user->username ? '@' . ltrim($item->user->username, '@') : $item->user->name) : 'Petugas' }}</span>
+                                        @if($item->notes && !str_starts_with($item->notes, 'Rincian:'))
+                                            <span>•</span>
+                                            <span class="truncate max-w-[200px] text-slate-500">{{ $item->notes }}</span>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right Total & Action Menu -->
+                            <div class="flex items-center gap-2 shrink-0">
+                                <div class="text-right">
+                                    <span class="text-xs sm:text-sm font-black {{ $isMasuk ? 'text-emerald-700' : 'text-slate-800' }} block">
+                                        {{ number_format($item->quantity, fmod((float)$item->quantity, 1) !== 0.0 ? 1 : 0, ',', '.') }} {{ $item->unit }}
+                                    </span>
+                                    <span class="text-[10px] text-slate-400">{{ $convertedKgDisplay }}</span>
+                                </div>
+
+                                <!-- 3 Dots Menu -->
+                                <div class="relative">
+                                    <button onclick="toggleActionDropdown(this)" class="w-7 h-7 rounded-full hover:bg-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-700 transition-colors">
+                                        <i data-lucide="more-vertical" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                    <div class="action-dropdown hidden absolute right-0 top-8 z-20 w-44 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 text-xs font-semibold text-slate-700">
+                                        <button onclick="openDetailPakanModal({{ json_encode([
+                                            'id' => $item->id,
+                                            'title' => $item->item_name,
+                                            'type' => $item->type,
+                                            'quantity' => number_format($item->quantity, 0, ',', '.') . ' ' . $item->unit,
+                                            'raw_quantity' => $item->quantity,
+                                            'unit' => $item->unit,
+                                            'notes' => $displayNotes,
+                                            'date' => \Carbon\Carbon::parse($item->date)->translatedFormat('d F Y'),
+                                            'raw_date' => $item->date->format('Y-m-d'),
+                                            'time' => $item->created_at ? $item->created_at->format('H:i') : '07:10',
+                                            'petugas' => $item->user ? ($item->user->username ? '@' . ltrim($item->user->username, '@') : $item->user->name) : 'Petugas',
+                                            'kandang' => $item->source ?? 'Semua Blok',
+                                            'jenis_pakan' => $item->feed_name ?? 'Pakan Layer',
+                                            'is_nonaktif' => $isNonaktif,
+                                            'sub_records' => $item->sub_records ?? [],
+                                        ]) }})" class="w-full px-3.5 py-2 text-left hover:bg-slate-50 flex items-center gap-2">
+                                            <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-500"></i>
+                                            <span>Lihat Detail</span>
+                                        </button>
+                                        <button onclick="openEditPakanModal({{ json_encode([
+                                            'id' => $item->id,
+                                            'title' => $item->item_name,
+                                            'item_name' => $item->item_name,
+                                            'type' => $item->type,
+                                            'quantity' => $item->quantity,
+                                            'raw_quantity' => $item->quantity,
+                                            'unit' => $item->unit,
+                                            'source' => $item->source,
+                                            'notes' => $displayNotes,
+                                            'date' => $item->date->format('Y-m-d'),
+                                            'raw_date' => $item->date->format('Y-m-d'),
+                                            'time' => $item->created_at ? $item->created_at->format('H:i') : '07:10',
+                                            'source_type' => $item->source_type ?? (str_starts_with($item->id, 'fc_') ? 'feed_consumption' : 'farm_stock'),
+                                            'coop_id' => $item->coop_id ?? null,
+                                            'flock_id' => $item->flock_id ?? null,
+                                            'feed_name' => $item->feed_name ?? $item->item_name,
+                                            'feeding_time' => $item->feeding_time ?? 'Pagi',
+                                            'quantity_kg' => $item->quantity_kg ?? $item->quantity,
+                                        ]) }})" class="w-full px-3.5 py-2 text-left hover:bg-slate-50 flex items-center gap-2">
+                                            <i data-lucide="edit-3" class="w-3.5 h-3.5 text-blue-600"></i>
+                                            <span>Edit Data</span>
+                                        </button>
+                                        @if(($item->source_type ?? '') === 'farm_stock')
+                                            @if($item->type === 'keluar')
+                                                <form method="POST" action="{{ route('warehouse.update', $item->id) }}" class="w-full">
+                                                    @csrf
+                                                    @method('PUT')
+                                                    <input type="hidden" name="type" value="masuk">
+                                                    <input type="hidden" name="redirect_tab" value="masuk">
+                                                    <button type="submit" class="w-full px-3.5 py-2 text-left hover:bg-emerald-50 flex items-center gap-2 text-emerald-700">
+                                                        <i data-lucide="arrow-down-left" class="w-3.5 h-3.5"></i>
+                                                        <span>Ubah ke Masuk (Beli)</span>
+                                                    </button>
+                                                </form>
+                                            @else
+                                                <form method="POST" action="{{ route('warehouse.update', $item->id) }}" class="w-full">
+                                                    @csrf
+                                                    @method('PUT')
+                                                    <input type="hidden" name="type" value="keluar">
+                                                    <input type="hidden" name="redirect_tab" value="keluar">
+                                                    <button type="submit" class="w-full px-3.5 py-2 text-left hover:bg-rose-50 flex items-center gap-2 text-rose-700">
+                                                        <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
+                                                        <span>Ubah ke Keluar</span>
+                                                    </button>
+                                                </form>
+                                            @endif
+                                        @endif
+                                        <form method="POST" action="{{ route('warehouse.toggle-status', $item->id) }}" class="w-full">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit" class="w-full px-3.5 py-2 text-left hover:bg-slate-50 flex items-center gap-2 text-amber-700">
+                                                <i data-lucide="{{ $isNonaktif ? 'check-circle' : 'eye-off' }}" class="w-3.5 h-3.5"></i>
+                                                <span>{{ $isNonaktif ? 'Aktifkan Data' : 'Nonaktifkan' }}</span>
+                                            </button>
+                                        </form>
+                                        <form method="POST" action="{{ route('warehouse.destroy', $item->id) }}" onsubmit="return confirm('Apakah Anda yakin ingin menghapus data transaksi pakan ini?');" class="w-full">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="w-full px-3.5 py-2 text-left hover:bg-rose-50 flex items-center gap-2 text-rose-600">
+                                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                                <span>Hapus Data</span>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endforeach
+
+        @if(!$hasAnyBlockData)
+            <div class="farm-card p-10 text-center">
+                <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3 text-slate-400">
+                    <i data-lucide="wheat" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-sm font-bold text-slate-700">Tidak ada data pakan</h3>
+                <p class="text-xs text-slate-400 mt-1">Belum ada catatan transaksi pakan untuk filter tanggal ini.</p>
+            </div>
+        @endif
+    </div>
+
+    <!-- 2. TAMPILAN TIMELINE TANGGAL (OPSIONAL, BISA DI-TOGGLE) -->
+    <div id="viewTimeline" class="space-y-2.5 hidden">
         @forelse($items as $item)
             @php
                 $isMasuk = $item->type === 'masuk';
@@ -276,7 +565,7 @@
                     'id' => $item->id,
                     'title' => $item->item_name,
                     'type' => $item->type,
-                    'quantity' => number_format($item->quantity, 0, ',', '.') . ' ' . $item->unit,
+                    'quantity' => number_format($item->quantity, fmod((float)$item->quantity, 1) !== 0.0 ? 1 : 0, ',', '.') . ' ' . $item->unit,
                     'raw_quantity' => $item->quantity,
                     'unit' => $item->unit,
                     'notes' => $displayNotes,
@@ -285,8 +574,10 @@
                     'time' => $item->created_at ? $item->created_at->format('H:i') : '07:10',
                     'petugas' => $item->user ? ($item->user->username ? '@' . ltrim($item->user->username, '@') : $item->user->name) : 'Petugas',
                     'kandang' => $item->source ?? 'Semua Blok',
-                    'jenis_pakan' => str_contains(strtolower($item->notes ?? ''), 'layer') ? 'Pakan Layer' : (str_contains(strtolower($item->notes ?? ''), 'starter') ? 'Pakan Starter' : 'Pakan Komplit'),
-                    'is_nonaktif' => $isNonaktif
+                    'jenis_pakan' => $item->feed_name ?? (str_contains(strtolower($item->notes ?? ''), 'layer') ? 'Pakan Layer' : (str_contains(strtolower($item->notes ?? ''), 'starter') ? 'Pakan Starter' : 'Pakan Komplit')),
+                    'is_nonaktif' => $isNonaktif,
+                    'sub_records' => $item->sub_records ?? [],
+                    'has_multiple_sessions' => $item->has_multiple_sessions ?? false,
                 ]) }})">
                     
                     <!-- Feed Sack Icon -->
@@ -297,20 +588,22 @@
                     </div>
 
                     <div class="min-w-0">
-                        <!-- Badge Masuk / Keluar / Pemberian Pakan -->
                         <div class="flex items-center gap-2 mb-0.5">
                             <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase {{ $isMasuk ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-blue-50 text-blue-700 border border-blue-200' }}">
                                 {{ $item->type === 'keluar' ? 'PEMBERIAN PAKAN' : 'MASUK (BELI)' }}
                             </span>
+                            @if(!empty($item->feeding_time))
+                                <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                    {{ $item->feeding_time }}
+                                </span>
+                            @endif
                             @if($isNonaktif)
                                 <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-200 text-slate-600">NONAKTIF</span>
                             @endif
                         </div>
 
-                        <!-- Judul Transaksi (Pembelian Pakan / Pemberian Pakan) -->
                         <h2 class="text-xs sm:text-sm font-bold text-slate-800 truncate">{{ $item->item_name }}</h2>
 
-                        <!-- Jumlah & Satuan -->
                         @php
                             $kgPerKarungSetting = \App\Models\Setting::getKgPerKarung();
                             $uLower = strtolower(trim($item->unit ?? ''));
@@ -319,13 +612,14 @@
                                 $convertedKgDisplay = ' (~' . number_format($item->quantity * $kgPerKarungSetting, 0, ',', '.') . ' Kg)';
                             } elseif ($uLower === 'ton') {
                                 $convertedKgDisplay = ' (~' . number_format($item->quantity * 1000, 0, ',', '.') . ' Kg)';
+                            } elseif ($uLower === 'kg') {
+                                $convertedKgDisplay = ' (~' . \App\Models\Setting::formatKarungKg($item->quantity) . ')';
                             }
                         @endphp
                         <p class="text-xs font-extrabold text-slate-800">
                             {{ number_format($item->quantity, fmod((float)$item->quantity, 1) !== 0.0 ? 1 : 0, ',', '.') }} {{ $item->unit }}<span class="text-xs font-semibold text-slate-500">{{ $convertedKgDisplay }}</span>
                         </p>
 
-                        <!-- Tanggal & Petugas -->
                         <div class="text-[10px] sm:text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5">
                             <span>{{ \Carbon\Carbon::parse($item->date)->translatedFormat('d M Y') }} {{ $item->created_at ? $item->created_at->format('H:i') : '' }}</span>
                             <span>•</span>
@@ -344,7 +638,6 @@
                     <button onclick="toggleActionDropdown(this)" class="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-700 transition-colors">
                         <i data-lucide="more-vertical" class="w-4 h-4"></i>
                     </button>
-                    <!-- Dropdown Content -->
                     <div class="action-dropdown hidden absolute right-0 top-9 z-20 w-44 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 text-xs font-semibold text-slate-700">
                         <button onclick="openDetailPakanModal({{ json_encode([
                             'id' => $item->id,
@@ -359,8 +652,9 @@
                             'time' => $item->created_at ? $item->created_at->format('H:i') : '07:10',
                             'petugas' => $item->user ? ($item->user->username ? '@' . ltrim($item->user->username, '@') : $item->user->name) : 'Petugas',
                             'kandang' => $item->source ?? 'A1, A2, A3',
-                            'jenis_pakan' => str_contains(strtolower($item->notes ?? ''), 'layer') ? 'Pakan Layer' : (str_contains(strtolower($item->notes ?? ''), 'starter') ? 'Pakan Starter' : 'Pakan Komplit'),
-                            'is_nonaktif' => $isNonaktif
+                            'jenis_pakan' => $item->feed_name ?? (str_contains(strtolower($item->notes ?? ''), 'layer') ? 'Pakan Layer' : (str_contains(strtolower($item->notes ?? ''), 'starter') ? 'Pakan Starter' : 'Pakan Komplit')),
+                            'is_nonaktif' => $isNonaktif,
+                            'sub_records' => $item->sub_records ?? [],
                         ]) }})" class="w-full px-3.5 py-2 text-left hover:bg-slate-50 flex items-center gap-2">
                             <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-500"></i>
                             <span>Lihat Detail</span>
@@ -368,14 +662,17 @@
                         <button onclick="openEditPakanModal({{ json_encode([
                             'id' => $item->id,
                             'title' => $item->item_name,
+                            'item_name' => $item->item_name,
                             'type' => $item->type,
                             'quantity' => $item->quantity,
+                            'raw_quantity' => $item->quantity,
                             'unit' => $item->unit,
                             'source' => $item->source,
                             'notes' => $displayNotes,
                             'date' => $item->date->format('Y-m-d'),
                             'raw_date' => $item->date->format('Y-m-d'),
                             'time' => $item->created_at ? $item->created_at->format('H:i') : '07:10',
+                            'source_type' => $item->source_type ?? (str_starts_with($item->id, 'fc_') ? 'feed_consumption' : 'farm_stock'),
                             'coop_id' => $item->coop_id ?? null,
                             'flock_id' => $item->flock_id ?? null,
                             'feed_name' => $item->feed_name ?? $item->item_name,
@@ -385,6 +682,31 @@
                             <i data-lucide="edit-3" class="w-3.5 h-3.5 text-blue-600"></i>
                             <span>Edit Data</span>
                         </button>
+                        @if(($item->source_type ?? '') === 'farm_stock')
+                            @if($item->type === 'keluar')
+                                <form method="POST" action="{{ route('warehouse.update', $item->id) }}" class="w-full">
+                                    @csrf
+                                    @method('PUT')
+                                    <input type="hidden" name="type" value="masuk">
+                                    <input type="hidden" name="redirect_tab" value="masuk">
+                                    <button type="submit" class="w-full px-3.5 py-2 text-left hover:bg-emerald-50 flex items-center gap-2 text-emerald-700">
+                                        <i data-lucide="arrow-down-left" class="w-3.5 h-3.5"></i>
+                                        <span>Ubah ke Masuk (Beli)</span>
+                                    </button>
+                                </form>
+                            @else
+                                <form method="POST" action="{{ route('warehouse.update', $item->id) }}" class="w-full">
+                                    @csrf
+                                    @method('PUT')
+                                    <input type="hidden" name="type" value="keluar">
+                                    <input type="hidden" name="redirect_tab" value="keluar">
+                                    <button type="submit" class="w-full px-3.5 py-2 text-left hover:bg-rose-50 flex items-center gap-2 text-rose-700">
+                                        <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
+                                        <span>Ubah ke Keluar</span>
+                                    </button>
+                                </form>
+                            @endif
+                        @endif
                         <form method="POST" action="{{ route('warehouse.toggle-status', $item->id) }}" class="w-full">
                             @csrf
                             @method('PATCH')
@@ -414,11 +736,11 @@
                 <p class="text-xs text-slate-400 mt-1">Belum ada catatan transaksi pakan untuk filter ini.</p>
             </div>
         @endforelse
-    </div>
 
-    <!-- Pagination -->
-    <div class="mt-4">
-        {{ $items->links() }}
+        <!-- Pagination for timeline -->
+        <div class="mt-4">
+            {{ $items->links() }}
+        </div>
     </div>
     @endif
 
@@ -498,6 +820,15 @@
                 </span>
                 <span id="detailPakanNotes" class="font-medium text-slate-700 text-right">Pemakaian pagi hari</span>
             </div>
+        </div>
+
+        <!-- Rincian Sesi Pakan (Pagi/Sore) jika ada -->
+        <div id="detailPakanSessionsContainer" class="hidden mt-3 p-3 bg-amber-50/80 border border-amber-200/80 rounded-2xl">
+            <div class="text-[11px] font-bold text-amber-900 mb-1.5 flex items-center gap-1.5">
+                <i data-lucide="clock" class="w-3.5 h-3.5 text-amber-700"></i>
+                <span>Rincian Sesi Pemberian Pakan</span>
+            </div>
+            <div id="detailPakanSessionsList" class="space-y-1.5 text-xs text-amber-950 font-medium"></div>
         </div>
 
         <!-- Aksi Section (Sesuai Mockup Layar 4: Edit Data, Nonaktifkan Data, Hapus Data) -->
@@ -667,9 +998,129 @@
 </div>
 
 <!-- ========================================================================= -->
-<!-- MODAL EDIT DATA PAKAN (Matching /input 🌾 Pemakaian Pakan) -->
+<!-- MODAL EDIT DATA GUDANG PAKAN (Pembelian / Mutasi Masuk & Keluar) -->
 <!-- ========================================================================= -->
-<div id="modalEditPakan" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm opacity-0 invisible pointer-events-none transition-all duration-300 flex items-end sm:items-center justify-center p-0 sm:p-4">
+<div id="modalEditPakanGudang" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm opacity-0 invisible pointer-events-none transition-all duration-300 flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl transform translate-y-full sm:translate-y-0 transition-transform duration-300 max-h-[90vh] overflow-y-auto">
+        
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-lg">
+                    📦
+                </div>
+                <div>
+                    <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">Edit Transaksi Gudang Pakan</h3>
+                    <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">Gudang Pakan</span>
+                </div>
+            </div>
+            <button type="button" onclick="closeModalEditPakanGudang()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <form id="formEditPakanGudang" method="POST" action="" class="mt-4 space-y-4">
+            @csrf
+            @method('PUT')
+            <input type="hidden" name="category" value="pakan">
+            <input type="hidden" name="tab" value="{{ $tab }}">
+            @if(!empty($startDate)) <input type="hidden" name="start_date" value="{{ $startDate }}"> @endif
+            @if(!empty($endDate)) <input type="hidden" name="end_date" value="{{ $endDate }}"> @endif
+
+            <!-- Pilihan Jenis: Masuk / Keluar -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1.5">Jenis Transaksi *</label>
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="type" id="editPakanGudangTypeMasuk" value="masuk" onchange="updateEditPakanGudangTypeUI()" class="peer sr-only">
+                        <div class="p-3 text-center rounded-xl border-2 border-slate-200 peer-checked:border-emerald-600 peer-checked:bg-emerald-50 text-slate-600 peer-checked:text-emerald-800 font-bold text-xs flex items-center justify-center gap-2 transition-all">
+                            <i data-lucide="arrow-down-left" class="w-4 h-4"></i>
+                            <span>Pakan Masuk (Beli)</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="type" id="editPakanGudangTypeKeluar" value="keluar" onchange="updateEditPakanGudangTypeUI()" class="peer sr-only">
+                        <div class="p-3 text-center rounded-xl border-2 border-slate-200 peer-checked:border-rose-600 peer-checked:bg-rose-50 text-slate-600 peer-checked:text-rose-800 font-bold text-xs flex items-center justify-center gap-2 transition-all">
+                            <i data-lucide="arrow-up-right" class="w-4 h-4"></i>
+                            <span>Pakan Keluar</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Jenis / Varian Pakan -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Jenis / Varian Pakan *</label>
+                <select id="editPakanGudangVariant" onchange="autoFillEditPakanGudangItemName()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white font-bold text-slate-800 focus:ring-2 focus:ring-maroon-800/20 focus:border-maroon-800">
+                    <option value="Pakan Layer">🌾 Pakan Layer (Ayam Petelur Dewasa)</option>
+                    <option value="Pakan Grower">🌾 Pakan Grower (Ayam Remaja)</option>
+                    <option value="Pakan Starter">🌾 Pakan Starter (Anak Ayam)</option>
+                    <option value="Pakan Finisher">🌾 Pakan Finisher</option>
+                    <option value="Custom">➕ Varian Lainnya / Custom</option>
+                </select>
+            </div>
+
+            <!-- Nama Transaksi / Item -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Nama Transaksi / Item *</label>
+                <input type="text" name="item_name" id="editPakanGudangItemName" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm focus:ring-2 focus:ring-maroon-800/20 focus:border-maroon-800 font-semibold">
+            </div>
+
+            <!-- Jumlah & Satuan -->
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1" id="editPakanGudangQtyLabel">Jumlah *</label>
+                    <input type="number" step="0.01" name="quantity" id="editPakanGudangQty" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm focus:ring-2 focus:ring-maroon-800/20 focus:border-maroon-800 font-bold">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Satuan *</label>
+                    <select name="unit" id="editPakanGudangUnit" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white font-medium">
+                        <option value="Karung">Karung / Sak (50 Kg)</option>
+                        <option value="Kg">Kg (Kilogram)</option>
+                        <option value="Ton">Ton (1.000 Kg)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Tanggal & Waktu -->
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Tanggal *</label>
+                    <input type="date" name="date" id="editPakanGudangDate" required class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Waktu</label>
+                    <input type="time" name="time" id="editPakanGudangTime" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm">
+                </div>
+            </div>
+
+            <!-- Kandang / Supplier -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1" id="editPakanGudangSourceLabel">Supplier / Asal Pembelian</label>
+                <input type="text" name="source" id="editPakanGudangSource" placeholder="Contoh: Phokpan, PT Charoen Pokphand, Toko Ternak, dll" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm">
+            </div>
+
+            <!-- Keterangan -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Keterangan / Catatan Transaksi</label>
+                <textarea name="notes" id="editPakanGudangNotes" rows="2" placeholder="Catatan transaksi..." class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm"></textarea>
+            </div>
+
+            <div class="pt-2 space-y-2">
+                <button type="submit" class="w-full py-3 rounded-xl bg-maroon-800 hover:bg-maroon-900 text-white font-bold text-sm shadow-md transition-all active:scale-98">
+                    Simpan Perubahan Gudang
+                </button>
+                <button type="button" onclick="closeModalEditPakanGudang()" class="w-full py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-xs transition-all">
+                    Batal
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL EDIT PEMBERIAN PAKAN KANDANG (FeedConsumption) -->
+<!-- ========================================================================= -->
+<div id="modalEditPakanKandang" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm opacity-0 invisible pointer-events-none transition-all duration-300 flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl transform translate-y-full sm:translate-y-0 transition-transform duration-300 max-h-[90vh] overflow-y-auto">
         
         <div class="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -678,19 +1129,22 @@
                     🌾
                 </div>
                 <div>
-                    <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">🌾 Pemakaian Pakan</h3>
-                    <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">↘ Gudang Pakan</span>
+                    <h3 class="font-extrabold text-slate-800 text-sm sm:text-base">🌾 Edit Pemberian Pakan Kandang</h3>
+                    <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">↘ Pemakaian Kandang</span>
                 </div>
             </div>
-            <button onclick="closeModalEditPakan()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600">
+            <button type="button" onclick="closeModalEditPakanKandang()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600">
                 <i data-lucide="x" class="w-4 h-4"></i>
             </button>
         </div>
 
-        <form id="formEditPakan" method="POST" action="" class="mt-4 space-y-4">
+        <form id="formEditPakanKandang" method="POST" action="" class="mt-4 space-y-4">
             @csrf
             @method('PUT')
             <input type="hidden" name="type" value="keluar">
+            <input type="hidden" name="tab" value="{{ $tab }}">
+            @if(!empty($startDate)) <input type="hidden" name="start_date" value="{{ $startDate }}"> @endif
+            @if(!empty($endDate)) <input type="hidden" name="end_date" value="{{ $endDate }}"> @endif
 
             <!-- Kloter & Blok -->
             <div class="grid grid-cols-2 gap-3">
@@ -804,9 +1258,9 @@
 
             <div class="pt-2 space-y-2">
                 <button type="submit" class="w-full py-3 rounded-xl bg-maroon-800 hover:bg-maroon-900 text-white font-bold text-sm shadow-md transition-all active:scale-98">
-                    Simpan Perubahan
+                    Simpan Perubahan Pemberian Pakan
                 </button>
-                <button type="button" onclick="closeModalEditPakan()" class="w-full py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-xs transition-all">
+                <button type="button" onclick="closeModalEditPakanKandang()" class="w-full py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-xs transition-all">
                     Batal
                 </button>
             </div>
@@ -845,6 +1299,51 @@
         document.getElementById('detailPakanJenis').textContent = data.jenis_pakan || 'Pakan Layer';
         document.getElementById('detailPakanNotes').textContent = data.notes || '-';
 
+        // Sub records / Sessions
+        const sessionsContainer = document.getElementById('detailPakanSessionsContainer');
+        const sessionsList = document.getElementById('detailPakanSessionsList');
+        if (sessionsContainer && sessionsList) {
+            if (data.sub_records && data.sub_records.length > 1) {
+                sessionsContainer.classList.remove('hidden');
+                sessionsList.innerHTML = data.sub_records.map(sr => {
+                    const kg = parseFloat(sr.quantity_kg || sr.quantity || 0);
+                    const safeFeedName = (sr.feed_name || data.feed_name || 'Pakan Layer').replace(/'/g, "\\'");
+                    const safeTime = (sr.feeding_time || 'Pagi').replace(/'/g, "\\'");
+                    const safeDate = (sr.date || data.raw_date || data.date || '').replace(/'/g, "\\'");
+                    const safeNotes = (sr.notes || '').replace(/'/g, "\\'");
+                    return `
+                        <div class="flex items-center justify-between py-1.5 border-b border-amber-200/50 last:border-0">
+                            <span class="font-bold flex items-center gap-1.5 text-amber-900">
+                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                Sesi ${sr.feeding_time || 'Pakan'}:
+                            </span>
+                            <div class="flex items-center gap-2">
+                                <span class="font-black text-amber-950">${kg.toLocaleString('id-ID', {minimumFractionDigits: 0, maximumFractionDigits: 1})} Kg</span>
+                                <button type="button" onclick="closeDetailPakanModal(); openModalEditPakanKandang({
+                                    id: '${sr.id}',
+                                    source_type: 'feed_consumption',
+                                    feed_name: '${safeFeedName}',
+                                    quantity_kg: ${kg},
+                                    feeding_time: '${safeTime}',
+                                    date: '${safeDate}',
+                                    raw_date: '${safeDate}',
+                                    time: '${data.time || '07:10'}',
+                                    notes: '${safeNotes}',
+                                    coop_id: ${data.coop_id || 'null'},
+                                    flock_id: ${data.flock_id || 'null'}
+                                })" class="text-[10px] font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded-md border border-blue-200 transition-colors">
+                                    Edit Sesi
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                sessionsContainer.classList.add('hidden');
+                sessionsList.innerHTML = '';
+            }
+        }
+
         // Badge
         const badge = document.getElementById('detailPakanBadge');
         badge.textContent = data.type === 'keluar' ? 'PEMBERIAN PAKAN' : (data.type === 'masuk' ? 'MASUK (BELI)' : data.type.toUpperCase());
@@ -874,6 +1373,67 @@
         const content = modal.querySelector('div');
         modal.classList.remove('modal-active');
         content.classList.remove('modal-content-active');
+    }
+
+    // 1b. FILTER PER BLOK & SWITCHER VIEW LOGIC
+    function setBlockFilter(blockKey) {
+        // 1. Update pills styling
+        const pills = document.querySelectorAll('.block-pill');
+        pills.forEach(pill => {
+            if (pill.getAttribute('data-block') === blockKey) {
+                pill.classList.remove('bg-slate-100', 'hover:bg-slate-200', 'text-slate-700', 'font-semibold');
+                pill.classList.add('bg-maroon-800', 'text-white', 'font-bold', 'shadow-2xs');
+            } else {
+                pill.classList.remove('bg-maroon-800', 'text-white', 'font-bold', 'shadow-2xs');
+                pill.classList.add('bg-slate-100', 'hover:bg-slate-200', 'text-slate-700', 'font-semibold');
+            }
+        });
+
+        // 2. Filter block sections
+        const sections = document.querySelectorAll('.block-group-section');
+        sections.forEach(sec => {
+            const secKey = sec.getAttribute('data-block-key');
+            const count = parseInt(sec.getAttribute('data-count') || '0');
+            if (blockKey === 'all') {
+                if (count > 0) {
+                    sec.classList.remove('hidden');
+                } else {
+                    sec.classList.add('hidden');
+                }
+            } else {
+                if (secKey === blockKey) {
+                    sec.classList.remove('hidden');
+                } else {
+                    sec.classList.add('hidden');
+                }
+            }
+        });
+
+        // Pastikan tampilan dalam mode grup blok
+        switchPakanView('grouped');
+    }
+
+    function switchPakanView(mode) {
+        const viewGrouped = document.getElementById('viewGroupedBlocks');
+        const viewTimeline = document.getElementById('viewTimeline');
+        const btnBlock = document.getElementById('btnViewBlock');
+        const btnTimeline = document.getElementById('btnViewTimeline');
+
+        if (!viewGrouped || !viewTimeline) return;
+
+        if (mode === 'grouped') {
+            viewGrouped.classList.remove('hidden');
+            viewTimeline.classList.add('hidden');
+
+            if (btnBlock) btnBlock.className = 'px-2.5 py-1 rounded-lg font-bold transition-all bg-white text-maroon-800 shadow-2xs flex items-center gap-1.5';
+            if (btnTimeline) btnTimeline.className = 'px-2.5 py-1 rounded-lg font-semibold transition-all text-slate-500 hover:text-slate-800 flex items-center gap-1.5';
+        } else {
+            viewGrouped.classList.add('hidden');
+            viewTimeline.classList.remove('hidden');
+
+            if (btnTimeline) btnTimeline.className = 'px-2.5 py-1 rounded-lg font-bold transition-all bg-white text-maroon-800 shadow-2xs flex items-center gap-1.5';
+            if (btnBlock) btnBlock.className = 'px-2.5 py-1 rounded-lg font-semibold transition-all text-slate-500 hover:text-slate-800 flex items-center gap-1.5';
+        }
     }
 
     // 2. INPUT MODAL (PAKAN)
@@ -979,18 +1539,126 @@
         // User manual entry for actual feed quantity
     }
 
+    // 3. EDIT DISPATCHER (GUDANG vs KANDANG)
     function openEditPakanModal(data) {
-        const modal = document.getElementById('modalEditPakan');
+        if (data.source_type === 'feed_consumption' || (typeof data.id === 'string' && data.id.startsWith('fc_'))) {
+            openModalEditPakanKandang(data);
+        } else {
+            openModalEditPakanGudang(data);
+        }
+    }
+
+    // 3a. EDIT MODAL (GUDANG PAKAN - FarmStock)
+    function openModalEditPakanGudang(data) {
+        const modal = document.getElementById('modalEditPakanGudang');
+        const content = modal.querySelector('div');
+
+        document.getElementById('formEditPakanGudang').action = `/gudang/${data.id}/update`;
+
+        // Type radio
+        const isMasuk = (data.type === 'masuk');
+        const rMasuk = document.getElementById('editPakanGudangTypeMasuk');
+        const rKeluar = document.getElementById('editPakanGudangTypeKeluar');
+        if (isMasuk) {
+            if (rMasuk) rMasuk.checked = true;
+        } else {
+            if (rKeluar) rKeluar.checked = true;
+        }
+        updateEditPakanGudangTypeUI();
+
+        // Item name & variant
+        const itemName = data.item_name || data.title || 'Pakan Layer';
+        document.getElementById('editPakanGudangItemName').value = itemName;
+        const vSel = document.getElementById('editPakanGudangVariant');
+        if (vSel) {
+            if (Array.from(vSel.options).some(o => o.value === itemName)) {
+                vSel.value = itemName;
+            } else {
+                vSel.value = 'Custom';
+            }
+        }
+
+        // Quantity & Unit
+        document.getElementById('editPakanGudangQty').value = data.raw_quantity || data.quantity || 0;
+        const uSel = document.getElementById('editPakanGudangUnit');
+        if (uSel && data.unit) {
+            Array.from(uSel.options).forEach(o => {
+                if (o.value.toLowerCase() === data.unit.toLowerCase()) {
+                    uSel.value = o.value;
+                }
+            });
+        }
+
+        // Date & Time
+        document.getElementById('editPakanGudangDate').value = data.raw_date || data.date || '';
+        document.getElementById('editPakanGudangTime').value = data.time || '07:10';
+
+        // Source
+        document.getElementById('editPakanGudangSource').value = data.source || '';
+
+        // Notes
+        document.getElementById('editPakanGudangNotes').value = data.notes || '';
+
+        modal.classList.add('modal-active');
+        content.classList.add('modal-content-active');
+    }
+
+    function closeModalEditPakanGudang() {
+        const modal = document.getElementById('modalEditPakanGudang');
+        const content = modal.querySelector('div');
+        modal.classList.remove('modal-active');
+        content.classList.remove('modal-content-active');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300);
+    }
+
+    function updateEditPakanGudangTypeUI() {
+        const isMasuk = document.getElementById('editPakanGudangTypeMasuk')?.checked ?? true;
+        const qtyLabel = document.getElementById('editPakanGudangQtyLabel');
+        const sourceLabel = document.getElementById('editPakanGudangSourceLabel');
+        const sourceInput = document.getElementById('editPakanGudangSource');
+
+        if (qtyLabel) {
+            qtyLabel.textContent = isMasuk ? 'Jumlah Masuk / Beli *' : 'Jumlah Keluar / Pemakaian *';
+        }
+        if (sourceLabel) {
+            sourceLabel.textContent = isMasuk ? 'Supplier / Asal Pembelian' : 'Kandang / Tujuan Pemakaian';
+        }
+        if (sourceInput) {
+            sourceInput.placeholder = isMasuk ? 'Contoh: Phokpan, PT Charoen Pokphand, Toko Ternak, dll' : 'Contoh: Blok A1, Blok B2, atau Konsumsi';
+        }
+    }
+
+    function autoFillEditPakanGudangItemName() {
+        const sel = document.getElementById('editPakanGudangVariant');
+        const input = document.getElementById('editPakanGudangItemName');
+        if (!sel || !input) return;
+        if (sel.value !== 'Custom') {
+            input.value = sel.value;
+        } else {
+            input.value = '';
+            input.focus();
+        }
+    }
+
+    // 3b. EDIT MODAL (PEMBERIAN PAKAN KANDANG - FeedConsumption)
+    function openModalEditPakanKandang(data) {
+        const modal = document.getElementById('modalEditPakanKandang');
         const content = modal.querySelector('div');
         
-        document.getElementById('formEditPakan').action = `/gudang/${data.id}/update`;
+        document.getElementById('formEditPakanKandang').action = `/gudang/${data.id}/update`;
         document.getElementById('editPakanAktual').value = data.quantity_kg || data.raw_quantity || data.quantity || 40;
         document.getElementById('editPakanDate').value = data.raw_date || data.date;
         document.getElementById('editPakanTime').value = data.time || '07:10';
         document.getElementById('editPakanNotes').value = data.notes || '';
 
         if (data.feeding_time) {
-            document.getElementById('editPakanWaktu').value = data.feeding_time;
+            if (data.feeding_time.toLowerCase().includes('sore')) {
+                document.getElementById('editPakanWaktu').value = 'Sore';
+            } else {
+                document.getElementById('editPakanWaktu').value = 'Pagi';
+            }
         }
         if (data.feed_name || data.title) {
             const fn = data.feed_name || data.title;
@@ -1015,8 +1683,8 @@
         content.classList.add('modal-content-active');
     }
 
-    function closeModalEditPakan() {
-        const modal = document.getElementById('modalEditPakan');
+    function closeModalEditPakanKandang() {
+        const modal = document.getElementById('modalEditPakanKandang');
         const content = modal.querySelector('div');
         modal.classList.remove('modal-active');
         content.classList.remove('modal-content-active');

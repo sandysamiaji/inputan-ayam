@@ -829,6 +829,13 @@ class MasterController extends Controller
 
     /**
      * Download Template Contoh Format Excel NF-DAT-002
+     * Urutan kolom WAJIB sesuai template resmi agar import berjalan benar:
+     * A(0):ID  B(1):Hari  C(2):Tanggal  D(3):Mode  E(4):Mingg  F(5):Umur  G(6):Blok  H(7):Populasi
+     * I(8):Baik  J(9):Retak  K(10):Pecah  L(11):Kotor  M(12):Total  N(13):HD%  O(14):Reject%
+     * P(15):Petugas  Q(16):Catatan  R(17):Jam Input  S(18):Status
+     * T(19):Pakan Pagi ← DIAMBIL  U(20):Pakan Sore ← DIAMBIL
+     * V(21):Total Pakan  W(22):Target Pakan Pagi  X(23):Target Pakan Sore  Y(24):Target Pakan Total
+     * Z(25):Ayam Mati  AA(26):Ayam Afkir  AB(27):Total Mati  AC(28):Harga
      */
     public function downloadSampleTemplate()
     {
@@ -842,21 +849,39 @@ class MasterController extends Controller
             // Tambahkan UTF-8 BOM untuk kompatibilitas Microsoft Excel
             fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
 
-            // Header sesuai template NF-DAT-002 di screenshot pengguna
+            // Baris judul (baris 1) — sama seperti di Excel asli
+            fputcsv($output, ['NOCHI FARM | NF-DAT-002 | DATABASE OPERASIONAL'], ';');
+
+            // Header kolom (baris 2) — WAJIB persis sesuai urutan kolom A s/d AC
+            // Kolom T (index 19) = Pakan Pagi, Kolom U (index 20) = Pakan Sore
             fputcsv($output, [
-                'ID', 'Hari', 'Tanggal', 'Mode Produksi', 'Mingg', 'Umur', 'Blok', 'Populasi',
-                'Baik', 'Retak', 'Pecah', 'Kotor', 'Total', 'HD (%)', 'Reject (%)', 'Petug', 'Catata',
-                'Jam Input', 'Status', 'Pakan Pagi', 'Pakan Sore', 'Total Pakan', 'Target Pagi', 'Target Sore', 'Target Total',
+                // A-H (0-7)
+                'ID', 'Hari', 'Tanggal', 'Mode Produksi', 'Mingg', 'Umur Ayam', 'Blok', 'Populasi',
+                // I-M (8-12): Data Telur
+                'Baik', 'Retak', 'Pecah', 'Kotor', 'Total',
+                // N-O (13-14): Persentase
+                'HD (%)', 'Reject (%)',
+                // P-S (15-18): Info
+                'Petugas', 'Catatan', 'Jam Input', 'Status',
+                // T-U (19-20): PAKAN — INI YANG DIAMBIL SAAT IMPORT
+                'Pakan Pagi', 'Pakan Sore',
+                // V-Y (21-24): Total & Target Pakan (TIDAK diambil saat import)
+                'Total Pakan', 'Target Pakan Pagi', 'Target Pakan Sore', 'Target Pakan Total',
+                // Z-AC (25-28): Mortalitas & Harga
                 'Ayam Mati', 'Ayam Afkir', 'Total Mati', 'Harga'
             ], ';');
 
-            // Baris sampel data
+            // Baris sampel data (mulai baris 3)
+            // Kolom T (index 19) = Pakan Pagi dalam Kg, Kolom U (index 20) = Pakan Sore dalam Kg
             $sampleRows = [
-                ['PRD-2026-000001', 'Sabtu', '15/08/2026', 'Kloter 1', '18', '18 A', 'A', '762', '13', '1', '0', '0', '14', '1,84%', '7,14%', 'Akip', '', '21:28:43', 'VALID', '24', '36', '60', '45', '45', '90', '0', '0', '0', '24.000'],
-                ['PRD-2026-000002', 'Sabtu', '15/08/2026', 'Kloter 1', '18', '18 B', 'B', '744', '14', '2', '0', '0', '16', '2,15%', '12,50%', 'Akip', '', '21:28:43', 'VALID', '24', '36', '60', '45', '45', '90', '0', '0', '0', '24.000'],
-                ['PRD-2026-000003', 'Sabtu', '15/08/2026', 'Kloter 1', '18', '18 C', 'C', '744', '5', '2', '0', '0', '7', '0,94%', '28,57%', 'Akip', '', '21:28:43', 'VALID', '2', '36', '38', '45', '45', '90', '0', '0', '0', '24.000'],
-                ['PRD-2026-000007', 'Senin', '17/08/2026', 'Kloter 1', '18', '18 A', 'A', '762', '37', '2', '0', '0', '39', '5,12%', '5,13%', 'Sipur', 'belum m', '20:35:30', 'VALID', '24', '36', '60', '45', '45', '90', '0', '1', '1', '24.000'],
-                ['PRD-2026-000010', 'Rabu', '19/08/2026', 'Kloter 1', '18', '18 A', 'A', '762', '49', '3', '0', '0', '52', '6,82%', '5,77%', 'Akip', '', '20:02:04', 'VALID', '28,3', '42,5', '70', '45', '45', '90', '0', '0', '0', '24.000'],
+                ['PRD-2026-000001', 'Sabtu',  '15/08/2026', 'Kloter 1', '18', '18 A', 'A', '762', '13', '1', '0', '0', '14',  '1,84%',  '7,14%',  'Akip',  '',        '21:28:43', 'VALID', '24',   '36',   '60', '45', '45', '90', '0', '0', '0', '24.000'],
+                ['PRD-2026-000002', 'Sabtu',  '15/08/2026', 'Kloter 1', '18', '18 B', 'B', '744', '14', '2', '0', '0', '16',  '2,15%',  '12,50%', 'Akip',  '',        '21:28:43', 'VALID', '24',   '36',   '60', '45', '45', '90', '0', '0', '0', '24.000'],
+                ['PRD-2026-000003', 'Sabtu',  '15/08/2026', 'Kloter 1', '18', '18 C', 'C', '744', '5',  '2', '0', '0', '7',   '0,94%',  '28,57%', 'Akip',  '',        '21:28:43', 'VALID', '2',    '36',   '38', '45', '45', '90', '0', '0', '0', '24.000'],
+                ['PRD-2026-000004', 'Minggu', '16/08/2026', 'Kloter 1', '18', '18 A', 'A', '762', '50', '3', '0', '0', '53',  '6,98%',  '5,66%',  'Akip',  '',        '20:30:50', 'VALID', '0',    '0',    '0',  '45', '45', '90', '0', '0', '0', '24.000'],
+                ['PRD-2026-000007', 'Senin',  '17/08/2026', 'Kloter 1', '18', '18 A', 'A', '762', '37', '2', '0', '0', '39',  '5,12%',  '5,13%',  'Sipur', 'belum m', '20:35:30', 'VALID', '24',   '36',   '60', '45', '45', '90', '0', '1', '1', '24.000'],
+                ['PRD-2026-000010', 'Rabu',   '19/08/2026', 'Kloter 1', '18', '18 A', 'A', '762', '49', '3', '0', '0', '52',  '6,82%',  '5,77%',  'Akip',  '',        '20:02:04', 'VALID', '28,3', '42,5', '70', '45', '45', '90', '0', '0', '0', '24.000'],
+                ['PRD-2026-000013', 'Jumat',  '28/08/2026', 'Kloter 1', '20', '20 A', 'A', '762', '123','5', '0', '0', '128', '16,80%', '3,91%',  'Siput', '',        '20:37:33', 'VALID', '28',   '43',   '71', '50', '50', '100','0', '0', '0', '24.000'],
+                ['PRD-2026-000014', 'Sabtu',  '29/08/2026', 'Kloter 1', '20', '20 A', 'A', '762', '133','4', '0', '0', '137', '18,03%', '2,92%',  'Akip',  '',        '20:13:11', 'VALID', '43',   '72',   '115','50', '50', '100','0', '0', '0', '24.000'],
             ];
 
             foreach ($sampleRows as $row) {

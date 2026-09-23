@@ -422,48 +422,7 @@ class MasterController extends Controller
      */
     private function getMedicinesList(): array
     {
-        return [
-            [
-                'name' => 'ND IB Vaccine (Newcastle Disease & Infectious Bronchitis)',
-                'category' => 'Vaksin',
-                'dosage' => '1000 - 2000 Dosis per Botol',
-                'application' => 'Tetes Mata / Air Minum',
-                'schedule' => 'Umur 4, 16, 24, 40 Minggu',
-                'notes' => 'Pencegahan virus tetelo dan radang pernapasan layer',
-            ],
-            [
-                'name' => 'ND Lasota',
-                'category' => 'Vaksin',
-                'dosage' => '1 Botol per 1000 Ekor',
-                'application' => 'Tetes Mata',
-                'schedule' => 'Umur 18 - 20 Minggu (Booster)',
-                'notes' => 'Vaksinasi booster menjelang masa puncak bertelur',
-            ],
-            [
-                'name' => 'Vitamin B Complex + Elektrolit',
-                'category' => 'Vitamin & Suplemen',
-                'dosage' => '1 gram per 2 Liter Air Minum',
-                'application' => 'Air Minum Pagi Hari',
-                'schedule' => 'Rutin 2x Seminggu atau Saat Cuaca Panas',
-                'notes' => 'Mencegah stres panas (heat stress) dan memacu nafsu makan',
-            ],
-            [
-                'name' => 'Kalsium & Mineral Premix Layer',
-                'category' => 'Mineral',
-                'dosage' => '2 kg per 100 kg Pakan Konsentrat',
-                'application' => 'Campuran Pakan Kering',
-                'schedule' => 'Setiap hari selama fase bertelur',
-                'notes' => 'Memperkuat cangkang telur agar tidak mudah retak',
-            ],
-            [
-                'name' => 'Disinfektan Kandang (Glutaraldehyde & QAC)',
-                'category' => 'Sanitasi',
-                'dosage' => '10 ml per 5 Liter Air',
-                'application' => 'Semprot / Fogging Lingkungan',
-                'schedule' => '1x Seminggu saat kandang kosong atau sela lorong',
-                'notes' => 'Sterilisasi bakteri dan virus pembawa penyakit unggas',
-            ]
-        ];
+        return \App\Services\MedicineCatalogService::getAllMedicines();
     }
 
     /**
@@ -472,8 +431,9 @@ class MasterController extends Controller
     public function medicines()
     {
         $medicines = $this->getMedicinesList();
+        $categories = \App\Services\MedicineCatalogService::getCategories();
 
-        return view('master.medicines', compact('medicines'));
+        return view('master.medicines', compact('medicines', 'categories'));
     }
 
     /**

@@ -957,6 +957,27 @@
 
     <!-- FORM 4: VAKSIN & OBAT -->
     <div id="formSectionObat" style="{{ $type === 'obat' ? '' : 'display:none;' }}">
+        <!-- Panduan Cepat Jenis Obat & Vitamin -->
+        <div style="background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%); border: 1px solid #bae6fd; border-radius: 16px; padding: 14px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <span style="font-size:16px;">💡</span>
+                    <b style="font-size:12px; color:#0369a1; text-transform:uppercase; letter-spacing:0.5px;">Panduan Kategori & Jenis Obat</b>
+                </div>
+                <span style="font-size:10px; background:#0284c7; color:#fff; font-weight:700; padding:2px 8px; border-radius:12px;">SOP Medis</span>
+            </div>
+            <div style="font-size:11px; line-height:1.6; color:#1e293b;">
+                <div style="display:grid; grid-template-columns: 1fr; gap:5px;">
+                    <div>• <b>Vermixon / Wormzol:</b> Kategori <span style="background:#fef3c7; color:#92400e; font-weight:700; padding:1px 6px; border-radius:6px;">🪱 Obat Cacing</span> (Ascaridia & cacing pita)</div>
+                    <div>• <b>Neomeditril / Amoxitin / Doxyvet:</b> Kategori <span style="background:#ffe4e6; color:#9f1239; font-weight:700; padding:1px 6px; border-radius:6px;">💊 Antibiotik</span> (CRD ngorok, Snot, Kolera)</div>
+                    <div>• <b>Toltrazuril / Coccilin:</b> Kategori <span style="background:#fee2e2; color:#991b1b; font-weight:700; padding:1px 6px; border-radius:6px;">🩸 Antikoksidia</span> (Berak Darah / Cokelat)</div>
+                    <div>• <b>Vita Stress / B Complex / Egg Stimulant:</b> Kategori <span style="background:#dcfce7; color:#166534; font-weight:700; padding:1px 6px; border-radius:6px;">🍊 Vitamin & Antistres</span></div>
+                    <div>• <b>ND Lasota / ND IB / Medivac AI:</b> Kategori <span style="background:#f3e8ff; color:#6b21a8; font-weight:700; padding:1px 6px; border-radius:6px;">💉 Vaksin</span> (Tetelo & Flu Burung)</div>
+                    <div>• <b>Kalsium Premix / Egg Shell Booster:</b> Kategori <span style="background:#e0f2fe; color:#075985; font-weight:700; padding:1px 6px; border-radius:6px;">🧱 Mineral & Kalsium</span> (Cangkang Telur)</div>
+                </div>
+            </div>
+        </div>
+
         <section class="form-card">
             <div class="cardhead">
                 <h2>💊 Vaksin & Obat</h2>
@@ -989,69 +1010,106 @@
                 </div>
 
                 <div class="field">
-                    <label>Kategori</label>
+                    <label>Kategori Obat / Medis</label>
                     <select name="type" id="obatKategori" onchange="filterMedicines()">
-                        <option value="vitamin">Vitamin</option>
-                        <option value="vaksin">Vaksin</option>
-                        <option value="obat">Obat</option>
-                        <option value="disinfektan">Disinfektan</option>
-                        <option value="mineral">Mineral / Premix</option>
+                        <option value="all">🔍 Semua Kategori (Tampilkan Semua 26 Produk)</option>
+                        <option value="obat_cacing">🪱 Obat Cacing / Anthelmintik (Vermixon, Wormzol)</option>
+                        <option value="antibiotik">💊 Antibiotik / Antibakteri (Neomeditril, Amoxitin, CRD)</option>
+                        <option value="antikoksidia">🩸 Antikoksidiosis (Toltrazuril, Berak Darah)</option>
+                        <option value="vitamin">🍊 Vitamin & Suplemen Antistres (Vita Stress, B Complex)</option>
+                        <option value="vaksin">💉 Vaksin Unggas (ND Lasota, ND IB, AI, Coryza)</option>
+                        <option value="mineral">🧱 Mineral, Kalsium & Premix (Kalsium, CaCO3)</option>
+                        <option value="disinfektan">🧪 Disinfektan & Sanitasi (Medisep, Antisep, Rodalon)</option>
+                        <option value="obat">🌿 Obat Lainnya / Herbal Unggas</option>
                     </select>
                 </div>
 
                 <div class="field">
-                    <label>Produk</label>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                        <label style="margin-bottom:0;">Pilih Produk</label>
+                        <span id="medFilterCount" style="font-size:10px; color:#64748b; font-weight:600;">{{ count($medicines) }} produk tersedia</span>
+                    </div>
                     <select name="medicine_name" id="obatProduk" onchange="updateMedDetails()">
                         @foreach($medicines as $med)
-                            <option value="{{ $med['name'] }}" data-dosage="{{ $med['dosage'] }}" data-app="{{ $med['application'] }}" data-sch="{{ $med['schedule'] }}" data-unit="{{ $med['unit'] }}" data-stock="{{ $med['stock'] }}">
-                                {{ $med['name'] }}
+                            <option value="{{ $med['name'] }}" 
+                                data-category="{{ $med['category_key'] }}" 
+                                data-category-label="{{ $med['category'] }}"
+                                data-dosage="{{ $med['dosage'] }}" 
+                                data-app="{{ $med['application'] }}" 
+                                data-sch="{{ $med['schedule'] }}" 
+                                data-unit="{{ $med['unit'] }}" 
+                                data-stock="{{ $med['stock'] }}"
+                                data-indication="{{ $med['indication'] ?? '' }}"
+                                data-notes="{{ $med['notes'] ?? '' }}">
+                                {{ $med['name'] }} — [{{ $med['category'] }}]
                             </option>
                         @endforeach
+                        <option value="custom" data-category="custom" data-category-label="Input Manual" data-dosage="Sesuai dosis kemasan" data-app="Air minum" data-sch="Sesuai anjuran" data-unit="Botol" data-stock="0" data-indication="Obat / vitamin khusus luar katalog" data-notes="Input manual oleh petugas">+ Tulis Nama Produk Lainnya (Input Manual)...</option>
                     </select>
                 </div>
 
-                <!-- Acuan dari Master -->
-                <div class="master-box">
-                    <div class="mastertop">
-                        <b>Acuan dari Master</b>
-                        <span>✓ Terdaftar</span>
+                <div class="field" id="fieldCustomMed" style="display:none; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:10px; padding:10px; margin-top:4px;">
+                    <label style="color:#0369a1; font-weight:700;">Nama Obat / Produk Baru</label>
+                    <input type="text" id="obatProdukCustom" placeholder="Contoh: Super Tetra, Tetrasiklin, Herbal Kunyit...">
+                </div>
+
+                <!-- Acuan Medis dari Master -->
+                <div class="master-box" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:12px; margin: 12px 0;">
+                    <div class="mastertop" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <b style="font-size:12px; color:#0f172a;">Acuan Medis dari Master</b>
+                            <span id="medCategoryBadge" style="font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:16px; background:#e0f2fe; color:#0369a1;">-</span>
+                        </div>
+                        <span style="font-size:11px; font-weight:700; color:#059669; display:flex; align-items:center; gap:3px;">
+                            <svg style="width:14px; height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Terdaftar
+                        </span>
                     </div>
-                    <p id="medMasterRef">
-                        Dosis: <b>1 g / 2 L air</b> · Aplikasi: <b>Air minum pagi</b> · Jadwal: <b>2×/minggu / cuaca panas</b>
-                    </p>
+
+                    <div id="medIndicationBox" style="font-size:11px; color:#991b1b; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:7px 10px; margin-bottom:8px; line-height:1.4;">
+                        <b>🎯 Indikasi / Gejala:</b> <span id="medIndicationText">-</span>
+                    </div>
+
+                    <div style="font-size:11.5px; line-height:1.6; color:#334155;">
+                        <div>• Dosis Standar: <b id="medDosisText" style="color:#0f172a;">-</b></div>
+                        <div>• Rekomendasi Aplikasi: <b id="medAplikasiText" style="color:#92002f;">-</b></div>
+                        <div>• Jadwal / Waktu: <b id="medJadwalText" style="color:#0f172a;">-</b></div>
+                        <div style="margin-top:4px; font-size:11px; color:#64748b; font-style:italic;" id="medNotesText">-</div>
+                    </div>
                 </div>
 
                 <div class="row-fields">
                     <div class="field">
-                        <label>Jumlah Pemakaian</label>
-                        <input type="number" step="0.5" name="dosage" id="obatJumlah" value="1" placeholder="Jumlah" oninput="calcObatSisa()" required>
+                        <label>Jumlah Pemakaian Aktual</label>
+                        <input type="number" step="0.1" name="dosage" id="obatJumlah" value="1" placeholder="Jumlah" oninput="calcObatSisa()" required>
                     </div>
                     <div class="field">
                         <label>Satuan</label>
-                        <select id="obatSatuan">
+                        <select name="unit" id="obatSatuan">
                             <option value="Botol">Botol</option>
                             <option value="Box">Box</option>
                             <option value="Kg">Kg</option>
                             <option value="Gram">Gram</option>
                             <option value="Liter">Liter</option>
+                            <option value="Dosis">Dosis</option>
                         </select>
                     </div>
                 </div>
 
                 <div class="field">
-                    <label>Cara / Aplikasi</label>
-                    <select name="application_method">
+                    <label>Cara / Aplikasi Aktual</label>
+                    <select name="application_method" id="obatAplikasi">
                         <option value="Air minum">Air minum</option>
                         <option value="Campur pakan">Campur pakan</option>
                         <option value="Tetes mata">Tetes mata</option>
                         <option value="Semprot">Semprot</option>
+                        <option value="Suntik paha / dada">Suntik paha / dada</option>
                         <option value="Lainnya">Lainnya</option>
                     </select>
                 </div>
 
                 <div class="field">
-                    <label>Keterangan</label>
-                    <input name="notes" placeholder="Opsional...">
+                    <label>Keterangan Tambahan</label>
+                    <input name="notes" placeholder="Opsional (misal: pemberian jam 08:00 pagi pasca vaksinasi)...">
                 </div>
 
                 <div class="sync">
@@ -1065,21 +1123,40 @@
             </form>
         </section>
 
-        <!-- Stok Obat Terkait -->
+        <!-- Stok Obat Terkait Real-time -->
         <section class="form-card">
             <div class="cardhead">
                 <h2>Stok Obat Terkait</h2>
                 <span class="tag">Real-time</span>
             </div>
-            @foreach($medicines as $m)
-                <div class="stock-row">
-                    <span>{{ $m['name'] }}</span>
-                    <b class="{{ $loop->first ? 'orange' : '' }}">{{ $m['stock'] }} {{ $m['unit'] }}</b>
+
+            <!-- Kartu Highlight Produk Terpilih -->
+            <div style="background:#fff7ed; border:1px solid #fed7aa; border-radius:12px; padding:12px; margin-bottom:12px;">
+                <div style="font-size:10.5px; text-transform:uppercase; font-weight:700; color:#c2410c; margin-bottom:2px;">Produk Aktif yang Dipilih</div>
+                <div style="font-size:13px; font-weight:800; color:#431407;" id="obatNamaTerpilih">-</div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; padding-top:8px; border-top:1px dashed #fdba74; font-size:11.5px;">
+                    <span>Stok di Gudang: <b class="orange" id="obatStokTerpilih">0</b></span>
+                    <span>Sisa Pasca Transaksi: <b class="green" id="obatSetelahTx">0</b></span>
                 </div>
-            @endforeach
-            <div class="stock-row">
-                <span>Setelah Transaksi</span>
-                <b class="green" id="obatSetelahTx">9 Botol</b>
+            </div>
+
+            <!-- Filter & Daftar Stok Cepat -->
+            <div style="border-top: 1px dashed #e2e8f0; padding-top: 10px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase;">Katalog Stok (<span id="stockCountLbl">{{ count($medicines) }}</span> Produk)</span>
+                    <input type="text" id="filterStockInput" placeholder="Cari obat..." oninput="searchStockRows()" style="font-size:11px; padding:4px 8px; border:1px solid #cbd5e1; border-radius:6px; width:130px;">
+                </div>
+                <div id="stockListContainer" style="max-height: 240px; overflow-y: auto; padding-right: 4px; display:flex; flex-direction:column; gap:4px;">
+                    @foreach($medicines as $m)
+                        <div class="stock-row stock-row-item" data-category="{{ $m['category_key'] }}" data-name="{{ strtolower($m['name']) }}" style="cursor:pointer; padding:6px 10px; border-radius:8px; border:1px solid #f1f5f9; background:#f8fafc; display:flex; justify-content:space-between; align-items:center;" onclick="selectProductFromStock('{{ $m['name'] }}', '{{ $m['category_key'] }}')">
+                            <div style="display:flex; flex-direction:column;">
+                                <span style="font-weight:700; font-size:11.5px; color:#1e293b;">{{ $m['name'] }}</span>
+                                <span style="font-size:9.5px; color:#64748b;">{{ $m['category'] }}</span>
+                            </div>
+                            <b style="font-size:11.5px; color:#92002f;">{{ $m['stock'] }} {{ $m['unit'] }}</b>
+                        </div>
+                    @endforeach
+                </div>
             </div>
         </section>
     </div>
@@ -1605,21 +1682,134 @@ function calcMort() {
     if (lblCount) lblCount.textContent = count;
 }
 
-// 7. Details for Vaksin & Obat
+// 7. Details & Dynamic Filtering for Vaksin & Obat
+let masterMedicineOptions = [];
+
+function filterMedicines() {
+    const katSel = document.getElementById('obatKategori');
+    const medSel = document.getElementById('obatProduk');
+    if (!katSel || !medSel || !masterMedicineOptions.length) return;
+
+    const selectedCategory = katSel.value;
+    const currentVal = medSel.value;
+
+    medSel.innerHTML = '';
+
+    let matchingCount = 0;
+    masterMedicineOptions.forEach(opt => {
+        const optCat = opt.getAttribute('data-category');
+        if (selectedCategory === 'all' || optCat === selectedCategory || opt.value === 'custom') {
+            medSel.appendChild(opt.cloneNode(true));
+            if (opt.value !== 'custom') matchingCount++;
+        }
+    });
+
+    const countLbl = document.getElementById('medFilterCount');
+    if (countLbl) {
+        countLbl.textContent = `${matchingCount} produk tersedia`;
+    }
+
+    let found = false;
+    for (let i = 0; i < medSel.options.length; i++) {
+        if (medSel.options[i].value === currentVal) {
+            medSel.selectedIndex = i;
+            found = true;
+            break;
+        }
+    }
+    if (!found && medSel.options.length > 0) {
+        medSel.selectedIndex = 0;
+    }
+
+    updateMedDetails();
+    filterStockRowsByCategory(selectedCategory);
+}
+
 function updateMedDetails() {
     const sel = document.getElementById('obatProduk');
     if (!sel || sel.selectedIndex < 0) return;
     const opt = sel.options[sel.selectedIndex];
     if (!opt) return;
 
+    const isCustom = (opt.value === 'custom');
+    const customDiv = document.getElementById('fieldCustomMed');
+    if (customDiv) {
+        customDiv.style.display = isCustom ? 'block' : 'none';
+        if (isCustom) {
+            const customInput = document.getElementById('obatProdukCustom');
+            if (customInput) customInput.focus();
+        }
+    }
+
     const dosage = opt.getAttribute('data-dosage') || '-';
     const app = opt.getAttribute('data-app') || '-';
     const sch = opt.getAttribute('data-sch') || '-';
     const unit = opt.getAttribute('data-unit') || 'Botol';
+    const catLabel = opt.getAttribute('data-category-label') || '-';
+    const indication = opt.getAttribute('data-indication') || '';
+    const notes = opt.getAttribute('data-notes') || '';
+    const stock = opt.getAttribute('data-stock') || '0';
 
-    document.getElementById('medMasterRef').innerHTML = 
-        `Dosis: <b>${dosage}</b> · Aplikasi: <b>${app}</b> · Jadwal: <b>${sch}</b>`;
-    document.getElementById('obatSatuan').value = unit;
+    // Update Master Details UI
+    const elBadge = document.getElementById('medCategoryBadge');
+    if (elBadge) elBadge.textContent = catLabel;
+
+    const elIndicationBox = document.getElementById('medIndicationBox');
+    const elIndicationText = document.getElementById('medIndicationText');
+    if (elIndicationBox && elIndicationText) {
+        if (indication) {
+            elIndicationBox.style.display = 'block';
+            elIndicationText.textContent = indication;
+        } else {
+            elIndicationBox.style.display = 'none';
+        }
+    }
+
+    const elDosis = document.getElementById('medDosisText');
+    if (elDosis) elDosis.textContent = dosage;
+
+    const elApp = document.getElementById('medAplikasiText');
+    if (elApp) elApp.textContent = app;
+
+    const elSch = document.getElementById('medJadwalText');
+    if (elSch) elSch.textContent = sch;
+
+    const elNotes = document.getElementById('medNotesText');
+    if (elNotes) elNotes.textContent = notes ? `ℹ️ Catatan: ${notes}` : '';
+
+    // Auto sync application method dropdown
+    const appSelect = document.getElementById('obatAplikasi');
+    if (appSelect) {
+        const appLower = app.toLowerCase();
+        for (let i = 0; i < appSelect.options.length; i++) {
+            const optVal = appSelect.options[i].value.toLowerCase();
+            if (appLower.includes(optVal) || (optVal === 'air minum' && appLower.includes('air'))) {
+                appSelect.selectedIndex = i;
+                break;
+            }
+        }
+    }
+
+    // Auto sync unit dropdown
+    const unitSelect = document.getElementById('obatSatuan');
+    if (unitSelect) {
+        for (let i = 0; i < unitSelect.options.length; i++) {
+            if (unitSelect.options[i].value.toLowerCase() === unit.toLowerCase()) {
+                unitSelect.selectedIndex = i;
+                break;
+            }
+        }
+    }
+
+    // Update Selected Product in Stock Box
+    const curStockVal = document.getElementById('obatStokTerpilih');
+    if (curStockVal) {
+        curStockVal.textContent = `${stock} ${unit}`;
+    }
+    const curProdName = document.getElementById('obatNamaTerpilih');
+    if (curProdName) {
+        curProdName.textContent = isCustom ? 'Input Manual (Obat Baru)' : opt.value;
+    }
 
     calcObatSisa();
 }
@@ -1628,12 +1818,78 @@ function calcObatSisa() {
     const sel = document.getElementById('obatProduk');
     if (!sel || sel.selectedIndex < 0) return;
     const opt = sel.options[sel.selectedIndex];
-    const stok = opt ? parseFloat(opt.getAttribute('data-stock') || 10) : 10;
+    const stok = opt ? parseFloat(opt.getAttribute('data-stock') || 0) : 0;
     const unit = opt ? (opt.getAttribute('data-unit') || 'Botol') : 'Botol';
     const jml = parseFloat(document.getElementById('obatJumlah').value) || 0;
     const sisa = Math.max(0, stok - jml);
 
-    document.getElementById('obatSetelahTx').textContent = `${sisa} ${unit}`;
+    const elSisa = document.getElementById('obatSetelahTx');
+    if (elSisa) {
+        elSisa.textContent = `${sisa} ${unit}`;
+    }
+}
+
+function selectProductFromStock(prodName, categoryKey) {
+    const katSel = document.getElementById('obatKategori');
+    const medSel = document.getElementById('obatProduk');
+    if (!katSel || !medSel) return;
+
+    katSel.value = 'all';
+    filterMedicines();
+
+    for (let i = 0; i < medSel.options.length; i++) {
+        if (medSel.options[i].value === prodName) {
+            medSel.selectedIndex = i;
+            break;
+        }
+    }
+    updateMedDetails();
+
+    const formSection = document.getElementById('formSectionObat');
+    if (formSection) {
+        formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
+function filterStockRowsByCategory(categoryKey) {
+    const rows = document.querySelectorAll('.stock-row-item');
+    let visibleCount = 0;
+    rows.forEach(row => {
+        const rowCat = row.getAttribute('data-category');
+        if (categoryKey === 'all' || rowCat === categoryKey) {
+            row.style.display = 'flex';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    const countLbl = document.getElementById('stockCountLbl');
+    if (countLbl) countLbl.textContent = visibleCount;
+}
+
+function searchStockRows() {
+    const input = document.getElementById('filterStockInput');
+    const query = input ? input.value.toLowerCase().trim() : '';
+    const katSel = document.getElementById('obatKategori');
+    const selectedCategory = katSel ? katSel.value : 'all';
+
+    const rows = document.querySelectorAll('.stock-row-item');
+    let visibleCount = 0;
+    rows.forEach(row => {
+        const rowCat = row.getAttribute('data-category');
+        const rowName = row.getAttribute('data-name') || '';
+        const matchCategory = (selectedCategory === 'all' || rowCat === selectedCategory);
+        const matchQuery = (!query || rowName.includes(query));
+
+        if (matchCategory && matchQuery) {
+            row.style.display = 'flex';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    const countLbl = document.getElementById('stockCountLbl');
+    if (countLbl) countLbl.textContent = visibleCount;
 }
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -1648,6 +1904,29 @@ document.addEventListener('DOMContentLoaded', function () {
     const pakanWaktuSelect = document.getElementById('pakanWaktu');
     if (pakanWaktuSelect) {
         masterWaktuOptions.push(...Array.from(pakanWaktuSelect.options).map(opt => opt.cloneNode(true)));
+    }
+
+    const medSelect = document.getElementById('obatProduk');
+    if (medSelect) {
+        masterMedicineOptions = Array.from(medSelect.options).map(opt => opt.cloneNode(true));
+    }
+
+    const formObat = document.getElementById('formObat');
+    if (formObat) {
+        formObat.addEventListener('submit', function (e) {
+            const sel = document.getElementById('obatProduk');
+            if (sel && sel.value === 'custom') {
+                const customInput = document.getElementById('obatProdukCustom');
+                const customVal = customInput ? customInput.value.trim() : '';
+                if (!customVal) {
+                    e.preventDefault();
+                    alert('Silakan tuliskan nama produk obat/vaksin manual terlebih dahulu.');
+                    if (customInput) customInput.focus();
+                    return false;
+                }
+                sel.options[sel.selectedIndex].value = customVal;
+            }
+        });
     }
 
     filterCoops('prod');

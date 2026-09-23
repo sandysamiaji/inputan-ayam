@@ -51,49 +51,9 @@ class InputController extends Controller
         $mortalitasHariIni = (int) Mortality::whereIn('type', ['mati', 'afkir'])->whereDate('date', $date)->sum('count');
         $totalKarantinaSaatIni = \App\Models\Quarantine::getCurrentCount();
 
-        // Ringkasan Stok Obat Real-time
-        $medicines = [
-            [
-                'id' => 1,
-                'name' => 'Vitamin B Complex + Electrolyte',
-                'category' => 'Vitamin',
-                'stock' => 10,
-                'unit' => 'Botol',
-                'dosage' => '1 g / 2 L air',
-                'application' => 'Air minum pagi',
-                'schedule' => '2×/minggu / cuaca panas',
-            ],
-            [
-                'id' => 2,
-                'name' => 'ND IB Vaccine',
-                'category' => 'Vaksin',
-                'stock' => 6,
-                'unit' => 'Botol',
-                'dosage' => '1.000–2.000 dosis/botol',
-                'application' => 'Tetes mata / air minum',
-                'schedule' => 'Umur 4 · 16 · 24 · 40 minggu',
-            ],
-            [
-                'id' => 3,
-                'name' => 'ND Lasota',
-                'category' => 'Vaksin',
-                'stock' => 4,
-                'unit' => 'Botol',
-                'dosage' => '1 botol / 1.000 ekor',
-                'application' => 'Tetes mata',
-                'schedule' => 'Umur 18–20 minggu (Booster)',
-            ],
-            [
-                'id' => 4,
-                'name' => 'Calcium & Mineral Premix Layer',
-                'category' => 'Mineral / Premix',
-                'stock' => 15,
-                'unit' => 'Kg',
-                'dosage' => '2 kg / 100 kg pakan',
-                'application' => 'Campur pakan',
-                'schedule' => 'Setiap hari fase bertelur',
-            ],
-        ];
+        // Katalog Lengkap Obat, Vaksin & Vitamin Real-time
+        $medicines = \App\Services\MedicineCatalogService::getAllMedicines();
+        $medicineCategories = \App\Services\MedicineCatalogService::getCategories();
 
         // Format tanggal Indonesia
         $bulanIndo = [
@@ -144,7 +104,7 @@ class InputController extends Controller
             'telurStokSaatIni', 'telurMasukHariIni', 'telurKeluarHariIni', 'telurTerjualKg',
             'pakanStokKg', 'pakanPemakaianHariIni',
             'kloter1Pop', 'kloter2Pop', 'mortalitasHariIni', 'totalKarantinaSaatIni',
-            'medicines', 'farmCondition', 'coopStandards',
+            'medicines', 'medicineCategories', 'farmCondition', 'coopStandards',
             'completedEggCoopIds', 'completedFeedRecords'
         ));
     }

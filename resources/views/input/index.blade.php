@@ -958,7 +958,7 @@
     <!-- FORM 4: VAKSIN & OBAT -->
     <div id="formSectionObat" style="{{ $type === 'obat' ? '' : 'display:none;' }}">
         <!-- Panduan Cepat Jenis Obat & Vitamin -->
-        <div style="background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%); border: 1px solid #bae6fd; border-radius: 16px; padding: 14px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+        <div hidden style="background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%); border: 1px solid #bae6fd; border-radius: 16px; padding: 14px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
                 <div style="display:flex; align-items:center; gap:6px;">
                     <span style="font-size:16px;">💡</span>

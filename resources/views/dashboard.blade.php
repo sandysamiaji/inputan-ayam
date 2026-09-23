@@ -550,16 +550,46 @@
                                     </div>
                                 </div>
                                 @if(isset($coopWeightData[$coop->id]) && $coopWeightData[$coop->id])
-                                <div class="mt-2 p-1.5 px-2 rounded-lg bg-sky-50/70 border border-sky-100 flex flex-wrap items-center justify-between gap-1 text-[10.5px]">
-                                    <span class="flex items-center gap-1 font-bold text-sky-950">
-                                        <i data-lucide="scale" class="w-3.5 h-3.5 text-sky-600"></i>
-                                        <span>Sampel Bobot: <b class="text-sky-800">{{ number_format($coopWeightData[$coop->id], 2, ',', '.') }} kg</b></span>
-                                    </span>
-                                    <span class="text-slate-500 font-medium text-[9.5px]">
-                                        {{ !empty($coopWeightDetails[$coop->id]['battery_number']) ? 'Baterai ' . $coopWeightDetails[$coop->id]['battery_number'] : '' }}
-                                        {{ !empty($coopWeightDetails[$coop->id]['egg_weight_gram']) ? ' • Telur ' . $coopWeightDetails[$coop->id]['egg_weight_gram'] . 'g' : '' }}
-                                    </span>
-                                </div>
+                                    @php
+                                        $bbAct = (float) $coopWeightData[$coop->id];
+                                        $bbTargetVal = (float) ($cStd['bb_target'] ?? 0);
+                                        $isBbGood = ($bbAct >= $bbTargetVal);
+
+                                        $eggActVal = !empty($coopWeightDetails[$coop->id]['egg_weight_gram']) ? (float) $coopWeightDetails[$coop->id]['egg_weight_gram'] : null;
+                                        $eggStdVal = (float) ($cStd['berat_telur_val'] ?? 0);
+                                        $eggTolMin = $eggStdVal > 0 ? round($eggStdVal - 2.5, 1) : 0;
+                                        $eggTolMax = $eggStdVal > 0 ? round($eggStdVal + 2.5, 1) : 0;
+                                        $isEggGood = $eggActVal !== null && ($eggStdVal > 0 ? ($eggActVal >= $eggTolMin && $eggActVal <= $eggTolMax) : true);
+                                    @endphp
+                                    <div onclick="openModal('modalBobot6Blok')" 
+                                         class="mt-2 p-1.5 px-2 rounded-lg bg-slate-50 hover:bg-slate-100/90 border border-slate-200/90 flex flex-wrap items-center justify-between gap-1.5 text-[10.5px] cursor-pointer transition-all shadow-2xs"
+                                         title="Klik untuk membuka Evaluasi Sampel Bobot Ayam & Telur vs Data Master">
+                                        <span class="flex items-center gap-1 font-bold text-slate-800">
+                                            <i data-lucide="scale" class="w-3.5 h-3.5 {{ $isBbGood ? 'text-emerald-600' : 'text-rose-600' }}"></i>
+                                            <span>Sampel Bobot Ayam:</span>
+                                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] font-black border {{ $isBbGood ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-rose-100 text-rose-800 border-rose-300' }}"
+                                                  title="Target Standar Master: {{ number_format($bbTargetVal, 2, ',', '.') }} kg ({{ $isBbGood ? 'Sesuai/Di Atas Target' : 'Di Bawah Standar Master' }})">
+                                                {{ number_format($bbAct, 2, ',', '.') }} kg
+                                            </span>
+                                        </span>
+                                        <div class="flex items-center gap-1 text-[9.5px]">
+                                            @if(!empty($coopWeightDetails[$coop->id]['battery_number']))
+                                                <span class="text-slate-500 font-medium">
+                                                    Baterai {{ $coopWeightDetails[$coop->id]['battery_number'] }}
+                                                </span>
+                                            @endif
+                                            @if($eggActVal !== null)
+                                                @if(!empty($coopWeightDetails[$coop->id]['battery_number']))
+                                                    <span class="text-slate-300">•</span>
+                                                @endif
+                                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-black border {{ $isEggGood ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-rose-100 text-rose-800 border-rose-300' }}"
+                                                      title="BB Telur: {{ number_format($eggActVal, 1, ',', '.') }}g (Toleransi Master: {{ number_format($eggTolMin, 1, ',', '.') }} - {{ number_format($eggTolMax, 1, ',', '.') }}g, Acuan: {{ $cStd['berat_telur'] }})">
+                                                    <span>Telur {{ number_format($eggActVal, 1, ',', '.') }}g</span>
+                                                    <span class="text-[8.5px] font-black">{{ $isEggGood ? '✓' : '⚠️' }}</span>
+                                                </span>
+                                            @endif
+                                        </div>
+                                    </div>
                                 @endif
                                 @endif
 

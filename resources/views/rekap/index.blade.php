@@ -458,7 +458,10 @@
                             </div>
                             <div style="text-align:right;">
                                 <b style="font-size:13px; color:#92002f;">{{ number_format($br['eggs'], 0, ',', '.') }} <span style="font-size:9.5px; font-weight:700; color:#64748b;">butir</span></b>
-                                <div style="font-size:10px; font-weight:700; color:#059669; margin-top:1px;">
+                                @php
+                                    $isBrHdpGood = !isset($br['target_hd']) || (float)$br['hdp'] >= (float)$br['target_hd'];
+                                @endphp
+                                <div style="font-size:10px; font-weight:700; color:{{ $isBrHdpGood ? '#059669' : '#e11d48' }}; margin-top:1px;" title="Target: {{ $br['target_hd'] ?? 90 }}% ({{ $isBrHdpGood ? 'Sesuai/Di Atas Target' : 'Di Bawah Target' }})">
                                     {{ number_format($br['crates'], 0, ',', '.') }} peti · HDP {{ number_format($br['hdp'], 1, ',', '.') }}%
                                 </div>
                             </div>

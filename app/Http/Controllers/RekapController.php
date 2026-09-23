@@ -318,6 +318,7 @@ class RekapController extends Controller
                 'broken' => $cBroken,
                 'reject' => $cReject,
                 'hdp' => $cHdp,
+                'target_hd' => (float) (\App\Services\ProductionStandardService::getStandardForWeek($coop->chicken_age_weeks)['hd_target'] ?? 90),
                 'percent' => $cPercent,
                 'feed_kg' => round($cFeedKg),
                 'master_feed_kg' => round($cMasterFeedKg),

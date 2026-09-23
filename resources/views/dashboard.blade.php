@@ -415,6 +415,8 @@
                             $coopHd = $coopHdData[$coop->id] ?? null;
                             $flockHd = $flockHdData[$coop->flock_id] ?? null;
                             $todayEgg = $coopEggTodayData[$coop->id] ?? 0;
+                            $targetHd = (float) ($cStd['hd_target'] ?? 0);
+                            $isHdMet = $coopHd !== null && ((float) $coopHd >= $targetHd);
                         @endphp
                         <div class="farm-card p-4 bg-white border border-slate-200 hover:border-maroon-300 transition-all flex flex-col justify-between shadow-xs">
                             <div>
@@ -433,10 +435,17 @@
                                         <!-- BADGE HD UTAMA DI DEPAN: HANYA MUNCUL JIKA TELUR SUDAH DIINPUT -->
                                         @if(!auth()->check() || auth()->user()->canAccess('dash_coop_hd'))
                                             @if($coopHd !== null)
-                                                <span class="inline-flex items-center gap-1 text-[11px] font-black px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs" title="Hen-Day Production (HD) Blok {{ $coop->name }} Hari Ini">
-                                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
-                                                    HD {{ number_format($coopHd, 1, ',', '.') }}%
-                                                </span>
+                                                @if($isHdMet)
+                                                    <span class="inline-flex items-center gap-1 text-[11px] font-black px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs" title="Hen-Day Production (HD) Blok {{ $coop->name }} Hari Ini: {{ number_format($coopHd, 1, ',', '.') }}% (Target Standar Master: {{ $targetHd }}% - Sesuai/Di Atas Target)">
+                                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+                                                        HD {{ number_format($coopHd, 1, ',', '.') }}%
+                                                    </span>
+                                                @else
+                                                    <span class="inline-flex items-center gap-1 text-[11px] font-black px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 border border-rose-300 shadow-2xs" title="Hen-Day Production (HD) Blok {{ $coop->name }} Hari Ini: {{ number_format($coopHd, 1, ',', '.') }}% (Target Standar Master: {{ $targetHd }}% - Di Bawah Standar Master)">
+                                                        <span class="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse"></span>
+                                                        HD {{ number_format($coopHd, 1, ',', '.') }}%
+                                                    </span>
+                                                @endif
                                             @else
                                                 <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200" title="Belum ada data input telur untuk tanggal ini">
                                                     <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
@@ -466,7 +475,7 @@
                                             </span>
                                             @if(!auth()->check() || auth()->user()->canAccess('dash_coop_hd'))
                                                 @if($coopHd !== null)
-                                                    <span class="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                                                    <span class="text-[11px] font-bold {{ $isHdMet ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-rose-700 bg-rose-50 border-rose-200' }} px-1.5 py-0.5 rounded border" title="Target Standar Master: {{ $targetHd }}% ({{ $isHdMet ? 'Tercapai/Lebih' : 'Di Bawah Standar' }})">
                                                         HD: {{ number_format($coopHd, 1, ',', '.') }}% ({{ number_format($todayEgg, 0, ',', '.') }} butir)
                                                     </span>
                                                 @else
@@ -484,7 +493,7 @@
                                     </div>
                                     <div class="flex justify-between items-center text-[10px] text-slate-400">
                                         <span>Kloter: <b>{{ $coop->flock ? $coop->flock->name : 'Klotter' }} (HD: {{ $flockHd !== null ? number_format($flockHd, 1, ',', '.') . '%' : 'Belum Input' }})</b></span>
-                                        <span>Target HD Master: <b>{{ $cStd['hd_target'] }}%</b></span>
+                                        <span>Target HD Master: <b class="{{ $coopHd !== null ? ($isHdMet ? 'text-emerald-700 font-extrabold' : 'text-rose-600 font-extrabold') : 'text-slate-600' }}">{{ $cStd['hd_target'] }}%</b></span>
                                     </div>
                                 </div>
 
@@ -514,7 +523,7 @@
                                         </p>
                                         <div class="text-[10px] text-emerald-950 font-medium bg-white/70 p-1.5 rounded border border-emerald-200/50">
                                             <div>• Target Standar HD: <b>{{ $cStd['hd_target'] }}%</b> (Acuan Master Umur {{ $coop->chicken_age_weeks }} Mgg)</div>
-                                            <div>• HD Aktual Hari Ini: <b>{{ $coopHd !== null ? number_format($coopHd, 1, ',', '.') . '% (' . number_format($todayEgg, 0, ',', '.') . ' butir)' : 'Belum Diinput (Klik tombol input di bawah)' }}</b></div>
+                                            <div>• HD Aktual Hari Ini: <b class="{{ $coopHd !== null ? ($isHdMet ? 'text-emerald-700 font-extrabold' : 'text-rose-700 font-extrabold') : '' }}">{{ $coopHd !== null ? number_format($coopHd, 1, ',', '.') . '% (' . number_format($todayEgg, 0, ',', '.') . ' butir)' . ($isHdMet ? ' [✓ Sesuai Target]' : ' [⚠ Di Bawah Standar Master]') : 'Belum Diinput (Klik tombol input di bawah)' }}</b></div>
                                             <div>• Kebutuhan Pakan: <b>{{ $cStd['gram_pakan'] }} g/ekor</b> ({{ number_format($totalPakanCoopKg, 1, ',', '.') }} kg/hari)</div>
                                         </div>
                                         <div class="pt-0.5 flex justify-end">

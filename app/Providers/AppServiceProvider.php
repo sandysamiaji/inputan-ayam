@@ -48,5 +48,8 @@ class AppServiceProvider extends ServiceProvider
         \App\Models\Coop::observe(\App\Observers\AuditObserver::class);
         \App\Models\Flock::observe(\App\Observers\AuditObserver::class);
         \App\Models\User::observe(\App\Observers\AuditObserver::class);
+        \App\Models\Setting::observe(\App\Observers\AuditObserver::class);
+        \App\Models\WeeklyStandard::observe(\App\Observers\AuditObserver::class);
+        \App\Models\UserPermission::observe(\App\Observers\AuditObserver::class);
     }
 }

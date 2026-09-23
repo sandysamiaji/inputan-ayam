@@ -26,14 +26,13 @@ class MasterController extends Controller
     }
 
     /**
-     * Helper untuk simpan setting ke DB
+     * Helper untuk simpan setting ke DB (menggunakan Eloquent agar tercatat di Audit Log)
      */
     private function setSetting($key, $value)
     {
-        $now = Carbon::now();
-        DB::table('settings')->updateOrInsert(
+        \App\Models\Setting::updateOrCreate(
             ['key' => $key],
-            ['value' => $value, 'updated_at' => $now]
+            ['value' => (string) $value]
         );
     }
 

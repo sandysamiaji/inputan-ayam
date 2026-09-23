@@ -48,6 +48,14 @@ class AuditService
             $modelId = $model ? ($model->id ?? null) : null;
             $tableName = $model ? (method_exists($model, 'getTable') ? $model->getTable() : null) : null;
 
+            $entityCode = null;
+            if ($model) {
+                if (isset($model->code)) $entityCode = (string) $model->code;
+                elseif (isset($model->invoice_no)) $entityCode = (string) $model->invoice_no;
+                elseif (isset($model->transaction_code)) $entityCode = (string) $model->transaction_code;
+                elseif (isset($model->battery_number)) $entityCode = (string) $model->battery_number;
+            }
+
             return AuditLog::create([
                 'user_id' => $user ? $user->id : null,
                 'user_name' => $user ? ($user->username ? '@' . ltrim($user->username, '@') : $user->name) : 'Sistem / Anonim',
@@ -58,6 +66,10 @@ class AuditService
                 'model_type' => $modelType,
                 'model_id' => $modelId,
                 'table_name' => $tableName,
+                'entity_type' => $modelType ?: ($tableName ?: 'General'),
+                'entity_id' => $modelId,
+                'entity_code' => $entityCode,
+                'payload' => $originalData ? (is_string($originalData) ? $originalData : json_encode($originalData)) : null,
                 'original_data' => $originalData,
                 'changes' => $changes,
                 'ip_address' => $ip,
@@ -82,9 +94,15 @@ class AuditService
         if ($model instanceof Quarantine) return 'karantina';
         if ($model instanceof WeightSample) return 'bobot';
         if ($model instanceof HealthTreatment) return 'obat';
-        if ($model instanceof FarmStock) return 'gudang';
-        if ($model instanceof Coop || $model instanceof Flock) return 'master';
-        if ($model instanceof User) return 'pengguna';
+        if ($model instanceof FarmStock) {
+            $cat = strtolower($model->category ?? '');
+            if (in_array($cat, ['telur', 'pakan', 'obat', 'karantina'])) {
+                return $cat;
+            }
+            return 'gudang';
+        }
+        if ($model instanceof Coop || $model instanceof Flock || $model instanceof \App\Models\Setting || $model instanceof \App\Models\WeeklyStandard) return 'master';
+        if ($model instanceof User || $model instanceof \App\Models\UserPermission) return 'pengguna';
         return 'umum';
     }
 
@@ -161,8 +179,10 @@ class AuditService
             $cat = ucfirst($model->category ?? 'barang');
             $item = $model->item_name ?? 'Item';
             $qty = number_format($model->quantity ?? 0, 1, ',', '.') . ' ' . ($model->unit ?? 'satuan');
-            $type = $model->type === 'masuk' ? 'masuk' : 'keluar';
-            return "{$actionText} transaksi gudang {$cat} ({$type}): {$item} sebanyak {$qty}";
+            $type = $model->type === 'masuk' ? 'masuk (stok/beli)' : 'keluar (pemakaian/kirim)';
+            $source = $model->source ? " (Sumber/Tujuan: {$model->source})" : '';
+            $tgl = $model->date ? Carbon::parse($model->date)->translatedFormat('d M Y') : 'hari ini';
+            return "{$actionText} transaksi gudang {$cat} ({$type}): {$item} sebanyak {$qty}{$source} tanggal {$tgl}";
         }
 
         if ($model instanceof Coop) {
@@ -171,6 +191,25 @@ class AuditService
 
         if ($model instanceof Flock) {
             return "{$actionText} data klotter farm: {$model->name} (Kode: {$model->code})";
+        }
+
+        if ($model instanceof \App\Models\Setting) {
+            $key = $model->key ?? 'parameter';
+            $val = $model->value ?? '';
+            return "{$actionText} konfigurasi master peternakan [{$key}] = {$val}";
+        }
+
+        if ($model instanceof \App\Models\WeeklyStandard) {
+            $week = $model->week ?? '-';
+            $target = $model->hd_target ?? '-';
+            return "{$actionText} standar performa mingguan kloter: Minggu ke-{$week} (HD Target: {$target}%)";
+        }
+
+        if ($model instanceof \App\Models\UserPermission) {
+            $targetUser = $model->user ? ($model->user->name . ' (@' . ltrim($model->user->username, '@') . ')') : "User #{$model->user_id}";
+            $perm = $model->permission_key ?? 'hak akses';
+            $status = $model->is_enabled ? 'Aktif' : 'Nonaktif';
+            return "{$actionText} hak akses fitur [{$perm}] untuk {$targetUser} menjadi {$status}";
         }
 
         if ($model instanceof User) {
@@ -213,6 +252,34 @@ class AuditService
 
         $modelClass = $auditLog->model_type;
         $snapshot = $auditLog->original_data;
+
+        // Jika snapshot berupa string JSON, decode terlebih dahulu
+        if (is_string($snapshot)) {
+            $snapshot = json_decode($snapshot, true);
+        }
+
+        // Jika model_type kosong atau class tidak ditemukan, coba petakan dari table_name
+        if (!$modelClass || !class_exists($modelClass)) {
+            $tableMap = [
+                'egg_productions' => \App\Models\EggProduction::class,
+                'feed_consumptions' => \App\Models\FeedConsumption::class,
+                'mortalities' => \App\Models\Mortality::class,
+                'quarantines' => \App\Models\Quarantine::class,
+                'weight_samples' => \App\Models\WeightSample::class,
+                'health_treatments' => \App\Models\HealthTreatment::class,
+                'farm_stocks' => \App\Models\FarmStock::class,
+                'coops' => \App\Models\Coop::class,
+                'flocks' => \App\Models\Flock::class,
+                'users' => \App\Models\User::class,
+                'settings' => \App\Models\Setting::class,
+                'weekly_standards' => \App\Models\WeeklyStandard::class,
+                'user_permissions' => \App\Models\UserPermission::class,
+            ];
+            $tName = strtolower($auditLog->table_name ?? '');
+            if (isset($tableMap[$tName])) {
+                $modelClass = $tableMap[$tName];
+            }
+        }
 
         if (!$modelClass || !class_exists($modelClass)) {
             return ['success' => false, 'message' => 'Tipe model data tidak dikenali atau tabel asal sudah tidak tersedia.'];

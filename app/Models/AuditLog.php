@@ -21,6 +21,10 @@ class AuditLog extends Model
         'model_type',
         'model_id',
         'table_name',
+        'entity_type',
+        'entity_id',
+        'entity_code',
+        'payload',
         'original_data',
         'changes',
         'ip_address',
@@ -70,6 +74,10 @@ class AuditLog extends Model
                     $table->string('model_type', 150)->nullable();
                     $table->unsignedBigInteger('model_id')->nullable();
                     $table->string('table_name', 100)->nullable();
+                    $table->string('entity_type', 255)->nullable();
+                    $table->unsignedBigInteger('entity_id')->nullable();
+                    $table->string('entity_code', 255)->nullable();
+                    $table->longText('payload')->nullable();
                     $table->longText('original_data')->nullable();
                     $table->longText('changes')->nullable();
                     $table->string('ip_address', 45)->nullable();
@@ -86,6 +94,14 @@ class AuditLog extends Model
                 });
                 return;
             }
+
+            // Pastikan kolom warisan seperti entity_type dan description dibuat NULL agar tidak memblok insert
+            try {
+                \Illuminate\Support\Facades\DB::statement("ALTER TABLE `audit_logs` MODIFY COLUMN `entity_type` VARCHAR(255) NULL");
+            } catch (\Throwable $e) {}
+            try {
+                \Illuminate\Support\Facades\DB::statement("ALTER TABLE `audit_logs` MODIFY COLUMN `description` TEXT NULL");
+            } catch (\Throwable $e) {}
 
             // Dapatkan daftar nama kolom yang ada saat ini secara aman
             $existingColumns = [];

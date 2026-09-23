@@ -55,7 +55,34 @@ class AuditController extends Controller
         // Filter berdasarkan Modul
         if (!empty($module) && $module !== 'semua') {
             if ($hasModuleCol) {
-                $query->where('module', $module);
+                if ($module === 'telur') {
+                    $query->where(function ($q) {
+                        $q->where('module', 'telur')
+                          ->orWhere(function ($sub) {
+                              $sub->where('module', 'gudang')->where('description', 'like', '%telur%');
+                          });
+                    });
+                } elseif ($module === 'pakan') {
+                    $query->where(function ($q) {
+                        $q->where('module', 'pakan')
+                          ->orWhere(function ($sub) {
+                              $sub->where('module', 'gudang')->where('description', 'like', '%pakan%');
+                          });
+                    });
+                } elseif ($module === 'obat') {
+                    $query->where(function ($q) {
+                        $q->where('module', 'obat')
+                          ->orWhere(function ($sub) {
+                              $sub->where('module', 'gudang')->where(function ($s) {
+                                  $s->where('description', 'like', '%obat%')
+                                    ->orWhere('description', 'like', '%vaksin%')
+                                    ->orWhere('description', 'like', '%vitamin%');
+                              });
+                          });
+                    });
+                } else {
+                    $query->where('module', $module);
+                }
             }
         }
 

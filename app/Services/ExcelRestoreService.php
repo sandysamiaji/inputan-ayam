@@ -232,10 +232,98 @@ class ExcelRestoreService
     }
 
     /**
+     * Membersihkan kloter / kandang duplikat otomatis jika sempat terbuat sebelumnya
+     */
+    public static function cleanupDuplicateFlocksAndCoops(): void
+    {
+        try {
+            // Ambil kloter 1 utama (ID terkecil)
+            $primaryFlock1 = Flock::where(function($q) {
+                $q->where('name', 'LIKE', '%Kloter 1%')
+                  ->orWhere('name', 'LIKE', '%Klotter 1%');
+            })->orderBy('id', 'asc')->first();
+
+            if (!$primaryFlock1) return;
+
+            // Kloter duplikat selain kloter utama
+            $duplicateFlocks = Flock::where('id', '!=', $primaryFlock1->id)
+                ->where(function($q) {
+                    $q->where('name', 'LIKE', '%Kloter 1%')
+                      ->orWhere('name', 'LIKE', '%Klotter 1%');
+                })->get();
+
+            // Kandang utama Blok A, B, C di kloter 1
+            $mainCoops = [
+                'A' => Coop::where('flock_id', $primaryFlock1->id)->where(function($q) { $q->where('code', 'A')->orWhere('name', 'LIKE', '%Blok A%'); })->first(),
+                'B' => Coop::where('flock_id', $primaryFlock1->id)->where(function($q) { $q->where('code', 'B')->orWhere('name', 'LIKE', '%Blok B%'); })->first(),
+                'C' => Coop::where('flock_id', $primaryFlock1->id)->where(function($q) { $q->where('code', 'C')->orWhere('name', 'LIKE', '%Blok C%'); })->first(),
+            ];
+
+            foreach ($duplicateFlocks as $dupFlock) {
+                $dupCoops = Coop::where('flock_id', $dupFlock->id)->get();
+                foreach ($dupCoops as $dupCoop) {
+                    $letter = self::extractBlockLetter($dupCoop->code, $dupCoop->name);
+                    $targetCoop = $mainCoops[$letter] ?? null;
+
+                    if ($targetCoop && $targetCoop->id !== $dupCoop->id) {
+                        // Pindahkan / sinkronkan data telur yang pernah masuk ke kandang duplikat
+                        $dupEggs = EggProduction::where('coop_id', $dupCoop->id)->get();
+                        foreach ($dupEggs as $de) {
+                            $exists = EggProduction::where('coop_id', $targetCoop->id)->whereDate('date', $de->date)->first();
+                            if ($exists) {
+                                $de->delete();
+                            } else {
+                                $de->update(['coop_id' => $targetCoop->id, 'flock_id' => $primaryFlock1->id]);
+                            }
+                        }
+
+                        // Pindahkan / sinkronkan data pakan
+                        $dupFeeds = FeedConsumption::where('coop_id', $dupCoop->id)->get();
+                        foreach ($dupFeeds as $df) {
+                            $exists = FeedConsumption::where('coop_id', $targetCoop->id)
+                                ->whereDate('date', $df->date)
+                                ->whereRaw('LOWER(feeding_time) = ?', [strtolower($df->feeding_time)])
+                                ->first();
+                            if ($exists) {
+                                $df->delete();
+                            } else {
+                                $df->update(['coop_id' => $targetCoop->id, 'flock_id' => $primaryFlock1->id]);
+                            }
+                        }
+
+                        // Pindahkan / sinkronkan data mortalitas
+                        $dupMorts = Mortality::where('coop_id', $dupCoop->id)->get();
+                        foreach ($dupMorts as $dm) {
+                            $exists = Mortality::where('coop_id', $targetCoop->id)
+                                ->whereDate('date', $dm->date)
+                                ->where('type', $dm->type)
+                                ->first();
+                            if ($exists) {
+                                $dm->delete();
+                            } else {
+                                $dm->update(['coop_id' => $targetCoop->id, 'flock_id' => $primaryFlock1->id]);
+                            }
+                        }
+
+                        $dupCoop->delete();
+                    }
+                }
+
+                $dupFlock->delete();
+            }
+        } catch (\Throwable $e) {
+            // Abaikan error agar proses utama tidak terhambat
+        }
+    }
+
+    /**
      * Proses Restore Data dari file Excel Operasional (NF-DAT-002)
      */
     public static function processRestore(string $filePath, bool $overwrite = true): array
     {
+        // 0. Bersihkan kloter / kandang duplikat jika pernah terbuat sebelumnya
+        self::cleanupDuplicateFlocksAndCoops();
+
         $rawRows = self::readRawRows($filePath);
         if (empty($rawRows)) {
             return [

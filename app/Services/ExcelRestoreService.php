@@ -9,6 +9,8 @@ use App\Models\FeedConsumption;
 use App\Models\Mortality;
 use App\Models\User;
 use App\Models\AuditLog;
+use App\Models\Setting;
+use App\Services\ProductionStandardService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -358,8 +360,9 @@ class ExcelRestoreService
 
             if (str_contains($val, 'tanggal') || $val === 'date') $colMap['tanggal'] = $cIdx;
             elseif (str_contains($val, 'mode') || str_contains($val, 'kloter') || str_contains($val, 'flock')) $colMap['flock'] = $cIdx;
+            elseif (str_contains($val, 'mingg') || str_contains($val, 'week')) $colMap['mingg'] = $cIdx;
+            elseif (str_contains($val, 'umur') || str_contains($val, 'age')) $colMap['umur'] = $cIdx;
             elseif (str_contains($val, 'blok') || $val === 'kandang') $colMap['blok'] = $cIdx;
-            elseif (str_contains($val, 'umur') || str_contains($val, 'mingg')) $colMap['umur'] = $cIdx;
             elseif (str_contains($val, 'populasi') || str_contains($val, 'ekor')) $colMap['populasi'] = $cIdx;
             elseif ($val === 'baik' || str_contains($val, 'telur baik')) $colMap['baik'] = $cIdx;
             elseif ($val === 'retak' || str_contains($val, 'telur retak')) $colMap['retak'] = $cIdx;
@@ -381,6 +384,7 @@ class ExcelRestoreService
         // R=17: Jam Input, T=19: Pakan Pagi, U=20: Pakan Sore, Z=25: Ayam Mati
         if (!isset($colMap['tanggal'])) $colMap['tanggal'] = 2;
         if (!isset($colMap['flock'])) $colMap['flock'] = 3;
+        if (!isset($colMap['mingg'])) $colMap['mingg'] = 4;
         if (!isset($colMap['umur'])) $colMap['umur'] = 5;
         if (!isset($colMap['blok'])) $colMap['blok'] = 6;
         if (!isset($colMap['populasi'])) $colMap['populasi'] = 7;
@@ -494,13 +498,63 @@ class ExcelRestoreService
                     $totalEggs = $goodEggs + $retakEggs + $pecahEggs;
                 }
 
+                // Ekstraksi Umur Ayam (Minggu) dari Kolom Mingg atau Kolom Umur (F4, misal '18 A')
+                $ageWeeks = 0;
+                if (isset($colMap['mingg']) && isset($row[$colMap['mingg']])) {
+                    $rawM = preg_replace('/[^0-9]/', '', (string)$row[$colMap['mingg']]);
+                    if (!empty($rawM)) {
+                        $ageWeeks = (int) $rawM;
+                    }
+                }
+                if ($ageWeeks <= 0 && isset($colMap['umur']) && isset($row[$colMap['umur']])) {
+                    if (preg_match('/^(\d+)/', trim((string)$row[$colMap['umur']]), $m)) {
+                        $ageWeeks = (int) $m[1];
+                    }
+                }
+                if ($ageWeeks <= 0 && !empty($coop->chicken_age_weeks)) {
+                    $ageWeeks = (int) $coop->chicken_age_weeks;
+                }
+                if ($ageWeeks <= 0) {
+                    $ageWeeks = 21;
+                }
+
+                // Update usia ayam di kandang jika lebih mutakhir
+                if ($ageWeeks > 0 && ($coop->chicken_age_weeks === null || $ageWeeks > $coop->chicken_age_weeks)) {
+                    $coop->update(['chicken_age_weeks' => $ageWeeks]);
+                }
+
+                // Ambil Standar Berat Telur (Gram) per Butir dari Master Data Acuan Umur (WeeklyStandard)
+                $standard = ProductionStandardService::getStandardForWeek($ageWeeks);
+                $stdEggGram = (!empty($standard['berat_telur_val']) && (float) $standard['berat_telur_val'] > 0)
+                    ? (float) $standard['berat_telur_val']
+                    : 60.0;
+
+                // Hitung estimasi berat (Kg) dan Peti:
+                // Input di Excel adalah BUTIR telur.
+                // Estimasi Berat Telur (Kg) = butir telur baik x berat standar master (gram) / 1000
+                $targetEggCount = $goodEggs > 0 ? $goodEggs : $totalEggs;
+                $totalWeightKg = round(($targetEggCount * $stdEggGram) / 1000, 2);
+
+                // Standar 1 Peti = 10 Kg (default_weight_per_peti)
+                $petiWeightKg = (float) Setting::getFloat('default_weight_per_peti', 10);
+                if ($petiWeightKg <= 0) $petiWeightKg = 10;
+
+                $cratesCount = 0;
+                $weightKg = null;
+
+                if ($totalWeightKg >= $petiWeightKg) {
+                    $cratesCount = (int) floor($totalWeightKg / $petiWeightKg);
+                    $remKg = round($totalWeightKg - ($cratesCount * $petiWeightKg), 1);
+                    $weightKg = $remKg > 0 ? $remKg : null;
+                } elseif ($totalWeightKg > 0) {
+                    $cratesCount = 0;
+                    $weightKg = round($totalWeightKg, 1);
+                }
+
                 if ($totalEggs > 0 || $goodEggs > 0 || $retakEggs > 0 || $pecahEggs > 0) {
                     $existingEgg = EggProduction::where('coop_id', $coop->id)
                         ->whereDate('date', $formattedDate)
                         ->first();
-
-                    $crates = round($totalEggs / 25, 2);
-                    $weightKg = round($totalEggs * 0.06, 2);
 
                     if ($existingEgg) {
                         if ($overwrite) {
@@ -512,7 +566,7 @@ class ExcelRestoreService
                                 'abnormal_eggs' => $retakEggs,
                                 'broken_eggs' => $pecahEggs,
                                 'total_eggs' => $totalEggs,
-                                'crates_count' => $crates,
+                                'crates_count' => $cratesCount,
                                 'weight_kg' => $weightKg,
                                 'notes' => $notes ?: $existingEgg->notes,
                             ]);
@@ -529,7 +583,7 @@ class ExcelRestoreService
                             'abnormal_eggs' => $retakEggs,
                             'broken_eggs' => $pecahEggs,
                             'total_eggs' => $totalEggs,
-                            'crates_count' => $crates,
+                            'crates_count' => $cratesCount,
                             'weight_kg' => $weightKg,
                             'notes' => $notes ?: 'Import Excel Database Operasional',
                         ]);

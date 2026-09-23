@@ -432,34 +432,31 @@ class ExcelRestoreService
                 }
 
                 // B. Identifikasi Blok (Kandang)
-                // Di aplikasi kita, tiap Blok (Blok A, B, C, dst.) sudah terdaftar dan sudah memiliki kloternya masing-masing.
-                // Tidak perlu melihat kloter dari Excel ataupun membuat kloter baru.
+                // Di aplikasi kita, tiap Blok sudah terdaftar resmi:
+                // Kloter 1: Blok A, Blok B, Blok C
+                // Kloter 2: Blok D, Blok E, Blok F
                 $rawBlok = trim((string)($row[$colMap['blok']] ?? ''));
                 $rawUmur = trim((string)($row[$colMap['umur']] ?? ''));
 
                 $blockLetter = self::extractBlockLetter($rawBlok, $rawUmur);
-                if (empty($blockLetter)) {
-                    $blockLetter = 'A'; // Default jika tidak terdeteksi
-                }
 
-                // Cari kandang yang sudah ada di database berdasarkan kode blok (A, B, C, dst.) atau nama
+                // Cari kandang di database berdasarkan kode blok (A, B, C, D, E, F) atau nama
                 $coop = $allCoops->first(function($c) use ($blockLetter) {
-                    return strtoupper(trim($c->code)) === strtoupper($blockLetter)
-                        || preg_match('/\b' . preg_quote($blockLetter, '/') . '\b/i', $c->name);
+                    $code = strtoupper(trim((string)$c->code));
+                    $name = strtoupper(trim((string)$c->name));
+                    return $code === $blockLetter
+                        || $name === 'BLOK ' . $blockLetter
+                        || $name === $blockLetter;
                 });
 
                 if (!$coop) {
                     $coop = $allCoops->first(function($c) use ($blockLetter) {
-                        return stripos($c->name, $blockLetter) !== false;
+                        return preg_match('/\b' . preg_quote($blockLetter, '/') . '\b/i', $c->name);
                     });
                 }
 
                 if (!$coop) {
-                    $coop = $allCoops->first();
-                }
-
-                if (!$coop) {
-                    continue; // Lewati jika tidak ada kandang di database
+                    continue; // Jangan sembarangan fallback ke Blok A! Lewati baris jika blok tidak valid di sistem kita
                 }
 
                 $rawPopulasi = self::parseNumeric($row[$colMap['populasi']] ?? 0);
@@ -748,22 +745,39 @@ class ExcelRestoreService
     }
 
     /**
-     * Ekstraksi Huruf Blok (A, B, C, D) dari kolom Blok atau kolom Umur (misal '18 A', '18 B')
+     * Ekstraksi Huruf Blok (A, B, C, D, E, F) dari kolom Blok atau kolom Umur (misal '18 A', '18 B')
      */
     public static function extractBlockLetter(string $rawBlok, string $rawUmur = ''): string
     {
-        // 1. Cek dari string blok langsung
+        $rawBlok = trim($rawBlok);
+        $rawUmur = trim($rawUmur);
+
+        // 1. Jika rawBlok adalah persis 1 huruf tunggal (A - Z)
+        if (preg_match('/^[A-Za-z]$/', $rawBlok)) {
+            return strtoupper($rawBlok);
+        }
+
+        // 2. Jika rawBlok mengandung pola "Blok A", "Blok B", "Kandang C", dst.
         if (!empty($rawBlok)) {
-            if (preg_match('/([A-Za-z]+)/', $rawBlok, $m)) {
+            if (preg_match('/(?:blok|kandang|coop)?\s*([A-Za-z])\b/i', $rawBlok, $m)) {
                 return strtoupper($m[1]);
             }
         }
 
-        // 2. Cek dari string umur misal '18 A' atau '18 B'
+        // 3. Cek dari string umur, misal '18 A', '18 B', '18C', '19 D', '20-E', '21 F'
         if (!empty($rawUmur)) {
-            if (preg_match('/[0-9]+\s*([A-Za-z]+)/', $rawUmur, $m)) {
+            if (preg_match('/\b\d+\s*[-_]?\s*([A-Za-z])\b/i', $rawUmur, $m)) {
                 return strtoupper($m[1]);
             }
+            if (preg_match('/([A-Za-z])\b/i', $rawUmur, $m)) {
+                return strtoupper($m[1]);
+            }
+        }
+
+        // 4. Cari huruf alfabet apa pun di rawBlok selain kata "blok" / "kandang"
+        $cleanBlok = preg_replace('/blok|kandang|coop/i', '', $rawBlok);
+        if (preg_match('/([A-Za-z])/', $cleanBlok, $m)) {
+            return strtoupper($m[1]);
         }
 
         return 'A';

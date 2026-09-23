@@ -179,6 +179,10 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/audit/{id}/restore', [AuditController::class, 'restore'])
             ->name('audit.restore')
             ->middleware('permission:feature_audit_restore');
+
+        // Restore Data Operasional dari Excel (NF-DAT-002)
+        Route::post('/restore-excel', [MasterController::class, 'restoreExcel'])->name('restore-excel');
+        Route::get('/restore-excel/template', [MasterController::class, 'downloadSampleTemplate'])->name('restore-excel.template');
     });
 
     // Alias cepat /audit

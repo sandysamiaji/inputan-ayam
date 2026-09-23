@@ -680,6 +680,14 @@
             </a>
             @endif
 
+            <!-- 9. Restore / Import Database Operasional Excel (NF-DAT-002) -->
+            <a href="javascript:void(0)" onclick="openRestoreExcelModal()" class="menu" id="menu-restore-excel" style="border: 1.5px solid #a7f3d0; background: #f0fdf4;">
+                <div class="ico green" style="background: #dcfce7; color: #15803d; font-size: 16px;">📥</div>
+                <b style="color: #166534;">Restore Data Excel</b>
+                <p>Upload Excel NF-DAT-002</p>
+                <span class="arr" style="color: #15803d;">›</span>
+            </a>
+
         </div>
     </div>
 
@@ -1384,7 +1392,116 @@ function handleHubModalSubmit(e) {
     .catch(err => {
         btn.disabled = false;
         btn.textContent = origText;
-        alert("Gagal Menyimpan:\\n" + err.message);
+        alert("Gagal Menyimpan:\n" + err.message);
+    });
+}
+
+/* ========================================================
+   RESTORE DATA EXCEL (NF-DAT-002) HANDLERS
+======================================================== */
+function openRestoreExcelModal() {
+    const modal = document.getElementById('modalRestoreExcel');
+    if (modal) {
+        modal.style.display = 'flex';
+        const form = document.getElementById('formRestoreExcel');
+        if (form) form.reset();
+        const fileInfo = document.getElementById('excelFileInfo');
+        if (fileInfo) fileInfo.style.display = 'none';
+        const dropText = document.getElementById('excelDropText');
+        if (dropText) dropText.style.display = 'block';
+        const progressBox = document.getElementById('excelProgressBox');
+        if (progressBox) progressBox.style.display = 'none';
+        const resultBox = document.getElementById('excelResultBox');
+        if (resultBox) resultBox.style.display = 'none';
+        const btn = document.getElementById('btnSubmitRestoreExcel');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '📥 Mulai Restore ke Database';
+        }
+    }
+}
+
+function closeRestoreExcelModal() {
+    const modal = document.getElementById('modalRestoreExcel');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function handleExcelFileSelect(input) {
+    const file = input.files[0];
+    const infoBox = document.getElementById('excelFileInfo');
+    const nameEl = document.getElementById('excelFileName');
+    const sizeEl = document.getElementById('excelFileSize');
+    const dropText = document.getElementById('excelDropText');
+
+    if (file) {
+        nameEl.textContent = file.name;
+        sizeEl.textContent = (file.size / 1024).toFixed(1) + ' KB';
+        infoBox.style.display = 'flex';
+        dropText.style.display = 'none';
+    } else {
+        infoBox.style.display = 'none';
+        dropText.style.display = 'block';
+    }
+}
+
+function handleExcelRestoreSubmit(e) {
+    e.preventDefault();
+    const form = e.target;
+    const fileInput = document.getElementById('excelFileInput');
+    if (!fileInput.files.length) {
+        alert('Silakan pilih file Excel (.xlsx, .xls) atau CSV terlebih dahulu.');
+        return;
+    }
+
+    const btn = document.getElementById('btnSubmitRestoreExcel');
+    const progressBox = document.getElementById('excelProgressBox');
+    const resultBox = document.getElementById('excelResultBox');
+
+    btn.disabled = true;
+    btn.innerHTML = '<span style="display:inline-block; animation:spin 1s linear infinite;">⏳</span> Memproses Data...';
+    progressBox.style.display = 'block';
+    resultBox.style.display = 'none';
+
+    const formData = new FormData(form);
+
+    fetch("{{ route('master.restore-excel') }}", {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData
+    })
+    .then(async res => {
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+            throw new Error(data.message || 'Gagal memproses file Excel.');
+        }
+        return data;
+    })
+    .then(data => {
+        progressBox.style.display = 'none';
+        resultBox.style.display = 'block';
+        
+        // Tampilkan statistik
+        document.getElementById('resProcessedRows').textContent = data.stats.processed_rows || 0;
+        document.getElementById('resEggTotal').textContent = data.stats.egg_total || 0;
+        document.getElementById('resFeedTotal').textContent = data.stats.feed_total || 0;
+        document.getElementById('resMortalityTotal').textContent = data.stats.mortality_total || 0;
+        document.getElementById('resCoopsCount').textContent = data.stats.coops_count || 0;
+        document.getElementById('resDatesCount').textContent = data.stats.dates_count || 0;
+
+        btn.disabled = false;
+        btn.innerHTML = '✔ Selesai (Restore File Lain)';
+    })
+    .catch(err => {
+        progressBox.style.display = 'none';
+        btn.disabled = false;
+        btn.innerHTML = '📥 Mulai Restore ke Database';
+        alert('Terjadi Kesalahan:\n' + err.message);
     });
 }
 </script>
@@ -1481,4 +1598,130 @@ function handleHubModalSubmit(e) {
         </form>
     </div>
 </div>
+
+<!-- ======================================================== -->
+<!-- MODAL RESTORE DATA EXCEL OPERASIONAL (NF-DAT-002) -->
+<!-- ======================================================== -->
+<div id="modalRestoreExcel" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(15,23,42,0.65); backdrop-filter:blur(4px); align-items:center; justify-content:center; padding:16px;">
+    <div style="background:#fff; border-radius:20px; max-width:480px; width:100%; padding:22px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); max-height:92vh; overflow-y:auto; font-family:Inter, sans-serif; box-sizing:border-box;">
+        <!-- Header Modal -->
+        <div style="display:flex; align-items:center; justify-content:space-between; padding-bottom:14px; border-bottom:1px solid #e2e8f0;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div style="width:42px; height:42px; border-radius:12px; background:#dcfce7; color:#15803d; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:20px; border:1px solid #bbf7d0; flex-shrink:0;">
+                    📥
+                </div>
+                <div>
+                    <h3 style="margin:0; font-size:16px; font-weight:900; color:#0f172a; line-height:1.2;">Restore Data Excel</h3>
+                    <p style="margin:3px 0 0; font-size:11px; color:#64748b;">Upload file database operasional (NF-DAT-002)</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeRestoreExcelModal()" style="border:none; background:#f1f5f9; color:#64748b; width:32px; height:32px; border-radius:9px; cursor:pointer; font-weight:bold; font-size:15px; display:flex; align-items:center; justify-content:center; transition:background .15s;">✕</button>
+        </div>
+
+        <!-- Kolom yang didukung -->
+        <div style="margin-top:14px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:12px;">
+            <div style="font-size:11px; font-weight:800; color:#334155; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+                <span>📋</span> Data yang Otomatis Masuk Database:
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                <span style="font-size:10px; font-weight:700; background:#e0f2fe; color:#0369a1; padding:3px 8px; border-radius:6px;">📅 Tanggal</span>
+                <span style="font-size:10px; font-weight:700; background:#f3e8ff; color:#7e22ce; padding:3px 8px; border-radius:6px;">🐔 Blok & Kloter</span>
+                <span style="font-size:10px; font-weight:700; background:#dcfce7; color:#15803d; padding:3px 8px; border-radius:6px;">🥚 Baik · Retak · Pecah</span>
+                <span style="font-size:10px; font-weight:700; background:#fef3c7; color:#92400e; padding:3px 8px; border-radius:6px;">🌾 Pakan Pagi & Sore</span>
+                <span style="font-size:10px; font-weight:700; background:#fee2e2; color:#b91c1c; padding:3px 8px; border-radius:6px;">💀 Ayam Mati</span>
+                <span style="font-size:10px; font-weight:700; background:#f1f5f9; color:#475569; padding:3px 8px; border-radius:6px;">⏰ Jam Input</span>
+            </div>
+            <p style="margin:8px 0 0; font-size:10px; color:#64748b; line-height:1.4;">
+                Mendukung format kolom template <b>NF-DAT-002</b>, desimal koma Indonesia (misal 28,3 kg), dan pembacaan multi-blok otomatis.
+            </p>
+        </div>
+
+        <!-- Form Upload -->
+        <form id="formRestoreExcel" method="POST" enctype="multipart/form-data" onsubmit="handleExcelRestoreSubmit(event)" style="margin-top:14px; display:flex; flex-direction:column; gap:12px;">
+            @csrf
+
+            <!-- Dropzone Area -->
+            <div style="position:relative; border:2px dashed #cbd5e1; border-radius:14px; padding:20px; text-align:center; background:#fafbfc; transition:all .2s; cursor:pointer;" onclick="document.getElementById('excelFileInput').click()">
+                <input type="file" id="excelFileInput" name="file" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleExcelFileSelect(this)">
+                
+                <div id="excelDropText">
+                    <div style="font-size:32px; margin-bottom:6px;">📂</div>
+                    <div style="font-size:12px; font-weight:800; color:#1e293b;">Pilih File Excel / Tarik ke Sini</div>
+                    <div style="font-size:10.5px; color:#64748b; margin-top:3px;">Format .xlsx, .xls, atau .csv (Maksimal 25MB)</div>
+                </div>
+
+                <div id="excelFileInfo" style="display:none; align-items:center; justify-content:center; gap:10px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:10px;">
+                    <span style="font-size:20px;">📄</span>
+                    <div style="text-align:left;">
+                        <b id="excelFileName" style="font-size:11.5px; color:#166534; display:block; word-break:break-all;">file.xlsx</b>
+                        <small id="excelFileSize" style="font-size:10px; color:#15803d;">0 KB</small>
+                    </div>
+                    <button type="button" onclick="event.stopPropagation(); document.getElementById('excelFileInput').value=''; handleExcelFileSelect(document.getElementById('excelFileInput'));" style="margin-left:auto; border:none; background:#fee2e2; color:#b91c1c; border-radius:6px; padding:4px 8px; font-size:10px; font-weight:800; cursor:pointer;">Ganti</button>
+                </div>
+            </div>
+
+            <!-- Opsi Timpa Data -->
+            <label style="display:flex; align-items:flex-start; gap:8px; font-size:11px; color:#334155; cursor:pointer; background:#f8fafc; padding:10px; border-radius:10px; border:1px solid #e2e8f0;">
+                <input type="checkbox" name="overwrite" value="1" checked style="margin-top:2px; accent-color:#15803d; width:15px; height:15px;">
+                <span>
+                    <b>Perbarui (Update) data jika sudah ada</b>
+                    <small style="display:block; color:#64748b; font-size:9.5px; margin-top:1px;">Jika data tanggal & blok yang sama sudah ada di database, nilai akan diperbarui sesuai Excel.</small>
+                </span>
+            </label>
+
+            <!-- Loading Progress Box -->
+            <div id="excelProgressBox" style="display:none; background:#f0fdf4; border:1.5px solid #86efac; border-radius:12px; padding:14px; text-align:center;">
+                <div style="font-size:12px; font-weight:800; color:#166534; margin-bottom:8px;">Sedang membaca dan memproses baris Excel...</div>
+                <div style="height:6px; background:#dcfce7; border-radius:6px; overflow:hidden; position:relative;">
+                    <div style="height:100%; width:100%; background:linear-gradient(90deg, #15803d, #22c55e); border-radius:6px; animation:pulse 1.5s infinite;"></div>
+                </div>
+                <div style="font-size:10px; color:#15803d; margin-top:6px;">Harap tunggu, jangan menutup jendela ini.</div>
+            </div>
+
+            <!-- Hasil Summary Box -->
+            <div id="excelResultBox" style="display:none; background:#f0fdf4; border:1.5px solid #86efac; border-radius:12px; padding:14px;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                    <span style="font-size:18px;">🎉</span>
+                    <b style="font-size:12.5px; color:#166534;">Restore Data Berhasil!</b>
+                </div>
+                <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px;">
+                    <div style="background:#fff; border:1px solid #bbf7d0; border-radius:8px; padding:8px; text-align:center;">
+                        <small style="font-size:9.5px; color:#64748b; display:block;">Baris Diproses</small>
+                        <b id="resProcessedRows" style="font-size:15px; color:#166534;">0</b>
+                    </div>
+                    <div style="background:#fff; border:1px solid #bbf7d0; border-radius:8px; padding:8px; text-align:center;">
+                        <small style="font-size:9.5px; color:#64748b; display:block;">Data Telur</small>
+                        <b id="resEggTotal" style="font-size:15px; color:#15803d;">0</b>
+                    </div>
+                    <div style="background:#fff; border:1px solid #bbf7d0; border-radius:8px; padding:8px; text-align:center;">
+                        <small style="font-size:9.5px; color:#64748b; display:block;">Data Pakan</small>
+                        <b id="resFeedTotal" style="font-size:15px; color:#b45309;">0</b>
+                    </div>
+                    <div style="background:#fff; border:1px solid #bbf7d0; border-radius:8px; padding:8px; text-align:center;">
+                        <small style="font-size:9.5px; color:#64748b; display:block;">Data Mortalitas</small>
+                        <b id="resMortalityTotal" style="font-size:15px; color:#b91c1c;">0</b>
+                    </div>
+                </div>
+                <div style="font-size:10px; color:#166534; margin-top:8px; text-align:center; font-weight:600;">
+                    Terdampak: <span id="resCoopsCount">0</span> Blok Kandang & <span id="resDatesCount">0</span> Hari Transaksi
+                </div>
+            </div>
+
+            <!-- Download Template & Tombol Aksi -->
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-top:6px; flex-wrap:wrap; gap:8px;">
+                <a href="{{ route('master.restore-excel.template') }}" target="_blank" style="font-size:11px; font-weight:700; color:#0369a1; text-decoration:none; display:flex; align-items:center; gap:4px; padding:6px 0;">
+                    <span>📥</span> Unduh Format Contoh
+                </a>
+
+                <div style="display:flex; gap:8px; margin-left:auto;">
+                    <button type="button" onclick="closeRestoreExcelModal()" style="padding:9px 14px; border-radius:10px; border:1px solid #cbd5e1; background:#fff; font-size:11.5px; font-weight:700; color:#475569; cursor:pointer;">Tutup</button>
+                    <button type="submit" id="btnSubmitRestoreExcel" style="padding:9px 18px; border-radius:10px; border:none; background:#15803d; color:#fff; font-size:11.5px; font-weight:800; cursor:pointer; box-shadow:0 2px 5px rgba(21,128,61,0.25); display:flex; align-items:center; gap:6px;">
+                        📥 Mulai Restore ke Database
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
 @endsection
+

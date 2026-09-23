@@ -10,6 +10,7 @@ use App\Models\WeeklyStandard;
 use App\Models\User;
 use App\Models\UserPermission;
 use App\Services\ProductionStandardService;
+use App\Services\ExcelRestoreService;
 use Carbon\Carbon;
 
 //test
@@ -786,5 +787,85 @@ class MasterController extends Controller
         $statusStr = $user->is_active ? 'diaktifkan' : 'dinonaktifkan';
         return redirect()->route('master.permissions', ['user_id' => $user->id])
             ->with('success', "Akun {$user->name} berhasil {$statusStr}.");
+    }
+
+    /**
+     * Restore / Import Data Operasional dari File Excel (NF-DAT-002)
+     */
+    public function restoreExcel(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|max:25600',
+        ], [
+            'file.required' => 'Silakan pilih file Excel (.xlsx, .xls) atau CSV untuk diunggah.',
+            'file.max' => 'Ukuran file maksimal adalah 25MB.',
+        ]);
+
+        $file = $request->file('file');
+        $ext = strtolower($file->getClientOriginalExtension());
+        if (!in_array($ext, ['xlsx', 'xls', 'csv', 'txt'])) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Format file tidak didukung. Harap unggah file .xlsx, .xls, atau .csv.',
+                ], 422);
+            }
+            return back()->with('error', 'Format file tidak didukung. Harap unggah file .xlsx, .xls, atau .csv.');
+        }
+
+        $overwrite = $request->boolean('overwrite', true);
+        $result = ExcelRestoreService::processRestore($file->getRealPath(), $overwrite);
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json($result);
+        }
+
+        if ($result['success']) {
+            return redirect()->route('master.index')->with('success', $result['message']);
+        } else {
+            return back()->with('error', $result['message']);
+        }
+    }
+
+    /**
+     * Download Template Contoh Format Excel NF-DAT-002
+     */
+    public function downloadSampleTemplate()
+    {
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="Template_Restore_Database_Operasional_NF-DAT-002.csv"',
+        ];
+
+        $callback = function () {
+            $output = fopen('php://output', 'w');
+            // Tambahkan UTF-8 BOM untuk kompatibilitas Microsoft Excel
+            fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
+
+            // Header sesuai template NF-DAT-002 di screenshot pengguna
+            fputcsv($output, [
+                'ID', 'Hari', 'Tanggal', 'Mode Produksi', 'Mingg', 'Umur', 'Blok', 'Populasi',
+                'Baik', 'Retak', 'Pecah', 'Kotor', 'Total', 'HD (%)', 'Reject (%)', 'Petug', 'Catata',
+                'Jam Input', 'Status', 'Pakan Pagi', 'Pakan Sore', 'Total Pakan', 'Target Pagi', 'Target Sore', 'Target Total',
+                'Ayam Mati', 'Ayam Afkir', 'Total Mati', 'Harga'
+            ], ';');
+
+            // Baris sampel data
+            $sampleRows = [
+                ['PRD-2026-000001', 'Sabtu', '15/08/2026', 'Kloter 1', '18', '18 A', 'A', '762', '13', '1', '0', '0', '14', '1,84%', '7,14%', 'Akip', '', '21:28:43', 'VALID', '24', '36', '60', '45', '45', '90', '0', '0', '0', '24.000'],
+                ['PRD-2026-000002', 'Sabtu', '15/08/2026', 'Kloter 1', '18', '18 B', 'B', '744', '14', '2', '0', '0', '16', '2,15%', '12,50%', 'Akip', '', '21:28:43', 'VALID', '24', '36', '60', '45', '45', '90', '0', '0', '0', '24.000'],
+                ['PRD-2026-000003', 'Sabtu', '15/08/2026', 'Kloter 1', '18', '18 C', 'C', '744', '5', '2', '0', '0', '7', '0,94%', '28,57%', 'Akip', '', '21:28:43', 'VALID', '2', '36', '38', '45', '45', '90', '0', '0', '0', '24.000'],
+                ['PRD-2026-000007', 'Senin', '17/08/2026', 'Kloter 1', '18', '18 A', 'A', '762', '37', '2', '0', '0', '39', '5,12%', '5,13%', 'Sipur', 'belum m', '20:35:30', 'VALID', '24', '36', '60', '45', '45', '90', '0', '1', '1', '24.000'],
+                ['PRD-2026-000010', 'Rabu', '19/08/2026', 'Kloter 1', '18', '18 A', 'A', '762', '49', '3', '0', '0', '52', '6,82%', '5,77%', 'Akip', '', '20:02:04', 'VALID', '28,3', '42,5', '70', '45', '45', '90', '0', '0', '0', '24.000'],
+            ];
+
+            foreach ($sampleRows as $row) {
+                fputcsv($output, $row, ';');
+            }
+
+            fclose($output);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 }

@@ -784,16 +784,41 @@ class MedicineCatalogService
         $totalMasuk = 0.0;
         $totalKeluar = 0.0;
         $totalStock = 0.0;
+        $totalStockConsumed = 0.0;
+        $totalDeficit = 0.0;
+        $deficitProducts = [];
         $safeCount = 0;
         $lowCount = 0;
         $emptyCount = 0;
 
         foreach ($meds as $m) {
-            $totalInitial += (float) ($m['initial_stock'] ?? 0);
-            $totalMasuk += (float) ($m['total_masuk'] ?? 0);
-            $totalKeluar += (float) ($m['total_keluar'] ?? 0);
+            $initial = (float) ($m['initial_stock'] ?? 0);
+            $masuk = (float) ($m['total_masuk'] ?? 0);
+            $keluar = (float) ($m['total_keluar'] ?? 0);
             $stock = (float) ($m['stock'] ?? 0);
+
+            $totalInitial += $initial;
+            $totalMasuk += $masuk;
+            $totalKeluar += $keluar;
             $totalStock += $stock;
+
+            // Pemakaian yang terpotong dari stok masuk tercatat
+            $consumed = min($masuk, $keluar);
+            $totalStockConsumed += $consumed;
+
+            // Pemakaian kandang yang melampaui stok masuk tercatat (butuh restok masuk)
+            if ($keluar > $masuk) {
+                $diff = round($keluar - $masuk, 2);
+                $totalDeficit += $diff;
+                $deficitProducts[] = [
+                    'id' => $m['id'] ?? null,
+                    'name' => $m['name'] ?? 'Produk',
+                    'unit' => $m['unit'] ?? 'Item',
+                    'masuk' => $masuk,
+                    'keluar' => $keluar,
+                    'deficit' => $diff,
+                ];
+            }
 
             $status = $m['status'] ?? 'aman';
             if ($status === 'aman') {
@@ -810,6 +835,10 @@ class MedicineCatalogService
             'total_masuk' => round($totalMasuk, 1),
             'total_keluar' => round($totalKeluar, 1),
             'total_stock' => round($totalStock, 1),
+            'total_stock_consumed' => round($totalStockConsumed, 1),
+            'total_deficit' => round($totalDeficit, 1),
+            'deficit_products' => $deficitProducts,
+            'deficit_products_count' => count($deficitProducts),
             'total_products' => count($meds),
             'safe_count' => $safeCount,
             'low_count' => $lowCount,

@@ -67,6 +67,10 @@ class MedicineCatalogServiceTest extends TestCase
         $this->assertGreaterThan(0, $summary['total_stock']);
         $this->assertEquals(0, $summary['total_keluar']);
         $this->assertGreaterThan(0, $summary['safe_count']);
+        $this->assertArrayHasKey('total_stock_consumed', $summary);
+        $this->assertArrayHasKey('total_deficit', $summary);
+        $this->assertArrayHasKey('deficit_products', $summary);
+        $this->assertArrayHasKey('deficit_products_count', $summary);
     }
 
     public function test_find_medicine_by_name(): void

@@ -51,6 +51,40 @@
         </div>
     </div>
 
+    <!-- Alert Rekonsiliasi & Penjelasan Perhitungan Stok Real-Time -->
+    @if(!empty($inventorySummary['deficit_products_count']) && $inventorySummary['deficit_products_count'] > 0)
+    <div class="p-3.5 sm:p-4 rounded-2xl bg-amber-50/90 border border-amber-200/90 text-xs text-amber-900 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div class="flex items-start gap-3">
+            <div class="w-9 h-9 rounded-xl bg-amber-100 border border-amber-300/60 text-amber-700 flex items-center justify-center shrink-0 text-base shadow-sm">
+                💡
+            </div>
+            <div>
+                <div class="font-extrabold text-amber-950 text-xs sm:text-sm flex flex-wrap items-center gap-1.5 sm:gap-2">
+                    <span>Penjelasan Perhitungan: Sisa Stok Fisik ({{ number_format($stokSaatIni, 0, ',', '.') }} Item)</span>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-200/80 text-amber-900 border border-amber-300">
+                        {{ $inventorySummary['deficit_products_count'] }} Produk Habis / Perlu Restok
+                    </span>
+                </div>
+                <p class="text-slate-600 text-[11px] sm:text-xs mt-1 leading-relaxed">
+                    Stok fisik yang masih tersedia di rak gudang saat ini adalah <b>{{ number_format($stokSaatIni, 0, ',', '.') }} Item</b> (berasal dari <b>{{ $inventorySummary['safe_count'] + $inventorySummary['low_count'] }} produk</b> yang masih ada stok).
+                    Total log pemakaian tercatat <b>{{ number_format($totalKeluar, 0, ',', '.') }} Item</b> karena terdapat <b>{{ $inventorySummary['deficit_products_count'] }} produk</b> yang pemakaiannya melampaui stok awal tercatat (stok fisik habis = 0):
+                    @foreach($inventorySummary['deficit_products'] as $dp)
+                        <span class="font-bold text-rose-700 underline decoration-rose-300 ml-1">{{ $dp['name'] }} (Masuk {{ $dp['masuk'] }}, Pakai {{ $dp['keluar'] }} {{ $dp['unit'] }})</span>{{ !$loop->last ? ',' : '.' }}
+                    @endforeach
+                </p>
+                <div class="flex items-center gap-2 mt-1.5 text-[11px] text-amber-800 font-medium">
+                    <span>ℹ️ <i>Stok gudang tidak bernilai minus (-8) karena barang habis berhenti di 0. Silakan catat <b>Restok Masuk</b> untuk produk tersebut agar mutasi masuk dan pemakaian seimbang.</i></span>
+                </div>
+            </div>
+        </div>
+        <div class="shrink-0 flex items-center gap-2">
+            <button type="button" onclick="openModalInputObat('masuk')" class="w-full sm:w-auto px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs shadow-sm transition-all flex items-center justify-center gap-1.5 whitespace-nowrap active:scale-95">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i> Catat Restok Masuk
+            </button>
+        </div>
+    </div>
+    @endif
+
     <!-- ========================================================================= -->
     <!-- 1. INVENTARIS & KATALOG STOK REAL-TIME (Sinkron dengan /input) -->
     <!-- ========================================================================= -->

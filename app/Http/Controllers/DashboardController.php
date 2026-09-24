@@ -484,28 +484,107 @@ class DashboardController extends Controller
             $coopFeedUserInputData[$c->id] = !empty($allFeedUsers) ? implode(', ', $allFeedUsers) : null;
         }
 
-        // Data Sampel Berat Badan Terkini Per 6 Blok (Bukan Rata-rata)
+        // Data Sampel Berat Badan Terkini Per 6 Blok (Mendukung hingga 3 Sampel per Blok & Rata-rata)
         WeightSample::ensureColumnsExist();
         $coopWeightData = [];
         $coopWeightDetails = [];
         foreach ($coops as $c) {
-            $ws = WeightSample::with('user')
-                ->where('coop_id', $c->id)
+            $latestSampleDate = WeightSample::where('coop_id', $c->id)
                 ->whereDate('date', '<=', $selectedDate)
                 ->latest('date')
-                ->latest('id')
-                ->first();
+                ->value('date');
 
-            if ($ws) {
-                $coopWeightData[$c->id] = (float) $ws->average_weight_kg;
+            if ($latestSampleDate) {
+                $samplesQuery = WeightSample::with('user')
+                    ->where('coop_id', $c->id)
+                    ->whereDate('date', $latestSampleDate)
+                    ->orderBy('sample_index', 'asc')
+                    ->orderBy('id', 'asc')
+                    ->take(3)
+                    ->get();
+
+                if ($samplesQuery->isEmpty()) {
+                    $samplesQuery = WeightSample::with('user')
+                        ->where('coop_id', $c->id)
+                        ->whereDate('date', '<=', $selectedDate)
+                        ->latest('date')
+                        ->latest('id')
+                        ->take(3)
+                        ->get();
+                }
+
+                $samplesList = [];
+                $totalW = 0;
+                $countW = 0;
+                $totalE = 0;
+                $countE = 0;
+                $batteryArr = [];
+                $latestUser = null;
+                $notesArr = [];
+
+                foreach ($samplesQuery as $idx => $s) {
+                    $wVal = (float) $s->average_weight_kg;
+                    $eVal = $s->egg_weight_gram !== null ? (float) $s->egg_weight_gram : null;
+                    if ($wVal > 0) {
+                        $totalW += $wVal;
+                        $countW++;
+                    }
+                    if ($eVal !== null && $eVal > 0) {
+                        $totalE += $eVal;
+                        $countE++;
+                    }
+                    if ($s->battery_number) {
+                        $batteryArr[] = $s->battery_number;
+                    }
+                    if ($s->notes) {
+                        $notesArr[] = $s->notes;
+                    }
+                    if (!$latestUser && $s->user) {
+                        $latestUser = $s->user->username ?: $s->user->name;
+                    }
+
+                    $samplesList[] = [
+                        'id' => $s->id,
+                        'sample_index' => $s->sample_index ?? ($idx + 1),
+                        'battery_number' => $s->battery_number,
+                        'weight_kg' => $wVal,
+                        'egg_weight_gram' => $eVal,
+                        'date' => $s->date ? Carbon::parse($s->date)->format('d/m/Y') : null,
+                        'user' => $s->user ? ($s->user->username ?: $s->user->name) : null,
+                    ];
+                }
+
+                $avgWeight = $countW > 0 ? round($totalW / $countW, 2) : 0;
+                $avgEgg = $countE > 0 ? round($totalE / $countE, 1) : null;
+
+                // Hitung Keseragaman (Uniformity %)
+                $uniformity = null;
+                if ($countW >= 2 && $avgWeight > 0) {
+                    $minBound = $avgWeight * 0.90;
+                    $maxBound = $avgWeight * 1.10;
+                    $inRange = 0;
+                    foreach ($samplesList as $sl) {
+                        if ($sl['weight_kg'] >= $minBound && $sl['weight_kg'] <= $maxBound) {
+                            $inRange++;
+                        }
+                    }
+                    $uniformity = round(($inRange / $countW) * 100, 1);
+                }
+
+                $firstSample = $samplesQuery->first();
+                $coopWeightData[$c->id] = $avgWeight;
                 $coopWeightDetails[$c->id] = [
-                    'weight_kg' => (float) $ws->average_weight_kg,
-                    'egg_weight_gram' => $ws->egg_weight_gram ? (float) $ws->egg_weight_gram : null,
-                    'battery_number' => $ws->battery_number,
-                    'age_weeks' => $ws->age_weeks ?? $c->chicken_age_weeks,
-                    'date' => $ws->date ? Carbon::parse($ws->date)->format('d/m/Y') : null,
-                    'notes' => $ws->notes,
-                    'user' => $ws->user ? ($ws->user->username ?: $ws->user->name) : null,
+                    'weight_kg' => $avgWeight,
+                    'egg_weight_gram' => $avgEgg,
+                    'battery_number' => !empty($batteryArr) ? implode(' • ', $batteryArr) : ($firstSample->battery_number ?? null),
+                    'battery_list' => $batteryArr,
+                    'age_weeks' => $firstSample->age_weeks ?? $c->chicken_age_weeks,
+                    'date' => $firstSample->date ? Carbon::parse($firstSample->date)->format('d/m/Y') : null,
+                    'notes' => !empty($notesArr) ? implode('; ', array_unique($notesArr)) : $firstSample->notes,
+                    'user' => $latestUser,
+                    'samples' => $samplesList,
+                    'sample_count' => count($samplesList),
+                    'uniformity_percentage' => $uniformity,
                 ];
             } else {
                 $coopWeightData[$c->id] = null;
@@ -908,44 +987,124 @@ class DashboardController extends Controller
      */
     public function storeWeightSample(Request $request)
     {
-        $validated = $request->validate([
+        // Pastikan kolom baru sudah ada pada tabel weight_samples
+        WeightSample::ensureColumnsExist();
+
+        $rules = [
             'coop_id' => 'required|exists:coops,id',
-            'average_weight_kg' => 'required|numeric|min:0.1',
-            'egg_weight_gram' => 'nullable|numeric|min:0',
-            'battery_number' => 'nullable|string|max:100',
             'sample_count' => 'nullable|integer|min:1',
             'age_weeks' => 'nullable|integer',
             'date' => 'nullable|date',
             'notes' => 'nullable|string',
-        ]);
+            'samples' => 'nullable|array',
+            'samples.*.weight_kg' => 'nullable|numeric|min:0.1',
+            'samples.*.egg_weight_gram' => 'nullable|numeric|min:0',
+            'samples.*.battery_number' => 'nullable|string|max:100',
+            // Fallback flat fields
+            'sample_1_weight' => 'nullable|numeric|min:0.1',
+            'sample_2_weight' => 'nullable|numeric|min:0.1',
+            'sample_3_weight' => 'nullable|numeric|min:0.1',
+            'average_weight_kg' => 'nullable|numeric|min:0.1',
+            'egg_weight_gram' => 'nullable|numeric|min:0',
+            'battery_number' => 'nullable|string|max:100',
+        ];
 
+        $validated = $request->validate($rules);
         $coop = Coop::findOrFail($validated['coop_id']);
+        $date = $validated['date'] ?? Carbon::today()->toDateString();
+        $userId = Auth::id() ?? User::where('username', 'petugas')->value('id') ?? User::value('id');
+        $ageWeeks = $validated['age_weeks'] ?? $coop->chicken_age_weeks;
+        $notes = $validated['notes'] ?? null;
 
-        // Pastikan kolom baru sudah ada pada tabel weight_samples
-        WeightSample::ensureColumnsExist();
+        // Kumpulkan sampel dari input (bisa dari array 'samples', flat inputs 'sample_1_...', atau single)
+        $parsedSamples = [];
 
-        $weight = WeightSample::create([
-            'flock_id' => $coop->flock_id,
-            'coop_id' => $coop->id,
-            'user_id' => Auth::id() ?? User::where('username', 'petugas')->value('id') ?? User::value('id'),
-            'date' => $validated['date'] ?? Carbon::today()->toDateString(),
-            'battery_number' => $validated['battery_number'] ?? null,
-            'sample_count' => $validated['sample_count'] ?? 1,
-            'average_weight_kg' => $validated['average_weight_kg'],
-            'egg_weight_gram' => $validated['egg_weight_gram'] ?? null,
-            'age_weeks' => $validated['age_weeks'] ?? $coop->chicken_age_weeks,
-            'notes' => $validated['notes'] ?? null,
-        ]);
+        if (!empty($validated['samples']) && is_array($validated['samples'])) {
+            foreach ($validated['samples'] as $idx => $s) {
+                if (!empty($s['weight_kg']) && (float)$s['weight_kg'] > 0) {
+                    $parsedSamples[] = [
+                        'sample_index' => $idx + 1,
+                        'battery_number' => !empty($s['battery_number']) ? trim($s['battery_number']) : 'Titik ' . ($idx + 1),
+                        'weight_kg' => (float)$s['weight_kg'],
+                        'egg_weight_gram' => !empty($s['egg_weight_gram']) ? (float)$s['egg_weight_gram'] : null,
+                    ];
+                }
+            }
+        } elseif (!empty($request->input('sample_1_weight')) || !empty($request->input('sample_2_weight')) || !empty($request->input('sample_3_weight'))) {
+            for ($i = 1; $i <= 3; $i++) {
+                $wKey = "sample_{$i}_weight";
+                $bKey = "sample_{$i}_battery";
+                $eKey = "sample_{$i}_egg";
+                if (!empty($request->input($wKey)) && (float)$request->input($wKey) > 0) {
+                    $parsedSamples[] = [
+                        'sample_index' => $i,
+                        'battery_number' => $request->input($bKey) ?: "Titik {$i}",
+                        'weight_kg' => (float)$request->input($wKey),
+                        'egg_weight_gram' => $request->input($eKey) ? (float)$request->input($eKey) : null,
+                    ];
+                }
+            }
+        } elseif (!empty($validated['average_weight_kg'])) {
+            $parsedSamples[] = [
+                'sample_index' => 1,
+                'battery_number' => $validated['battery_number'] ?? null,
+                'weight_kg' => (float)$validated['average_weight_kg'],
+                'egg_weight_gram' => $validated['egg_weight_gram'] ?? null,
+            ];
+        }
+
+        if (empty($parsedSamples)) {
+            return back()->withErrors(['average_weight_kg' => 'Minimal 1 bobot sampel ayam harus diisi!'])->withInput();
+        }
+
+        // Hitung rata-rata dan keseragaman (uniformity)
+        $countSamples = count($parsedSamples);
+        $sumW = array_sum(array_column($parsedSamples, 'weight_kg'));
+        $meanW = $countSamples > 0 ? ($sumW / $countSamples) : 0;
+        $uniformity = null;
+        if ($countSamples >= 2 && $meanW > 0) {
+            $minB = $meanW * 0.90;
+            $maxB = $meanW * 1.10;
+            $inR = 0;
+            foreach ($parsedSamples as $ps) {
+                if ($ps['weight_kg'] >= $minB && $ps['weight_kg'] <= $maxB) {
+                    $inR++;
+                }
+            }
+            $uniformity = round(($inR / $countSamples) * 100, 1);
+        }
+
+        $createdRecords = [];
+        foreach ($parsedSamples as $sample) {
+            $createdRecords[] = WeightSample::create([
+                'flock_id' => $coop->flock_id,
+                'coop_id' => $coop->id,
+                'user_id' => $userId,
+                'date' => $date,
+                'battery_number' => $sample['battery_number'],
+                'sample_index' => $sample['sample_index'],
+                'sample_count' => 1,
+                'average_weight_kg' => $sample['weight_kg'],
+                'egg_weight_gram' => $sample['egg_weight_gram'],
+                'uniformity_percentage' => $uniformity,
+                'age_weeks' => $ageWeeks,
+                'notes' => $notes,
+            ]);
+        }
+
+        $lastWeight = end($createdRecords);
 
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Data sampel ayam mingguan berhasil disimpan!',
-                'data' => $weight,
+                'message' => "Data {$countSamples} sampel timbang ayam mingguan Blok {$coop->name} berhasil disimpan!",
+                'data' => $lastWeight,
+                'count' => $countSamples,
+                'average_weight_kg' => round($meanW, 2),
             ]);
         }
 
-        return redirect()->route('dashboard')->with('success', 'Data sampel ayam mingguan Blok ' . $coop->name . ' berhasil disimpan!');
+        return redirect()->route('dashboard')->with('success', "Data {$countSamples} sampel timbang ayam Blok {$coop->name} (Rata-rata: " . number_format($meanW, 2, ',', '.') . " kg) berhasil disimpan!");
     }
 
     /**

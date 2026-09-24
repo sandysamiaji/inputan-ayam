@@ -706,40 +706,86 @@
                                         $bbTargetVal = (float) ($cStd['bb_target'] ?? 0);
                                         $isBbGood = ($bbAct >= $bbTargetVal);
 
-                                        $eggActVal = !empty($coopWeightDetails[$coop->id]['egg_weight_gram']) ? (float) $coopWeightDetails[$coop->id]['egg_weight_gram'] : null;
+                                        $cDetail = $coopWeightDetails[$coop->id] ?? [];
+                                        $sampleList = $cDetail['samples'] ?? [];
+                                        $sampleCount = count($sampleList);
+                                        $unifPct = $cDetail['uniformity_percentage'] ?? null;
+
+                                        $eggActVal = !empty($cDetail['egg_weight_gram']) ? (float) $cDetail['egg_weight_gram'] : null;
                                         $eggStdVal = (float) ($cStd['berat_telur_val'] ?? 0);
                                         $eggTolMin = $eggStdVal > 0 ? round($eggStdVal - 2.5, 1) : 0;
                                         $eggTolMax = $eggStdVal > 0 ? round($eggStdVal + 2.5, 1) : 0;
                                         $isEggGood = $eggActVal !== null && ($eggStdVal > 0 ? ($eggActVal >= $eggTolMin && $eggActVal <= $eggTolMax) : true);
                                     @endphp
                                     <div onclick="openModal('modalBobot6Blok')" 
-                                         class="mt-2 p-1.5 px-2 rounded-lg bg-slate-50 hover:bg-slate-100/90 border border-slate-200/90 flex flex-wrap items-center justify-between gap-1.5 text-[10.5px] cursor-pointer transition-all shadow-2xs"
+                                         class="mt-2 p-2 rounded-lg bg-slate-50 hover:bg-slate-100/90 border border-slate-200/90 text-[10.5px] cursor-pointer transition-all shadow-2xs"
                                          title="Klik untuk membuka Evaluasi Sampel Bobot Ayam & Telur vs Data Master">
-                                        <span class="flex items-center gap-1 font-bold text-slate-800">
-                                            <i data-lucide="scale" class="w-3.5 h-3.5 {{ $isBbGood ? 'text-emerald-600' : 'text-rose-600' }}"></i>
-                                            <span>Sampel Bobot Ayam:</span>
-                                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] font-black border {{ $isBbGood ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-rose-100 text-rose-800 border-rose-300' }}"
-                                                  title="Target Standar Master: {{ number_format($bbTargetVal, 2, ',', '.') }} kg ({{ $isBbGood ? 'Sesuai/Di Atas Target' : 'Di Bawah Standar Master' }})">
-                                                {{ number_format($bbAct, 2, ',', '.') }} kg
+                                        
+                                        <!-- Baris Rata-rata -->
+                                        <div class="flex flex-wrap items-center justify-between gap-1.5 pb-1 border-b border-slate-200/60">
+                                            <span class="flex items-center gap-1.5 font-bold text-slate-800">
+                                                <i data-lucide="scale" class="w-3.5 h-3.5 {{ $isBbGood ? 'text-emerald-600' : 'text-rose-600' }}"></i>
+                                                <span>Sampel Bobot:</span>
+                                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] font-black border {{ $isBbGood ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-rose-100 text-rose-800 border-rose-300' }}"
+                                                      title="Target Master: {{ number_format($bbTargetVal, 2, ',', '.') }} kg ({{ $isBbGood ? 'Sesuai Target' : 'Di Bawah Target' }})">
+                                                    {{ number_format($bbAct, 2, ',', '.') }} kg
+                                                    @if($sampleCount > 1)
+                                                        <span class="text-[9px] font-semibold text-slate-500">(Rerata)</span>
+                                                    @endif
+                                                </span>
                                             </span>
-                                        </span>
-                                        <div class="flex items-center gap-1 text-[9.5px]">
-                                            @if(!empty($coopWeightDetails[$coop->id]['battery_number']))
-                                                <span class="text-slate-500 font-medium">
-                                                    Baterai {{ $coopWeightDetails[$coop->id]['battery_number'] }}
-                                                </span>
-                                            @endif
-                                            @if($eggActVal !== null)
-                                                @if(!empty($coopWeightDetails[$coop->id]['battery_number']))
-                                                    <span class="text-slate-300">•</span>
+
+                                            <div class="flex items-center gap-1.5 text-[9.5px]">
+                                                @if($unifPct !== null)
+                                                    <span class="font-extrabold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200" title="Keseragaman Bobot 3 Titik Sampel">
+                                                        Uniformity {{ $unifPct }}%
+                                                    </span>
                                                 @endif
-                                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-black border {{ $isEggGood ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-rose-100 text-rose-800 border-rose-300' }}"
-                                                      title="BB Telur: {{ number_format($eggActVal, 1, ',', '.') }}g (Toleransi Master: {{ number_format($eggTolMin, 1, ',', '.') }} - {{ number_format($eggTolMax, 1, ',', '.') }}g, Acuan: {{ $cStd['berat_telur'] }})">
-                                                    <span>Telur {{ number_format($eggActVal, 1, ',', '.') }}g</span>
-                                                    <span class="text-[8.5px] font-black">{{ $isEggGood ? '✓' : '⚠️' }}</span>
-                                                </span>
-                                            @endif
+                                                @if($eggActVal !== null)
+                                                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-black border {{ $isEggGood ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-rose-100 text-rose-800 border-rose-300' }}"
+                                                          title="Rata-rata BB Telur: {{ number_format($eggActVal, 1, ',', '.') }}g (Toleransi Master: {{ number_format($eggTolMin, 1, ',', '.') }} - {{ number_format($eggTolMax, 1, ',', '.') }}g)">
+                                                        <span>Telur {{ number_format($eggActVal, 1, ',', '.') }}g</span>
+                                                        <span class="text-[8.5px]">{{ $isEggGood ? '✓' : '⚠️' }}</span>
+                                                    </span>
+                                                @endif
+                                            </div>
                                         </div>
+
+                                        <!-- 3 Titik Sampel Mini Badges -->
+                                        @if($sampleCount > 1)
+                                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-1 mt-1.5 text-[9.5px]">
+                                                @foreach($sampleList as $sIdx => $sItem)
+                                                    @php
+                                                        $sW = (float) $sItem['weight_kg'];
+                                                        $sIsGood = ($sW >= $bbTargetVal);
+                                                        $sEgg = !empty($sItem['egg_weight_gram']) ? (float)$sItem['egg_weight_gram'] : null;
+                                                        $sEggGood = $sEgg !== null && ($eggStdVal > 0 ? ($sEgg >= $eggTolMin && $sEgg <= $eggTolMax) : true);
+                                                    @endphp
+                                                    <div class="flex items-center justify-between px-1.5 py-1 rounded bg-white border border-slate-200/80 shadow-3xs" 
+                                                         title="Sampel {{ $sItem['sample_index'] ?? ($sIdx + 1) }}: {{ $sItem['battery_number'] ?: 'Baterai' }}">
+                                                        <span class="font-bold text-slate-600 truncate max-w-[85px]">
+                                                            S{{ $sItem['sample_index'] ?? ($sIdx + 1) }}: <span class="font-normal text-slate-500">{{ $sItem['battery_number'] ?: '-' }}</span>
+                                                        </span>
+                                                        <div class="flex items-center gap-1 shrink-0 font-bold">
+                                                            <span class="{{ $sIsGood ? 'text-emerald-700' : 'text-rose-600' }}">
+                                                                {{ number_format($sW, 2, ',', '.') }} kg
+                                                            </span>
+                                                            @if($sEgg !== null)
+                                                                <span class="text-slate-300">•</span>
+                                                                <span class="{{ $sEggGood ? 'text-amber-800' : 'text-rose-600' }} text-[9px]">
+                                                                    {{ number_format($sEgg, 1, ',', '.') }}g
+                                                                </span>
+                                                            @endif
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @elseif($sampleCount == 1 && !empty($sampleList[0]['battery_number']))
+                                            <div class="mt-1 flex items-center justify-between text-[9.5px] text-slate-500">
+                                                <span>Posisi: <b>Baterai {{ $sampleList[0]['battery_number'] }}</b></span>
+                                                <span>{{ $cDetail['date'] ?? '' }}</span>
+                                            </div>
+                                        @endif
                                     </div>
                                 @endif
                                 @endif
@@ -1864,16 +1910,41 @@
                         </div>
                     </div>
 
-                    <!-- Adu Data Metrik Grid -->
+                    <!-- Adu Data Metrik Grid (Mendukung 3 Sampel per Blok & Rata-rata) -->
+                    @php
+                        $dSamples = $d['samples'] ?? [];
+                        $dUnif = $d['uniformity_percentage'] ?? null;
+                    @endphp
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 mt-3 text-xs">
                         <div class="bg-white p-2.5 rounded-lg border border-slate-200">
-                            <span class="text-[10px] font-bold text-slate-400 block uppercase">BB Ayam (Input Aktual)</span>
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase">BB Ayam ({{ count($dSamples) > 1 ? count($dSamples) . ' Sampel' : 'Aktual' }})</span>
+                                @if($dUnif !== null)
+                                    <span class="text-[9px] font-black px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                        Unif {{ $dUnif }}%
+                                    </span>
+                                @endif
+                            </div>
                             <b class="text-base font-black {{ $bbAct === null ? 'text-slate-400' : ($isTargetOrMore ? 'text-emerald-700' : 'text-rose-700') }}">
-                                {{ $bbAct ? number_format($bbAct, 1, ',', '.') . ' Kg' : 'Belum Input' }}
+                                {{ $bbAct ? number_format($bbAct, 2, ',', '.') . ' Kg' : 'Belum Input' }}
+                                @if(count($dSamples) > 1)
+                                    <span class="text-[10px] font-normal text-slate-500">(Rerata)</span>
+                                @endif
                             </b>
-                            <span class="text-[10px] text-slate-500 block mt-0.5">
-                                {{ $d && $d['battery_number'] ? 'Baterai: ' . $d['battery_number'] : 'Posisi sampel acak' }}
-                            </span>
+                            @if(count($dSamples) > 1)
+                                <div class="mt-1.5 pt-1.5 border-t border-slate-100 space-y-1 text-[10px]">
+                                    @foreach($dSamples as $ds)
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-slate-500 font-medium">S{{ $ds['sample_index'] }}: {{ $ds['battery_number'] ?: 'Baterai' }}</span>
+                                            <span class="font-bold {{ $ds['weight_kg'] >= $bbTarget ? 'text-emerald-700' : 'text-rose-600' }}">{{ number_format($ds['weight_kg'], 2, ',', '.') }} kg</span>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @else
+                                <span class="text-[10px] text-slate-500 block mt-0.5">
+                                    {{ $d && $d['battery_number'] ? 'Baterai: ' . $d['battery_number'] : 'Posisi sampel acak' }}
+                                </span>
+                            @endif
                         </div>
 
                         <div class="bg-white p-2.5 rounded-lg border border-slate-200">
@@ -1892,10 +1963,29 @@
                             <span class="text-[10px] font-bold text-slate-400 block uppercase">BB Telur Butir (Input Aktual)</span>
                             <b class="text-base font-black {{ $eggAct ? ($isIdealEgg ? 'text-emerald-700' : 'text-rose-700') : 'text-slate-400' }}">
                                 {{ $eggAct ? number_format($eggAct, 1, ',', '.') . ' Gram' : '-' }}
+                                @if(count($dSamples) > 1 && $eggAct)
+                                    <span class="text-[10px] font-normal text-slate-500">(Rerata)</span>
+                                @endif
                             </b>
-                            <span class="text-[10px] {{ $eggAct ? ($isIdealEgg ? 'text-emerald-700 font-bold' : 'text-rose-600 font-bold') : 'text-slate-500' }} block mt-0.5">
-                                {{ $eggAct ? ($isIdealEgg ? '✓ Sesuai batas toleransi' : '⚠️ Di luar toleransi target') : 'Belum ditimbang' }}
-                            </span>
+                            @if(count($dSamples) > 1)
+                                <div class="mt-1.5 pt-1.5 border-t border-slate-100 space-y-1 text-[10px]">
+                                    @foreach($dSamples as $ds)
+                                        @if(!empty($ds['egg_weight_gram']))
+                                            @php
+                                                $dsEggGood = ($eggTargetVal > 0 ? ($ds['egg_weight_gram'] >= $eggMinTol && $ds['egg_weight_gram'] <= $eggMaxTol) : true);
+                                            @endphp
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-slate-500 font-medium">S{{ $ds['sample_index'] }}:</span>
+                                                <span class="font-bold {{ $dsEggGood ? 'text-emerald-700' : 'text-rose-600' }}">{{ number_format($ds['egg_weight_gram'], 1, ',', '.') }} g</span>
+                                            </div>
+                                        @endif
+                                    @endforeach
+                                </div>
+                            @else
+                                <span class="text-[10px] {{ $eggAct ? ($isIdealEgg ? 'text-emerald-700 font-bold' : 'text-rose-600 font-bold') : 'text-slate-500' }} block mt-0.5">
+                                    {{ $eggAct ? ($isIdealEgg ? '✓ Sesuai batas toleransi' : '⚠️ Di luar toleransi target') : 'Belum ditimbang' }}
+                                </span>
+                            @endif
                         </div>
 
                         <div class="bg-white p-2.5 rounded-lg border border-slate-200">
@@ -1921,9 +2011,9 @@
             <div id="modalBobotGeneralBanner" class="p-3 bg-sky-50/70 rounded-xl border border-sky-200 text-xs text-sky-950 flex items-start gap-2">
                 <i data-lucide="info" class="w-4 h-4 text-sky-700 shrink-0 mt-0.5"></i>
                 <div class="text-[11px] leading-relaxed">
-                    <b class="text-sky-950">Adu Data Master Standar Produksi vs Hasil Inputan Aktual:</b>
+                    <b class="text-sky-950">Adu Data Master Standar Produksi vs Hasil 3 Sampel Timbang per Blok:</b>
                     <span class="text-sky-900">
-                        Setiap baris blok kandang membandingkan berat badan (BB) ayam dan bobot butir telur sampel terhadap batas <b>BB Minimum</b>, <b>BB Target (Ideal)</b>, <b>BB Maksimum</b>, dan <b>Batas Toleransi Telur</b> berdasarkan umur minggu ayam di blok tersebut.
+                        Setiap baris blok kandang menyajikan 3 titik sampel timbang (Depan, Tengah, Belakang) serta nilai <b>Rata-rata BB Ayam</b> dan <b>Rata-rata Telur</b> terhadap batas <b>BB Minimum</b>, <b>BB Target (Ideal)</b>, <b>BB Maksimum</b>, dan <b>Batas Toleransi Telur</b>.
                     </span>
                 </div>
             </div>
@@ -1936,14 +2026,14 @@
                             <th class="py-2.5 px-3">Kloter & Blok</th>
                             <th class="py-2.5 px-2.5 text-center">Umur</th>
                             <th class="py-2.5 px-3">Fase Pertumbuhan</th>
-                            <th class="py-2.5 px-3 text-right bg-sky-50/50 text-sky-950">BB Ayam (Input)</th>
+                            <th class="py-2.5 px-3 text-right bg-sky-50/50 text-sky-950">BB Ayam (3 Sampel & Rerata)</th>
                             <th class="py-2.5 px-2.5 text-right bg-slate-100/60">BB Min</th>
                             <th class="py-2.5 px-2.5 text-right bg-emerald-100/50 text-emerald-950">BB Target</th>
                             <th class="py-2.5 px-2.5 text-right bg-slate-100/60">BB Max</th>
                             <th class="py-2.5 px-3 text-center">Status BB Ayam</th>
-                            <th class="py-2.5 px-3 text-right bg-amber-50/50 text-amber-950">BB Telur (Input)</th>
+                            <th class="py-2.5 px-3 text-right bg-amber-50/50 text-amber-950">BB Telur (Sampel & Rerata)</th>
                             <th class="py-2.5 px-3 text-right bg-amber-100/40 text-amber-950">Toleransi Telur</th>
-                            <th class="py-2.5 px-3">No. Baterai</th>
+                            <th class="py-2.5 px-3">No. Baterai (Titik Sampel)</th>
                             <th class="py-2.5 px-2.5 text-center">Aksi</th>
                         </tr>
                     </thead>
@@ -1951,6 +2041,7 @@
                         @foreach($coops as $c)
                             @php
                                 $d = $coopWeightDetails[$c->id] ?? null;
+                                $samples = $d['samples'] ?? [];
                                 $cStd = $coopStandards[$c->id] ?? \App\Services\ProductionStandardService::getStandardForWeek((int)$c->chicken_age_weeks);
                                 $bbAct = $d && isset($d['weight_kg']) ? (float)$d['weight_kg'] : null;
                                 $eggAct = $d && isset($d['egg_weight_gram']) ? (float)$d['egg_weight_gram'] : null;
@@ -1961,6 +2052,7 @@
                                 $eggMinTol = $eggTargetVal > 0 ? round($eggTargetVal - 2.5, 1) : 0;
                                 $eggMaxTol = $eggTargetVal > 0 ? round($eggTargetVal + 2.5, 1) : 0;
                                 $isIdealEgg = $eggAct !== null && ($eggAct >= $eggMinTol && $eggAct <= $eggMaxTol);
+                                $unif = $d['uniformity_percentage'] ?? null;
                             @endphp
                             <tr class="modal-bobot-row hover:bg-sky-50/30 transition-colors" 
                                 data-flock="{{ $c->flock_id }}" 
@@ -1990,11 +2082,26 @@
                                     <span class="block text-[9px] text-slate-400 font-medium truncate max-w-[110px]" title="{{ $cStd['fase'] }}">{{ $cStd['fase'] }}</span>
                                 </td>
 
-                                <!-- BB Ayam Aktual -->
+                                <!-- BB Ayam Aktual (Rerata & 3 Sampel) -->
                                 <td class="py-3 px-3 text-right whitespace-nowrap {{ $bbAct === null ? 'bg-sky-50/30' : ($bbAct >= $bbTarget ? 'bg-emerald-50/40' : 'bg-rose-50/40') }}">
-                                    <b class="text-xs font-black {{ $bbAct === null ? 'text-slate-400' : ($bbAct >= $bbTarget ? 'text-emerald-700 text-sm' : 'text-rose-700 text-sm') }}">
-                                        {{ $bbAct ? number_format($bbAct, 1, ',', '.') . ' Kg' : '-' }}
-                                    </b>
+                                    <div class="flex flex-col items-end">
+                                        <b class="text-xs font-black {{ $bbAct === null ? 'text-slate-400' : ($bbAct >= $bbTarget ? 'text-emerald-700 text-sm' : 'text-rose-700 text-sm') }}">
+                                            {{ $bbAct ? number_format($bbAct, 2, ',', '.') . ' Kg' : '-' }}
+                                        </b>
+                                        @if(count($samples) > 1)
+                                            <span class="text-[9px] font-extrabold text-slate-500 uppercase tracking-wider">(Rerata)</span>
+                                            <div class="mt-1 space-y-0.5 text-[9.5px]">
+                                                @foreach($samples as $sItem)
+                                                    <div class="flex items-center justify-end gap-1 font-semibold">
+                                                        <span class="text-slate-400">S{{ $sItem['sample_index'] }}:</span>
+                                                        <span class="{{ $sItem['weight_kg'] >= $bbTarget ? 'text-emerald-800' : 'text-rose-700' }}">
+                                                            {{ number_format($sItem['weight_kg'], 2, ',', '.') }} kg
+                                                        </span>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @endif
+                                    </div>
                                 </td>
 
                                 <!-- Acuan Master: BB Min -->
@@ -2021,26 +2128,54 @@
                                             Belum Input
                                         </span>
                                     @elseif($bbAct >= $bbTarget)
-                                        <span class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-black text-[10px] border border-emerald-300 inline-flex items-center gap-1 shadow-2xs" title="Capai target atau lebih ({{ number_format($bbAct, 1, ',', '.') }} kg >= {{ number_format($bbTarget, 1, ',', '.') }} kg)">
-                                            <i data-lucide="check-circle-2" class="w-3 h-3 text-emerald-600"></i> Capai Target / Lebih
+                                        <span class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-black text-[10px] border border-emerald-300 inline-flex items-center gap-1 shadow-2xs" title="Capai target atau lebih ({{ number_format($bbAct, 2, ',', '.') }} kg >= {{ number_format($bbTarget, 1, ',', '.') }} kg)">
+                                            <i data-lucide="check-circle-2" class="w-3 h-3 text-emerald-600"></i> Capai Target
                                         </span>
                                     @else
-                                        <span class="px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 font-black text-[10px] border border-rose-300 inline-flex items-center gap-1 shadow-2xs" title="Belum sesuai master (Kurang {{ number_format(round($bbTarget - $bbAct, 3), 1, ',', '.') }} kg)">
+                                        <span class="px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 font-black text-[10px] border border-rose-300 inline-flex items-center gap-1 shadow-2xs" title="Belum sesuai master (Kurang {{ number_format(round($bbTarget - $bbAct, 3), 2, ',', '.') }} kg)">
                                             <i data-lucide="alert-circle" class="w-3 h-3 text-rose-600"></i> Di Bawah Target
                                         </span>
                                     @endif
+
+                                    @if($unif !== null)
+                                        <div class="mt-1">
+                                            <span class="text-[9px] font-black px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                                Unif {{ $unif }}%
+                                            </span>
+                                        </div>
+                                    @endif
                                 </td>
 
-                                <!-- BB Telur Aktual -->
+                                <!-- BB Telur Aktual (Rerata & 3 Sampel) -->
                                 <td class="py-3 px-3 text-right whitespace-nowrap {{ $eggAct === null ? 'bg-amber-50/20' : ($isIdealEgg ? 'bg-emerald-50/40' : 'bg-rose-50/40') }}">
-                                    <b class="text-xs font-black {{ $eggAct === null ? 'text-slate-400' : ($isIdealEgg ? 'text-emerald-700' : 'text-rose-700') }}">
-                                        {{ $eggAct ? number_format($eggAct, 1, ',', '.') . ' g' : '-' }}
-                                    </b>
-                                    @if($eggAct !== null)
-                                        <span class="block text-[9.5px] font-black {{ $isIdealEgg ? 'text-emerald-700' : 'text-rose-700' }}">
-                                            {{ $isIdealEgg ? '✓ Sesuai' : '⚠️ Di Luar' }}
-                                        </span>
-                                    @endif
+                                    <div class="flex flex-col items-end">
+                                        <b class="text-xs font-black {{ $eggAct === null ? 'text-slate-400' : ($isIdealEgg ? 'text-emerald-700' : 'text-rose-700') }}">
+                                            {{ $eggAct ? number_format($eggAct, 1, ',', '.') . ' g' : '-' }}
+                                        </b>
+                                        @if($eggAct !== null)
+                                            <span class="text-[9px] font-black {{ $isIdealEgg ? 'text-emerald-700' : 'text-rose-700' }}">
+                                                {{ $isIdealEgg ? '✓ Sesuai' : '⚠️ Di Luar' }}
+                                            </span>
+                                        @endif
+                                        @if(count($samples) > 1)
+                                            <div class="mt-1 space-y-0.5 text-[9.5px]">
+                                                @foreach($samples as $sItem)
+                                                    @if(!empty($sItem['egg_weight_gram']))
+                                                        @php
+                                                            $sEggVal = (float)$sItem['egg_weight_gram'];
+                                                            $sEggOk = ($eggTargetVal > 0 ? ($sEggVal >= $eggMinTol && $sEggVal <= $eggMaxTol) : true);
+                                                        @endphp
+                                                        <div class="flex items-center justify-end gap-1 font-semibold">
+                                                            <span class="text-slate-400">S{{ $sItem['sample_index'] }}:</span>
+                                                            <span class="{{ $sEggOk ? 'text-emerald-800' : 'text-rose-700' }}">
+                                                                {{ number_format($sEggVal, 1, ',', '.') }}g
+                                                            </span>
+                                                        </div>
+                                                    @endif
+                                                @endforeach
+                                            </div>
+                                        @endif
+                                    </div>
                                 </td>
 
                                 <!-- Batas Toleransi Telur Master -->
@@ -2055,10 +2190,21 @@
                                     @endif
                                 </td>
 
-                                <!-- No. Baterai & Tanggal -->
+                                <!-- No. Baterai (Titik Sampel) & Tanggal -->
                                 <td class="py-3 px-3 whitespace-nowrap font-medium text-slate-700">
-                                    <span class="font-bold text-slate-900 block text-[11px]">{{ $d && $d['battery_number'] ? $d['battery_number'] : '-' }}</span>
-                                    <span class="text-[9.5px] text-slate-400 block">{{ $d && $d['date'] ? $d['date'] : '-' }}</span>
+                                    @if(count($samples) > 1)
+                                        <div class="space-y-0.5 text-[10.5px]">
+                                            @foreach($samples as $sItem)
+                                                <div class="flex items-center gap-1">
+                                                    <span class="text-slate-400 font-bold text-[9.5px]">S{{ $sItem['sample_index'] }}:</span>
+                                                    <span class="font-bold text-slate-800">{{ $sItem['battery_number'] ?: '-' }}</span>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <span class="font-bold text-slate-900 block text-[11px]">{{ $d && $d['battery_number'] ? $d['battery_number'] : '-' }}</span>
+                                    @endif
+                                    <span class="text-[9.5px] text-slate-400 block mt-0.5">{{ $d && $d['date'] ? $d['date'] : '-' }}</span>
                                 </td>
 
                                 <!-- Aksi -->

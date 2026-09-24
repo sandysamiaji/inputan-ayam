@@ -1231,19 +1231,108 @@
                     <input class="readonly" id="bobotFase" value="Puncak Produksi (Egg Peak)" readonly style="font-weight:700; color:#047857; background:#f0fdf4;">
                 </div>
 
-                <div class="field">
-                    <label>Nomor Baterai Ayam Sampel <span style="color:#e11d48">*</span></label>
-                    <input type="text" name="battery_number" id="bobotBaterai" placeholder="Contoh: Baris 2 / B-14" required>
+                <!-- 3 TITIK SAMPEL AYAM & TELUR (DEPAN, TENGAH, BELAKANG) -->
+                <div style="margin-top: 10px; margin-bottom: 12px;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+                        <label style="font-weight:800; font-size:12px; color:#0f172a; margin:0; display:flex; align-items:center; gap:6px;">
+                            <span>⚖️ 3 Titik Sampel Timbang per Blok</span>
+                            <span style="font-size:10px; background:#e0f2fe; color:#0369a1; padding:2px 6px; border-radius:6px; font-weight:700;">Standar Akurat</span>
+                        </label>
+                        <span style="font-size:10px; color:#64748b;">(Depan, Tengah, Belakang)</span>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap:10px;">
+                        <!-- Slot Sampel 1 -->
+                        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:10px 12px; border-left:3px solid #0284c7;">
+                            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+                                <b style="font-size:11px; color:#0369a1;">SAMPEL 1 (Depan) <span style="color:#e11d48">*</span></b>
+                                <span style="font-size:9.5px; color:#64748b; font-weight:600;">Titik 1</span>
+                            </div>
+                            <div style="display:flex; flex-direction:column; gap:6px;">
+                                <div>
+                                    <label style="font-size:10px; color:#475569; font-weight:600; margin-bottom:2px; display:block;">No. Baterai</label>
+                                    <input type="text" name="sample_1_battery" id="sample1Battery" placeholder="Contoh: Baris 1 / Btr A1" required style="width:100%; font-size:12px; padding:6px 9px; border-radius:8px; border:1px solid #cbd5e1;">
+                                </div>
+                                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px;">
+                                    <div>
+                                        <label style="font-size:10px; color:#475569; font-weight:600; margin-bottom:2px; display:block;">BB Ayam (Kg) <span style="color:#e11d48">*</span></label>
+                                        <input type="number" step="0.01" name="sample_1_weight" id="sample1Weight" placeholder="1.70" oninput="calcBobot3Samples()" required style="width:100%; font-size:12px; font-weight:700; padding:6px 9px; border-radius:8px; border:1px solid #cbd5e1;">
+                                    </div>
+                                    <div>
+                                        <label style="font-size:10px; color:#475569; font-weight:600; margin-bottom:2px; display:block;">BB Telur (g)</label>
+                                        <input type="number" step="0.1" name="sample_1_egg" id="sample1Egg" placeholder="45.0" oninput="calcBobot3Samples()" style="width:100%; font-size:12px; padding:6px 9px; border-radius:8px; border:1px solid #cbd5e1;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Slot Sampel 2 -->
+                        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:10px 12px; border-left:3px solid #0284c7;">
+                            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+                                <b style="font-size:11px; color:#0369a1;">SAMPEL 2 (Tengah) <span style="color:#e11d48">*</span></b>
+                                <span style="font-size:9.5px; color:#64748b; font-weight:600;">Titik 2</span>
+                            </div>
+                            <div style="display:flex; flex-direction:column; gap:6px;">
+                                <div>
+                                    <label style="font-size:10px; color:#475569; font-weight:600; margin-bottom:2px; display:block;">No. Baterai</label>
+                                    <input type="text" name="sample_2_battery" id="sample2Battery" placeholder="Contoh: Baris 2 / Btr B12" required style="width:100%; font-size:12px; padding:6px 9px; border-radius:8px; border:1px solid #cbd5e1;">
+                                </div>
+                                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px;">
+                                    <div>
+                                        <label style="font-size:10px; color:#475569; font-weight:600; margin-bottom:2px; display:block;">BB Ayam (Kg) <span style="color:#e11d48">*</span></label>
+                                        <input type="number" step="0.01" name="sample_2_weight" id="sample2Weight" placeholder="1.75" oninput="calcBobot3Samples()" required style="width:100%; font-size:12px; font-weight:700; padding:6px 9px; border-radius:8px; border:1px solid #cbd5e1;">
+                                    </div>
+                                    <div>
+                                        <label style="font-size:10px; color:#475569; font-weight:600; margin-bottom:2px; display:block;">BB Telur (g)</label>
+                                        <input type="number" step="0.1" name="sample_2_egg" id="sample2Egg" placeholder="45.5" oninput="calcBobot3Samples()" style="width:100%; font-size:12px; padding:6px 9px; border-radius:8px; border:1px solid #cbd5e1;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Slot Sampel 3 -->
+                        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:10px 12px; border-left:3px solid #0284c7;">
+                            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+                                <b style="font-size:11px; color:#0369a1;">SAMPEL 3 (Belakang) <span style="color:#e11d48">*</span></b>
+                                <span style="font-size:9.5px; color:#64748b; font-weight:600;">Titik 3</span>
+                            </div>
+                            <div style="display:flex; flex-direction:column; gap:6px;">
+                                <div>
+                                    <label style="font-size:10px; color:#475569; font-weight:600; margin-bottom:2px; display:block;">No. Baterai</label>
+                                    <input type="text" name="sample_3_battery" id="sample3Battery" placeholder="Contoh: Baris 3 / Btr C24" required style="width:100%; font-size:12px; padding:6px 9px; border-radius:8px; border:1px solid #cbd5e1;">
+                                </div>
+                                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px;">
+                                    <div>
+                                        <label style="font-size:10px; color:#475569; font-weight:600; margin-bottom:2px; display:block;">BB Ayam (Kg) <span style="color:#e11d48">*</span></label>
+                                        <input type="number" step="0.01" name="sample_3_weight" id="sample3Weight" placeholder="1.71" oninput="calcBobot3Samples()" required style="width:100%; font-size:12px; font-weight:700; padding:6px 9px; border-radius:8px; border:1px solid #cbd5e1;">
+                                    </div>
+                                    <div>
+                                        <label style="font-size:10px; color:#475569; font-weight:600; margin-bottom:2px; display:block;">BB Telur (g)</label>
+                                        <input type="number" step="0.1" name="sample_3_egg" id="sample3Egg" placeholder="45.0" oninput="calcBobot3Samples()" style="width:100%; font-size:12px; padding:6px 9px; border-radius:8px; border:1px solid #cbd5e1;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="row-fields">
-                    <div class="field">
-                        <label>Berat Ayam (Kg) <span style="color:#e11d48">*</span></label>
-                        <input type="number" step="0.1" name="average_weight_kg" id="bobotBeratAyam" placeholder="Contoh: 1.1" oninput="calcBobotFeedback()" required>
+                <!-- Hidden inputs for legacy / single field compatibility -->
+                <input type="hidden" name="average_weight_kg" id="bobotBeratAyam">
+                <input type="hidden" name="egg_weight_gram" id="bobotBeratTelur">
+                <input type="hidden" name="battery_number" id="bobotBaterai">
+
+                <!-- Ringkasan Live Rata-rata 3 Sampel -->
+                <div id="bobotSummaryBox" style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:12px; padding:10px 14px; margin-top:8px;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:11px; font-weight:800; color:#0369a1;">📊 Hasil Rata-rata 3 Sampel:</span>
+                            <span id="bobotAvgKgBadge" style="font-size:12px; font-weight:900; background:#fff; color:#0369a1; padding:3px 8px; border-radius:6px; border:1px solid #bae6fd;">- Kg</span>
+                            <span id="bobotAvgEggBadge" style="font-size:11px; font-weight:700; background:#fff; color:#92400e; padding:3px 8px; border-radius:6px; border:1px solid #fde68a;">- g Telur</span>
+                        </div>
+                        <div id="bobotUniformityBadge" style="font-size:10.5px; font-weight:800; color:#047857;"></div>
                     </div>
-                    <div class="field">
-                        <label>Berat Telur (Butir / Gram)</label>
-                        <input type="number" step="0.1" name="egg_weight_gram" id="bobotBeratTelur" placeholder="Contoh: 58.5" oninput="calcBobotFeedback()">
+                    <div id="bobotLiveStatusText" style="margin-top:6px; font-size:10.5px; font-weight:600; color:#0369a1;">
+                        ℹ Masukkan nilai bobot ketiga sampel ayam untuk menghitung rata-rata dan kesesuaian target master otomatis.
                     </div>
                 </div>
 
@@ -1271,10 +1360,6 @@
                             <b style="font-size:10px; color:#92400e; display:block; margin-top:2px;" id="bobotStdTelur">53,8–58,8 g</b>
                         </div>
                     </div>
-                    <!-- Live Feedback Indicator -->
-                    <div id="bobotLiveFeedback" style="margin-top:8px; font-size:10px; font-weight:700; padding:7px 9px; border-radius:8px; background:#fff; border:1px solid #bae6fd; color:#0369a1; display:flex; align-items:center; gap:6px;">
-                        <span id="bobotFeedbackText">ℹ Masukkan bobot ayam untuk membandingkan langsung dengan acuan master umur ayam ini.</span>
-                    </div>
                 </div>
 
                 <div class="field" style="margin-top:11px">
@@ -1284,12 +1369,12 @@
 
                 <div class="sync" style="background:#f0f9ff; border-color:#bae6fd;">
                     <b style="color:#0369a1;">↗ Otomatis Masuk ke Ringkasan Bobot & Analisa 6 Blok</b>
-                    <p style="color:#0284c7;">Data berat badan ayam dan berat butir telur per sampel mingguan ini otomatis memperbarui kartu bobot 6 blok di Dashboard dan Rekapitulasi.</p>
+                    <p style="color:#0284c7;">Data 3 sampel bobot ayam dan butir telur mingguan ini otomatis menghitung rata-rata dan memperbarui kartu bobot 6 blok di Dashboard dan Rekapitulasi.</p>
                 </div>
 
-                <button type="submit" class="btn-submit" style="background:#0284c7;">Simpan Timbang Ayam & Telur</button>
+                <button type="submit" class="btn-submit" style="background:#0284c7;">Simpan 3 Sampel Timbang Ayam & Telur</button>
                 <a href="{{ route('dashboard') }}" class="btn-cancel">Batal</a>
-                <div class="info-note">Timbang sampel ayam rutin per minggu untuk memantau kurva pertumbuhan bobot dan kesesuaian target produksi telur.</div>
+                <div class="info-note">Timbang 3 titik sampel ayam rutin per minggu untuk memantau kurva pertumbuhan bobot dan kesesuaian target produksi telur.</div>
             </form>
         </section>
     </div>
@@ -1492,8 +1577,8 @@ function updateCoopPop(prefix) {
     }
 }
 
-// 3b. Real-time Live Evaluator BB Ayam & Telur vs Master
-function calcBobotFeedback() {
+// 3b. Real-time Live Evaluator 3 Sampel BB Ayam & Telur vs Master
+function calcBobot3Samples() {
     const coopSelect = document.getElementById('bobotCoop');
     if (!coopSelect) return;
     const selectedOpt = coopSelect.options[coopSelect.selectedIndex];
@@ -1504,52 +1589,124 @@ function calcBobotFeedback() {
     const bbMax = parseFloat(selectedOpt.getAttribute('data-bbmax') || 1.72);
     const eggTarget = parseFloat(selectedOpt.getAttribute('data-eggtarget') || 0);
 
-    const bbVal = parseFloat(document.getElementById('bobotBeratAyam').value);
-    const eggVal = parseFloat(document.getElementById('bobotBeratTelur').value);
-    const box = document.getElementById('bobotLiveFeedback');
-    const txt = document.getElementById('bobotFeedbackText');
-    if (!box || !txt) return;
+    const s1W = parseFloat(document.getElementById('sample1Weight').value);
+    const s2W = parseFloat(document.getElementById('sample2Weight').value);
+    const s3W = parseFloat(document.getElementById('sample3Weight').value);
 
-    if (isNaN(bbVal) || bbVal <= 0) {
-        box.style.background = '#fff';
-        box.style.borderColor = '#bae6fd';
-        box.style.color = '#0369a1';
-        txt.innerHTML = 'ℹ Masukkan bobot ayam untuk membandingkan langsung dengan acuan master umur ayam ini.';
+    const s1E = parseFloat(document.getElementById('sample1Egg').value);
+    const s2E = parseFloat(document.getElementById('sample2Egg').value);
+    const s3E = parseFloat(document.getElementById('sample3Egg').value);
+
+    const s1B = (document.getElementById('sample1Battery').value || '').trim();
+    const s2B = (document.getElementById('sample2Battery').value || '').trim();
+    const s3B = (document.getElementById('sample3Battery').value || '').trim();
+
+    // Kumpulkan bobot ayam
+    const weights = [];
+    if (!isNaN(s1W) && s1W > 0) weights.push(s1W);
+    if (!isNaN(s2W) && s2W > 0) weights.push(s2W);
+    if (!isNaN(s3W) && s3W > 0) weights.push(s3W);
+
+    // Kumpulkan bobot telur
+    const eggs = [];
+    if (!isNaN(s1E) && s1E > 0) eggs.push(s1E);
+    if (!isNaN(s2E) && s2E > 0) eggs.push(s2E);
+    if (!isNaN(s3E) && s3E > 0) eggs.push(s3E);
+
+    // Kumpulkan baterai
+    const batteries = [];
+    if (s1B) batteries.push(s1B);
+    if (s2B) batteries.push(s2B);
+    if (s3B) batteries.push(s3B);
+
+    const box = document.getElementById('bobotSummaryBox');
+    const avgKgBadge = document.getElementById('bobotAvgKgBadge');
+    const avgEggBadge = document.getElementById('bobotAvgEggBadge');
+    const unifBadge = document.getElementById('bobotUniformityBadge');
+    const statusTxt = document.getElementById('bobotLiveStatusText');
+
+    if (weights.length === 0) {
+        if (box) {
+            box.style.background = '#f0f9ff';
+            box.style.borderColor = '#bae6fd';
+        }
+        if (avgKgBadge) avgKgBadge.textContent = '- Kg';
+        if (avgEggBadge) avgEggBadge.textContent = '- g Telur';
+        if (unifBadge) unifBadge.textContent = '';
+        if (statusTxt) {
+            statusTxt.style.color = '#0369a1';
+            statusTxt.innerHTML = 'ℹ Masukkan nilai bobot ketiga sampel ayam untuk menghitung rata-rata dan kesesuaian target master otomatis.';
+        }
         return;
     }
 
-    let bbStatusHtml = '';
-    if (bbVal >= bbMin && bbVal <= bbMax) {
-        box.style.background = '#ecfdf5';
-        box.style.borderColor = '#a7f3d0';
-        box.style.color = '#065f46';
-        bbStatusHtml = `✓ <b>BB Ayam Sesuai Target (Ideal):</b> ${bbVal.toString().replace('.', ',')} kg berada dalam rentang ideal master (${bbMin.toString().replace('.', ',')} – ${bbMax.toString().replace('.', ',')} kg). Target ideal: ${bbTarget.toString().replace('.', ',')} kg.`;
-    } else if (bbVal < bbMin) {
-        box.style.background = '#fffbeb';
-        box.style.borderColor = '#fde68a';
-        box.style.color = '#92400e';
-        const diff = (bbMin - bbVal).toFixed(1).replace('.', ',');
-        bbStatusHtml = `⚠️ <b>Kurang Bobot:</b> ${bbVal.toString().replace('.', ',')} kg berada di bawah BB Minimum (${bbMin.toString().replace('.', ',')} kg). Selisih ${diff} kg di bawah standar.`;
+    const sumW = weights.reduce((a, b) => a + b, 0);
+    const avgW = sumW / weights.length;
+    const avgWStr = avgW.toFixed(2).replace('.', ',');
+
+    // Sync hidden inputs for legacy / single field compatibility
+    const hiddenW = document.getElementById('bobotBeratAyam');
+    if (hiddenW) hiddenW.value = avgW.toFixed(2);
+    const hiddenB = document.getElementById('bobotBaterai');
+    if (hiddenB) hiddenB.value = batteries.length > 0 ? batteries.join(' • ') : 'Titik Sampel';
+
+    let avgEStr = '-';
+    if (eggs.length > 0) {
+        const sumE = eggs.reduce((a, b) => a + b, 0);
+        const avgE = sumE / eggs.length;
+        avgEStr = avgE.toFixed(1).replace('.', ',') + ' g';
+        const hiddenE = document.getElementById('bobotBeratTelur');
+        if (hiddenE) hiddenE.value = avgE.toFixed(1);
     } else {
-        box.style.background = '#fff1f2';
-        box.style.borderColor = '#fecdd3';
-        box.style.color = '#9f1239';
-        const diff = (bbVal - bbMax).toFixed(1).replace('.', ',');
-        bbStatusHtml = `⚠️ <b>Kelebihan Bobot:</b> ${bbVal.toString().replace('.', ',')} kg berada di atas BB Maksimum (${bbMax.toString().replace('.', ',')} kg). Selisih ${diff} kg di atas standar.`;
+        const hiddenE = document.getElementById('bobotBeratTelur');
+        if (hiddenE) hiddenE.value = '';
     }
 
-    let eggStatusHtml = '';
-    if (!isNaN(eggVal) && eggVal > 0 && eggTarget > 0) {
-        const minTol = eggTarget - 2.5;
-        const maxTol = eggTarget + 2.5;
-        if (eggVal >= minTol && eggVal <= maxTol) {
-            eggStatusHtml = `<br><span style="color:#047857;">✓ <b>BB Telur Sesuai Toleransi:</b> ${eggVal.toString().replace('.', ',')} g (Batas: ${minTol.toFixed(1).replace('.', ',')} – ${maxTol.toFixed(1).replace('.', ',')} g).</span>`;
-        } else {
-            eggStatusHtml = `<br><span style="color:#b45309;">⚠️ <b>BB Telur di Luar Toleransi:</b> ${eggVal.toString().replace('.', ',')} g (Target acuan: ${eggTarget.toFixed(1).replace('.', ',')} g).</span>`;
+    if (avgKgBadge) avgKgBadge.textContent = avgWStr + ' Kg (Rerata)';
+    if (avgEggBadge) avgEggBadge.textContent = avgEStr + (eggs.length > 0 ? ' (Rerata)' : '');
+
+    // Uniformity (%)
+    if (weights.length >= 2) {
+        const minBound = avgW * 0.90;
+        const maxBound = avgW * 1.10;
+        const inRange = weights.filter(w => w >= minBound && w <= maxBound).length;
+        const unifPct = Math.round((inRange / weights.length) * 100);
+        if (unifBadge) {
+            unifBadge.textContent = `Keseragaman: ${unifPct}%`;
+            unifBadge.style.color = unifPct >= 80 ? '#047857' : '#b45309';
+        }
+    } else {
+        if (unifBadge) unifBadge.textContent = '';
+    }
+
+    // Status Kesesuaian Master
+    const isTargetAchieved = (avgW >= bbTarget);
+
+    if (isTargetAchieved) {
+        if (box) {
+            box.style.background = '#ecfdf5';
+            box.style.borderColor = '#a7f3d0';
+        }
+        if (statusTxt) {
+            statusTxt.style.color = '#065f46';
+            const diff = (avgW - bbTarget).toFixed(2).replace('.', ',');
+            statusTxt.innerHTML = `✓ <b>Rata-rata Capai Target Master:</b> ${avgWStr} kg &ge; target ${bbTarget.toString().replace('.', ',')} kg (+${diff} kg). Kondisi ayam sangat baik.`;
+        }
+    } else {
+        if (box) {
+            box.style.background = '#fff1f2';
+            box.style.borderColor = '#fecdd3';
+        }
+        if (statusTxt) {
+            statusTxt.style.color = '#9f1239';
+            const diff = (bbTarget - avgW).toFixed(2).replace('.', ',');
+            statusTxt.innerHTML = `⚠️ <b>Rata-rata di Bawah Target Master:</b> ${avgWStr} kg < target ${bbTarget.toString().replace('.', ',')} kg (Kurang ${diff} kg dari acuan umur).`;
         }
     }
+}
 
-    txt.innerHTML = bbStatusHtml + eggStatusHtml;
+function calcBobotFeedback() {
+    calcBobot3Samples();
 }
 
 // 4. Calculations for Produksi Telur

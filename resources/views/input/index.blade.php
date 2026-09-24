@@ -1321,21 +1321,6 @@
                 <input type="hidden" name="egg_weight_gram" id="bobotBeratTelur">
                 <input type="hidden" name="battery_number" id="bobotBaterai">
 
-                <!-- Ringkasan Live Rata-rata 3 Sampel -->
-                <div id="bobotSummaryBox" style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:12px; padding:10px 14px; margin-top:8px;">
-                    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <span style="font-size:11px; font-weight:800; color:#0369a1;">📊 Hasil Rata-rata 3 Sampel:</span>
-                            <span id="bobotAvgKgBadge" style="font-size:12px; font-weight:900; background:#fff; color:#0369a1; padding:3px 8px; border-radius:6px; border:1px solid #bae6fd;">- Kg</span>
-                            <span id="bobotAvgEggBadge" style="font-size:11px; font-weight:700; background:#fff; color:#92400e; padding:3px 8px; border-radius:6px; border:1px solid #fde68a;">- g Telur</span>
-                        </div>
-                        <div id="bobotUniformityBadge" style="font-size:10.5px; font-weight:800; color:#047857;"></div>
-                    </div>
-                    <div id="bobotLiveStatusText" style="margin-top:6px; font-size:10.5px; font-weight:600; color:#0369a1;">
-                        ℹ Masukkan nilai bobot ketiga sampel ayam untuk menghitung rata-rata dan kesesuaian target master otomatis.
-                    </div>
-                </div>
-
                 <!-- Kotak Acuan Master Standar Produksi (Disembunyikan / Hidden Sesuai Permintaan User) -->
                 <div class="standard" style="display:none; background:#f0f9ff; border-color:#bae6fd; margin-top:8px;">
                     <div class="stdtop">
@@ -1577,131 +1562,30 @@ function updateCoopPop(prefix) {
     }
 }
 
-// 3b. Real-time Live Evaluator 3 Sampel BB Ayam & Telur vs Master
+// 3b. Sync 3 Samples input to form
 function calcBobot3Samples() {
-    const coopSelect = document.getElementById('bobotCoop');
-    if (!coopSelect) return;
-    const selectedOpt = coopSelect.options[coopSelect.selectedIndex];
-    if (!selectedOpt) return;
-
-    const bbMin = parseFloat(selectedOpt.getAttribute('data-bbmin') || 1.58);
-    const bbTarget = parseFloat(selectedOpt.getAttribute('data-bbtarget') || 1.65);
-    const bbMax = parseFloat(selectedOpt.getAttribute('data-bbmax') || 1.72);
-    const eggTarget = parseFloat(selectedOpt.getAttribute('data-eggtarget') || 0);
-
     const s1W = parseFloat(document.getElementById('sample1Weight').value);
     const s2W = parseFloat(document.getElementById('sample2Weight').value);
     const s3W = parseFloat(document.getElementById('sample3Weight').value);
-
-    const s1E = parseFloat(document.getElementById('sample1Egg').value);
-    const s2E = parseFloat(document.getElementById('sample2Egg').value);
-    const s3E = parseFloat(document.getElementById('sample3Egg').value);
-
     const s1B = (document.getElementById('sample1Battery').value || '').trim();
     const s2B = (document.getElementById('sample2Battery').value || '').trim();
     const s3B = (document.getElementById('sample3Battery').value || '').trim();
+    const s1E = parseFloat(document.getElementById('sample1Egg').value);
 
-    // Kumpulkan bobot ayam
-    const weights = [];
-    if (!isNaN(s1W) && s1W > 0) weights.push(s1W);
-    if (!isNaN(s2W) && s2W > 0) weights.push(s2W);
-    if (!isNaN(s3W) && s3W > 0) weights.push(s3W);
-
-    // Kumpulkan bobot telur
-    const eggs = [];
-    if (!isNaN(s1E) && s1E > 0) eggs.push(s1E);
-    if (!isNaN(s2E) && s2E > 0) eggs.push(s2E);
-    if (!isNaN(s3E) && s3E > 0) eggs.push(s3E);
-
-    // Kumpulkan baterai
-    const batteries = [];
-    if (s1B) batteries.push(s1B);
-    if (s2B) batteries.push(s2B);
-    if (s3B) batteries.push(s3B);
-
-    const box = document.getElementById('bobotSummaryBox');
-    const avgKgBadge = document.getElementById('bobotAvgKgBadge');
-    const avgEggBadge = document.getElementById('bobotAvgEggBadge');
-    const unifBadge = document.getElementById('bobotUniformityBadge');
-    const statusTxt = document.getElementById('bobotLiveStatusText');
-
-    if (weights.length === 0) {
-        if (box) {
-            box.style.background = '#f0f9ff';
-            box.style.borderColor = '#bae6fd';
-        }
-        if (avgKgBadge) avgKgBadge.textContent = '- Kg';
-        if (avgEggBadge) avgEggBadge.textContent = '- g Telur';
-        if (unifBadge) unifBadge.textContent = '';
-        if (statusTxt) {
-            statusTxt.style.color = '#0369a1';
-            statusTxt.innerHTML = 'ℹ Masukkan nilai bobot ketiga sampel ayam untuk menghitung rata-rata dan kesesuaian target master otomatis.';
-        }
-        return;
-    }
-
-    const sumW = weights.reduce((a, b) => a + b, 0);
-    const avgW = sumW / weights.length;
-    const avgWStr = avgW.toFixed(2).replace('.', ',');
-
-    // Sync hidden inputs for legacy / single field compatibility
+    // Sync legacy hidden inputs
     const hiddenW = document.getElementById('bobotBeratAyam');
-    if (hiddenW) hiddenW.value = avgW.toFixed(2);
+    if (hiddenW) {
+        const firstValid = (!isNaN(s1W) && s1W > 0) ? s1W : ((!isNaN(s2W) && s2W > 0) ? s2W : s3W);
+        hiddenW.value = firstValid || '';
+    }
     const hiddenB = document.getElementById('bobotBaterai');
-    if (hiddenB) hiddenB.value = batteries.length > 0 ? batteries.join(' • ') : 'Titik Sampel';
-
-    let avgEStr = '-';
-    if (eggs.length > 0) {
-        const sumE = eggs.reduce((a, b) => a + b, 0);
-        const avgE = sumE / eggs.length;
-        avgEStr = avgE.toFixed(1).replace('.', ',') + ' g';
-        const hiddenE = document.getElementById('bobotBeratTelur');
-        if (hiddenE) hiddenE.value = avgE.toFixed(1);
-    } else {
-        const hiddenE = document.getElementById('bobotBeratTelur');
-        if (hiddenE) hiddenE.value = '';
+    if (hiddenB) {
+        const b = [s1B, s2B, s3B].filter(Boolean);
+        hiddenB.value = b.join(' • ');
     }
-
-    if (avgKgBadge) avgKgBadge.textContent = avgWStr + ' Kg (Rerata)';
-    if (avgEggBadge) avgEggBadge.textContent = avgEStr + (eggs.length > 0 ? ' (Rerata)' : '');
-
-    // Uniformity (%)
-    if (weights.length >= 2) {
-        const minBound = avgW * 0.90;
-        const maxBound = avgW * 1.10;
-        const inRange = weights.filter(w => w >= minBound && w <= maxBound).length;
-        const unifPct = Math.round((inRange / weights.length) * 100);
-        if (unifBadge) {
-            unifBadge.textContent = `Keseragaman: ${unifPct}%`;
-            unifBadge.style.color = unifPct >= 80 ? '#047857' : '#b45309';
-        }
-    } else {
-        if (unifBadge) unifBadge.textContent = '';
-    }
-
-    // Status Kesesuaian Master
-    const isTargetAchieved = (avgW >= bbTarget);
-
-    if (isTargetAchieved) {
-        if (box) {
-            box.style.background = '#ecfdf5';
-            box.style.borderColor = '#a7f3d0';
-        }
-        if (statusTxt) {
-            statusTxt.style.color = '#065f46';
-            const diff = (avgW - bbTarget).toFixed(2).replace('.', ',');
-            statusTxt.innerHTML = `✓ <b>Rata-rata Capai Target Master:</b> ${avgWStr} kg &ge; target ${bbTarget.toString().replace('.', ',')} kg (+${diff} kg). Kondisi ayam sangat baik.`;
-        }
-    } else {
-        if (box) {
-            box.style.background = '#fff1f2';
-            box.style.borderColor = '#fecdd3';
-        }
-        if (statusTxt) {
-            statusTxt.style.color = '#9f1239';
-            const diff = (bbTarget - avgW).toFixed(2).replace('.', ',');
-            statusTxt.innerHTML = `⚠️ <b>Rata-rata di Bawah Target Master:</b> ${avgWStr} kg < target ${bbTarget.toString().replace('.', ',')} kg (Kurang ${diff} kg dari acuan umur).`;
-        }
+    const hiddenE = document.getElementById('bobotBeratTelur');
+    if (hiddenE) {
+        hiddenE.value = !isNaN(s1E) && s1E > 0 ? s1E : '';
     }
 }
 

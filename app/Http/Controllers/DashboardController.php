@@ -503,14 +503,21 @@ class DashboardController extends Controller
                     ->take(3)
                     ->get();
 
-                if ($samplesQuery->isEmpty()) {
-                    $samplesQuery = WeightSample::with('user')
+                if ($samplesQuery->count() < 3) {
+                    $allRecent = WeightSample::with('user')
                         ->where('coop_id', $c->id)
                         ->whereDate('date', '<=', $selectedDate)
                         ->latest('date')
                         ->latest('id')
                         ->take(3)
-                        ->get();
+                        ->get()
+                        ->sortBy(function($item) {
+                            return $item->sample_index ?? $item->id;
+                        })
+                        ->values();
+                    if ($allRecent->count() > $samplesQuery->count()) {
+                        $samplesQuery = $allRecent;
+                    }
                 }
 
                 $samplesList = [];
@@ -990,6 +997,25 @@ class DashboardController extends Controller
         // Pastikan kolom baru sudah ada pada tabel weight_samples
         WeightSample::ensureColumnsExist();
 
+        // Normalisasi format desimal koma (misal: 1,75 atau 1,1) menjadi titik
+        $inputData = $request->all();
+        foreach (['sample_1_weight', 'sample_1_egg', 'sample_2_weight', 'sample_2_egg', 'sample_3_weight', 'sample_3_egg', 'average_weight_kg', 'egg_weight_gram'] as $k) {
+            if (isset($inputData[$k]) && is_string($inputData[$k])) {
+                $inputData[$k] = str_replace(',', '.', trim($inputData[$k]));
+            }
+        }
+        if (!empty($inputData['samples']) && is_array($inputData['samples'])) {
+            foreach ($inputData['samples'] as $idx => $s) {
+                if (isset($s['weight_kg']) && is_string($s['weight_kg'])) {
+                    $inputData['samples'][$idx]['weight_kg'] = str_replace(',', '.', trim($s['weight_kg']));
+                }
+                if (isset($s['egg_weight_gram']) && is_string($s['egg_weight_gram'])) {
+                    $inputData['samples'][$idx]['egg_weight_gram'] = str_replace(',', '.', trim($s['egg_weight_gram']));
+                }
+            }
+        }
+        $request->merge($inputData);
+
         $rules = [
             'coop_id' => 'required|exists:coops,id',
             'sample_count' => 'nullable|integer|min:1',
@@ -1002,8 +1028,14 @@ class DashboardController extends Controller
             'samples.*.battery_number' => 'nullable|string|max:100',
             // Fallback flat fields
             'sample_1_weight' => 'nullable|numeric|min:0.1',
+            'sample_1_egg' => 'nullable|numeric|min:0',
+            'sample_1_battery' => 'nullable|string|max:100',
             'sample_2_weight' => 'nullable|numeric|min:0.1',
+            'sample_2_egg' => 'nullable|numeric|min:0',
+            'sample_2_battery' => 'nullable|string|max:100',
             'sample_3_weight' => 'nullable|numeric|min:0.1',
+            'sample_3_egg' => 'nullable|numeric|min:0',
+            'sample_3_battery' => 'nullable|string|max:100',
             'average_weight_kg' => 'nullable|numeric|min:0.1',
             'egg_weight_gram' => 'nullable|numeric|min:0',
             'battery_number' => 'nullable|string|max:100',
@@ -1035,12 +1067,14 @@ class DashboardController extends Controller
                 $wKey = "sample_{$i}_weight";
                 $bKey = "sample_{$i}_battery";
                 $eKey = "sample_{$i}_egg";
-                if (!empty($request->input($wKey)) && (float)$request->input($wKey) > 0) {
+                $wVal = $request->input($wKey);
+                $eVal = $request->input($eKey);
+                if (!empty($wVal) && (float)$wVal > 0) {
                     $parsedSamples[] = [
                         'sample_index' => $i,
                         'battery_number' => $request->input($bKey) ?: "Titik {$i}",
-                        'weight_kg' => (float)$request->input($wKey),
-                        'egg_weight_gram' => $request->input($eKey) ? (float)$request->input($eKey) : null,
+                        'weight_kg' => (float)$wVal,
+                        'egg_weight_gram' => (!empty($eVal) || $eVal === '0' || $eVal === 0) ? (float)$eVal : null,
                     ];
                 }
             }

@@ -75,42 +75,44 @@
             </span>
         </div>
 
-        <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 sm:gap-4">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3.5 sm:gap-4 items-stretch">
 
-            <!-- Card 0: Populasi & Kloter Ayam (Indigo) -->
+            <!-- Card 0: Populasi & Kloter Ayam (Indigo - Spans 2 Cols) -->
             @if(!auth()->check() || auth()->user()->canAccess('dash_card_flock'))
-            <div class="col-span-2 sm:col-span-1 farm-card p-3 sm:p-3.5 border-l-4 border-l-indigo-600 bg-white flex flex-col justify-between hover:border-indigo-500 hover:shadow-md transition-all cursor-pointer group"
+            <div class="col-span-2 farm-card p-3.5 sm:p-4 border-l-4 border-l-indigo-600 bg-white flex flex-col justify-between hover:border-indigo-500 hover:shadow-md transition-all cursor-pointer group"
                  onclick="openModal('modalPopulasiKloter')">
-                <div>
-                    <!-- Header Kartu: Icon & Status Farm -->
-                    <div class="flex items-start justify-between gap-1.5">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                    <!-- Sisi Kiri: Total Populasi & Overview -->
+                    <div class="space-y-1 sm:max-w-[42%] shrink-0">
                         <div class="flex items-center gap-2">
-                            <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center shrink-0 border border-indigo-100 shadow-xs group-hover:scale-105 transition-transform">
-                                <i data-lucide="layers" class="w-4 h-4 stroke-[2.2]"></i>
+                            <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center shrink-0 border border-indigo-100 shadow-2xs group-hover:scale-105 transition-transform">
+                                <i data-lucide="layers" class="w-4.5 h-4.5 stroke-[2.2]"></i>
                             </div>
                             <div>
-                                <p class="text-xs font-bold text-slate-700 leading-tight">Populasi Ayam</p>
-                                <span class="text-[10px] text-indigo-700 font-extrabold">{{ $flocks->count() }} Kloter • {{ $totalCoopsCount }} Blok</span>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-xs font-bold text-slate-700 leading-tight">Populasi Ayam</span>
+                                    <span class="text-[9px] font-black px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">Aktif</span>
+                                </div>
+                                <span class="text-[10.5px] text-indigo-700 font-extrabold block">{{ $flocks->count() }} Kloter • {{ $totalCoopsCount }} Blok Kandang</span>
                             </div>
                         </div>
-                        <span class="text-[9px] font-black px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-800 border border-indigo-200">
-                            Aktif
-                        </span>
-                    </div>
 
-                    <!-- Total Ayam Aktif & Persentase Farm -->
-                    <div class="mt-2.5">
-                        <div class="flex items-baseline justify-between">
-                            <span class="text-[10px] font-semibold text-slate-500">Ayam Aktif Farm</span>
-                            <span class="text-[9.5px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.2 rounded border border-indigo-100">100%</span>
+                        <div class="pt-1">
+                            <div class="flex items-baseline gap-1.5">
+                                <span class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-mono">
+                                    {{ number_format($totalActiveChickens, 0, ',', '.') }}
+                                </span>
+                                <span class="text-xs font-bold text-slate-500">Ekor</span>
+                                <span class="text-[10px] font-extrabold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100 ml-1">
+                                    100% Farm
+                                </span>
+                            </div>
+                            <span class="text-[11px] text-slate-400 font-medium block">Akumulasi seluruh blok kandang aktif</span>
                         </div>
-                        <p class="text-lg sm:text-xl font-black text-slate-900 tracking-tight leading-tight mt-0.5">
-                            {{ number_format($totalActiveChickens, 0, ',', '.') }} <span class="text-xs font-bold text-slate-500">Ekor</span>
-                        </p>
                     </div>
 
-                    <!-- Breakdown Per Kloter (Umur, Populasi, & % Populasi) -->
-                    <div class="mt-2.5 space-y-1.5 pt-2 border-t border-slate-100">
+                    <!-- Sisi Kanan: Rincian Kloter 1 & Kloter 2 Side-by-Side -->
+                    <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2 sm:pl-3 sm:border-l sm:border-slate-100">
                         @forelse($flocks as $flock)
                             @php
                                 $fChx = (int) $flock->coops->sum('active_chickens');
@@ -126,22 +128,26 @@
                                     $fAgeWeeks = (int) ($flock->initial_age_weeks ?? 0);
                                 }
                             @endphp
-                            <div class="p-1.5 rounded-lg bg-slate-50/90 border border-slate-100 hover:bg-indigo-50/50 transition-colors">
-                                <div class="flex items-center justify-between gap-1 text-[11px]">
-                                    <span class="font-extrabold text-slate-800 flex items-center gap-1 truncate" title="{{ $flock->name }} ({{ $flock->coops->count() }} Blok)">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0"></span>
-                                        <span>{{ $flock->name }}</span>
+                            <div class="p-2 sm:p-2.5 rounded-xl bg-slate-50/90 border border-slate-100 hover:bg-indigo-50/50 hover:border-indigo-200 transition-all flex flex-col justify-between">
+                                <div class="flex items-center justify-between gap-1">
+                                    <span class="font-extrabold text-slate-800 text-xs flex items-center gap-1.5 truncate">
+                                        <span class="w-2 h-2 rounded-full bg-indigo-600 shrink-0"></span>
+                                        <span class="truncate">{{ $flock->name }}</span>
                                     </span>
-                                    <span class="text-[9.5px] font-black text-indigo-700 bg-white px-1.5 py-0.5 rounded border border-indigo-200/80 shadow-2xs whitespace-nowrap">
+                                    <span class="text-[10px] font-black text-indigo-700 bg-white px-2 py-0.5 rounded-md border border-indigo-200/80 shadow-2xs shrink-0 whitespace-nowrap">
                                         {{ $fAgeWeeks }} Mgg
                                     </span>
                                 </div>
-                                <div class="flex items-center justify-between text-[10px] text-slate-500 mt-1">
-                                    <span class="font-medium">{{ number_format($fChx, 0, ',', '.') }} Ekor</span>
-                                    <span class="font-black text-indigo-950 font-mono">{{ $fPct }}%</span>
+
+                                <div class="mt-1.5 flex items-baseline justify-between text-xs">
+                                    <span class="font-bold text-slate-800 font-mono text-xs sm:text-sm">
+                                        {{ number_format($fChx, 0, ',', '.') }} <span class="text-[10px] font-normal text-slate-500">ekor</span>
+                                    </span>
+                                    <span class="font-black text-indigo-950 font-mono text-xs">{{ $fPct }}%</span>
                                 </div>
-                                <!-- Mini visual progress ratio -->
-                                <div class="w-full bg-slate-200/80 h-1.5 rounded-full overflow-hidden mt-1 shadow-inner">
+
+                                <!-- Progress bar proporsi -->
+                                <div class="w-full bg-slate-200/80 h-1.5 rounded-full overflow-hidden mt-1.5 shadow-inner">
                                     <div class="bg-gradient-to-r from-indigo-500 to-blue-600 h-full rounded-full transition-all duration-300" style="width: {{ $fPct }}%"></div>
                                 </div>
                             </div>
@@ -151,11 +157,9 @@
                                     $nChx = (int) $coops->whereNull('flock_id')->sum('active_chickens');
                                     $nPct = $totalActiveChickens > 0 ? round(($nChx / $totalActiveChickens) * 100, 1) : 0;
                                 @endphp
-                                <div class="p-1.5 rounded-lg bg-slate-50 border border-slate-100 text-[10.5px]">
-                                    <div class="flex items-center justify-between">
-                                        <span class="font-bold text-slate-700">Non-Kloter</span>
-                                        <span class="font-black text-slate-800">{{ $nPct }}%</span>
-                                    </div>
+                                <div class="p-2 rounded-xl bg-slate-50 border border-slate-100 text-xs flex items-center justify-between">
+                                    <span class="font-bold text-slate-700">Non-Kloter</span>
+                                    <span class="font-black text-slate-800">{{ $nPct }}%</span>
                                 </div>
                             @endif
                         @endforelse
@@ -163,29 +167,37 @@
                 </div>
 
                 <!-- Footer Card -->
-                <div class="mt-2 pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px]">
-                    <span class="text-slate-400 font-medium">Umur & Proporsi</span>
-                    <span class="text-indigo-700 font-bold group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
-                        Detail &raquo;
+                <div class="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[10px]">
+                    <span class="text-slate-400 font-medium flex items-center gap-1">
+                        <i data-lucide="info" class="w-3 h-3 text-indigo-500"></i>
+                        <span>Klik kartu untuk rincian keterisian per blok kandang</span>
+                    </span>
+                    <span class="text-indigo-700 font-extrabold group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
+                        Rincian Lengkap &raquo;
                     </span>
                 </div>
             </div>
             @endif
 
-            <!-- Card 1: Produksi Telur (Amber) -->
+            <!-- Card 1: Produksi Telur (Amber - Col 1) -->
             @if(!auth()->check() || auth()->user()->canAccess('dash_card_egg'))
-            <div class="farm-card p-3.5 sm:p-4 border-l-4 border-l-amber-500 bg-white flex flex-col justify-between">
-                <div class="flex items-start justify-between gap-2">
-                    <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100 shadow-xs">
-                        <svg class="w-6 h-6 fill-amber-500 text-amber-500" viewBox="0 0 24 24">
-                            <path d="M12 2C7.5 2 4 7.5 4 13.5C4 18.2 7.6 22 12 22C16.4 22 20 18.2 20 13.5C20 7.5 16.5 2 12 2Z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8"/>
-                            <circle cx="12" cy="14" r="4" fill="currentColor" fill-opacity="0.8"/>
-                        </svg>
+            <div class="farm-card p-3 sm:p-3.5 border-l-4 border-l-amber-500 bg-white flex flex-col justify-between hover:shadow-md transition-all">
+                <div>
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100 shadow-xs">
+                                <svg class="w-4.5 h-4.5 fill-amber-500 text-amber-500" viewBox="0 0 24 24">
+                                    <path d="M12 2C7.5 2 4 7.5 4 13.5C4 18.2 7.6 22 12 22C16.4 22 20 18.2 20 13.5C20 7.5 16.5 2 12 2Z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="1.8"/>
+                                    <circle cx="12" cy="14" r="4" fill="currentColor" fill-opacity="0.8"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-slate-700 leading-tight">Produksi Telur</p>
+                                <span class="text-[10px] text-amber-700 font-semibold">Panen Harian</span>
+                            </div>
+                        </div>
+                        <span class="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">Masuk</span>
                     </div>
-                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200">Masuk</span>
-                </div>
-                <div class="mt-3">
-                    <p class="text-xs font-semibold text-slate-500">Produksi Telur</p>
                     @php
                         $cNormPeti = (int) round($totalEggCrates);
                         $cNormKg = (float) $totalEggKg;
@@ -206,102 +218,68 @@
                             $prodTelurDisplay = $cratesStr;
                         }
                     @endphp
-                    <p class="text-lg sm:text-xl font-black text-slate-900 tracking-tight leading-tight mt-0.5">
-                        {{ $prodTelurDisplay }}
-                    </p>
-                    <p class="text-[11px] text-slate-500 font-medium mt-0.5">
-                        ({{ number_format($totalEggCount, 0, ',', '.') }} Butir)
-                    </p>
+                    <div class="mt-2.5">
+                        <span class="text-[10px] font-semibold text-slate-500">Hasil Panen Hari Ini</span>
+                        <p class="text-lg sm:text-xl font-black text-slate-900 tracking-tight leading-tight mt-0.5 font-mono">
+                            {{ $prodTelurDisplay }}
+                        </p>
+                        <p class="text-[11px] text-slate-500 font-medium mt-0.5">
+                            ({{ number_format($totalEggCount, 0, ',', '.') }} Butir)
+                        </p>
+                    </div>
+                </div>
+
+                <div class="mt-2 pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px]">
+                    <span class="text-slate-400 font-medium">1 Peti = 10 Kg</span>
+                    <span class="text-amber-700 font-bold flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Real-time
+                    </span>
                 </div>
             </div>
             @endif
 
-            <!-- Card 2: Pemakaian Pakan (Emerald) -->
+            <!-- Card 2: Pemakaian Pakan (Emerald - Col 1) -->
             @if(!auth()->check() || auth()->user()->canAccess('dash_card_feed'))
             @php
                 $dashStokLayer = $feedSummary['current_stock_kg_layer'] ?? 0;
                 $dashStokGrower = $feedSummary['current_stock_kg_grower'] ?? 0;
             @endphp
-            <div class="farm-card p-3.5 sm:p-4 border-l-4 border-l-emerald-600 bg-white flex flex-col justify-between">
-                <div class="flex items-start justify-between gap-2">
-                    <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100 shadow-xs">
-                        <i data-lucide="package" class="w-5 h-5 stroke-[2.2]"></i>
+            <div class="farm-card p-3 sm:p-3.5 border-l-4 border-l-emerald-600 bg-white flex flex-col justify-between hover:shadow-md transition-all">
+                <div>
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100 shadow-xs">
+                                <i data-lucide="package" class="w-4.5 h-4.5 stroke-[2.2]"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-slate-700 leading-tight">Pemakaian Pakan</p>
+                                <span class="text-[10px] text-emerald-700 font-semibold">Konsumsi Hari Ini</span>
+                            </div>
+                        </div>
+                        <span class="text-[9px] font-black px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">Kandang</span>
                     </div>
-                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">Kandang</span>
-                </div>
-                <div class="mt-3">
-                    <p class="text-xs font-semibold text-slate-500">Pemakaian Pakan Hari Ini</p>
-                    <p class="text-lg sm:text-xl font-black text-slate-900 tracking-tight leading-tight mt-0.5">
-                        {{ number_format($totalFeedKg, 0, ',', '.') }} <span class="text-xs font-bold text-slate-500">Kg</span>
-                    </p>
-                    <div class="mt-1 pt-1 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-600">
-                        <span>Stok Layer: <b class="{{ $dashStokLayer < 0 ? 'text-rose-600' : 'text-emerald-700' }}">{{ number_format($dashStokLayer, 0, ',', '.') }} kg</b></span>
-                        <span>Grower: <b class="{{ $dashStokGrower < 0 ? 'text-rose-600' : 'text-sky-700' }}">{{ number_format($dashStokGrower, 0, ',', '.') }} kg</b></span>
-                    </div>
-                </div>
-            </div>
-            @endif
-
-            <!-- Card 3: Mortalitas (Rose/Red) -->
-            @if(!auth()->check() || auth()->user()->canAccess('dash_card_mortality'))
-            @php
-                $canClickMortality = auth()->check() && (auth()->user()->canAccess('dash_card_mortality_click') || auth()->user()->canAccess('warehouse_click_quarantine') || auth()->user()->canAccess('feature_warehouse_karantina') || auth()->user()->role === 'admin');
-            @endphp
-            @if($canClickMortality)
-            <a href="{{ route('warehouse.karantina') }}" class="farm-card p-3.5 sm:p-4 border-l-4 border-l-rose-600 bg-white flex flex-col justify-between hover:border-rose-500 hover:shadow-md transition-all cursor-pointer group">
-            @else
-            <div class="farm-card p-3.5 sm:p-4 border-l-4 border-l-rose-600 bg-white flex flex-col justify-between cursor-default">
-            @endif
-                <div class="flex items-start justify-between gap-2">
-                    <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-100 shadow-xs {{ $canClickMortality ? 'group-hover:scale-105 transition-transform' : '' }}">
-                        <i data-lucide="skull" class="w-5 h-5 stroke-[2.2]"></i>
-                    </div>
-                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200">Mati</span>
-                </div>
-                <div class="mt-3">
-                    <div class="flex items-center justify-between">
-                        <p class="text-xs font-semibold text-slate-500">💀 Mati</p>
-                        <!-- <p class="text-base sm:text-lg font-black text-rose-700 tracking-tight leading-tight">
-                            {{ $totalMortalityCount }} <span class="text-xs font-bold text-slate-500">Ekor</span>
-                        </p> -->
-                        <p class="text-base sm:text-lg font-black text-rose-700 tracking-tight leading-tight">
-                            {{ $matiHariIni ?? 0 }} <span class="text-xs font-bold text-slate-500">Ekor</span>
+                    <div class="mt-2.5">
+                        <span class="text-[10px] font-semibold text-slate-500">Total Pakan Terpakai</span>
+                        <p class="text-lg sm:text-xl font-black text-slate-900 tracking-tight leading-tight mt-0.5 font-mono">
+                            {{ number_format($totalFeedKg, 0, ',', '.') }} <span class="text-xs font-bold text-slate-500">Kg</span>
                         </p>
-                    </div>
-
-                    <!-- Split Rincian: Ayam Mati vs Ayam Afkir -->
-                    <!-- <div hidden class="grid grid-cols-2 gap-1.5 mt-2 text-[10.5px]">
-                        <div class="flex items-center justify-between px-2 py-1 rounded-md bg-rose-50/80 border border-rose-200/70 text-rose-950">
-                            <span class="font-bold flex items-center gap-1 text-[10px] text-rose-800">💀 Mati</span>
-                            <b class="font-black text-rose-700 text-xs">{{ $matiHariIni ?? 0 }}</b>
+                        <div class="mt-1 flex items-center justify-between text-[10px] text-slate-600">
+                            <span>Layer: <b class="{{ $dashStokLayer < 0 ? 'text-rose-600' : 'text-emerald-700' }}">{{ number_format($dashStokLayer, 0, ',', '.') }} kg</b></span>
+                            <span>Grower: <b class="{{ $dashStokGrower < 0 ? 'text-rose-600' : 'text-sky-700' }}">{{ number_format($dashStokGrower, 0, ',', '.') }} kg</b></span>
                         </div>
-                        <div class="flex items-center justify-between px-2 py-1 rounded-md bg-amber-50/80 border border-amber-200/70 text-amber-950">
-                            <span class="font-bold flex items-center gap-1 text-[10px] text-amber-800">✂️ Afkir</span>
-                            <b class="font-black text-amber-700 text-xs">{{ $afkirHariIni ?? 0 }}</b>
-                        </div>
-                    </div> -->
-
-                    <div class="mt-2 pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px]">
-                        <span class="text-slate-400 font-medium">Riwayat Kematian & Afkir</span>
-                        @if($canClickMortality)
-                            <span class="text-rose-700 font-bold group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
-                                Kelola &raquo;
-                            </span>
-                        @else
-                            <span class="text-slate-400 font-semibold flex items-center gap-1">
-                                <i data-lucide="lock" class="w-2.5 h-2.5"></i> Terkunci
-                            </span>
-                        @endif
                     </div>
                 </div>
-            @if($canClickMortality)
-            </a>
-            @else
+
+                <div class="mt-2 pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px]">
+                    <span class="text-slate-400 font-medium">Sisa Stok Gudang</span>
+                    <span class="text-emerald-700 font-bold flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Siap Pakai
+                    </span>
+                </div>
             </div>
             @endif
-            @endif
 
-            <!-- Card 4: Berat Badan 6 Blok (Sky Blue) -->
+            <!-- Card 3: Bobot Ayam 6 Blok (Sky Blue - Col 1) -->
             @if(!auth()->check() || auth()->user()->canAccess('dash_card_weight'))
             @php
                 $canClickWeight = auth()->check() && auth()->user()->canAccess('dash_card_weight_click');
@@ -326,7 +304,7 @@
                     <div class="flex items-start justify-between gap-1.5">
                         <div class="flex items-center gap-2">
                             <div class="w-8 h-8 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center shrink-0 border border-sky-100 shadow-xs {{ $canClickWeight ? 'group-hover:scale-105 transition-transform' : '' }}">
-                                <i data-lucide="scale" class="w-4 h-4 stroke-[2.2]"></i>
+                                <i data-lucide="scale" class="w-4.5 h-4.5 stroke-[2.2]"></i>
                             </div>
                             <div>
                                 <p class="text-xs font-bold text-slate-700 leading-tight">Bobot Ayam</p>
@@ -351,7 +329,7 @@
                     </div>
 
                     <!-- Mini Grid Data 6 Blok (Hijau jika capai/lebih target, Merah jika di bawah target) -->
-                    <div class="grid grid-cols-2 gap-1 mt-2.5">
+                    <div class="grid grid-cols-2 gap-1.5 mt-2.5">
                         @foreach($coops as $c)
                             @php
                                 $w = $coopWeightData[$c->id] ?? null;
@@ -361,15 +339,15 @@
                                 $isTargetOrMore = ($w !== null && $w >= $bbTarget);
                                 $isMissed = ($w !== null && $w < $bbTarget);
                             @endphp
-                            <div class="flex items-center justify-between px-1.5 py-0.5 rounded transition-colors {{ $w === null ? 'bg-slate-50 border border-slate-100 text-slate-400' : ($isTargetOrMore ? 'bg-emerald-50/80 border border-emerald-200 text-emerald-950' : 'bg-rose-50/80 border border-rose-200 text-rose-950') }}" 
+                            <div class="flex items-center justify-between px-2 py-1 rounded-lg transition-colors {{ $w === null ? 'bg-slate-50 border border-slate-100 text-slate-400' : ($isTargetOrMore ? 'bg-emerald-50/80 border border-emerald-200 text-emerald-950' : 'bg-rose-50/80 border border-rose-200 text-rose-950') }}" 
                                  title="{{ $w !== null ? ($isTargetOrMore ? 'Capai Target / Lebih (Target: ' . number_format($bbTarget, 1, ',', '.') . ' kg)' : 'Belum Sesuai Master (Target: ' . number_format($bbTarget, 1, ',', '.') . ' kg)') : 'Belum Ada Input' }}">
                                 <div class="flex items-center gap-1">
                                     @if($w !== null)
                                         <span class="w-1.5 h-1.5 rounded-full shrink-0 {{ $isTargetOrMore ? 'bg-emerald-500' : 'bg-rose-500' }}"></span>
                                     @endif
-                                    <span class="text-[10px] font-extrabold {{ $w === null ? 'text-slate-500' : ($isTargetOrMore ? 'text-emerald-900' : 'text-rose-900') }}">{{ $cShort }}</span>
+                                    <span class="text-[10.5px] font-extrabold {{ $w === null ? 'text-slate-500' : ($isTargetOrMore ? 'text-emerald-900' : 'text-rose-900') }}">Blok {{ $cShort }}</span>
                                 </div>
-                                <span class="text-[10.5px] font-black {{ $w === null ? 'text-slate-400' : ($isTargetOrMore ? 'text-emerald-700' : 'text-rose-700') }}">
+                                <span class="text-[11px] font-black {{ $w === null ? 'text-slate-400' : ($isTargetOrMore ? 'text-emerald-700' : 'text-rose-700') }}">
                                     {{ $w ? number_format($w, 1, ',', '.') . ' kg' : '-' }}
                                 </span>
                             </div>
@@ -395,70 +373,148 @@
             </div>
             @endif
 
-            <!-- Card 5: Vaksin / Obat (Maroon) -->
-            @if(!auth()->check() || auth()->user()->canAccess('dash_card_health'))
-            <div class="farm-card p-3.5 sm:p-4 border-l-4 border-l-maroon-800 bg-white flex flex-col justify-between">
-                <div class="flex items-start justify-between gap-2">
-                    <div class="w-10 h-10 rounded-xl bg-maroon-50 text-maroon-800 flex items-center justify-center shrink-0 border border-maroon-100 shadow-xs">
-                        <i data-lucide="syringe" class="w-5 h-5 stroke-[2.2]"></i>
+            <!-- Card 4: Mortalitas (Rose/Red - Col 1) -->
+            @if(!auth()->check() || auth()->user()->canAccess('dash_card_mortality'))
+            @php
+                $canClickMortality = auth()->check() && (auth()->user()->canAccess('dash_card_mortality_click') || auth()->user()->canAccess('warehouse_click_quarantine') || auth()->user()->canAccess('feature_warehouse_karantina') || auth()->user()->role === 'admin');
+            @endphp
+            @if($canClickMortality)
+            <a href="{{ route('warehouse.karantina') }}" class="farm-card p-3 sm:p-3.5 border-l-4 border-l-rose-600 bg-white flex flex-col justify-between hover:border-rose-500 hover:shadow-md transition-all cursor-pointer group">
+            @else
+            <div class="farm-card p-3 sm:p-3.5 border-l-4 border-l-rose-600 bg-white flex flex-col justify-between cursor-default">
+            @endif
+                <div>
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-100 shadow-xs {{ $canClickMortality ? 'group-hover:scale-105 transition-transform' : '' }}">
+                                <i data-lucide="skull" class="w-4.5 h-4.5 stroke-[2.2]"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-slate-700 leading-tight">Mortalitas Ayam</p>
+                                <span class="text-[10px] text-rose-700 font-semibold">Mati & Afkir</span>
+                            </div>
+                        </div>
+                        <span class="text-[9px] font-black px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200">Mati</span>
                     </div>
-                    <!-- Left intentionally blank, + Catat button removed as per user request -->
+                    <div class="mt-2.5">
+                        <span class="text-[10px] font-semibold text-slate-500">Jumlah Ayam Mati</span>
+                        <p class="text-lg sm:text-xl font-black text-rose-700 tracking-tight leading-tight mt-0.5 font-mono">
+                            {{ $matiHariIni ?? 0 }} <span class="text-xs font-bold text-slate-500">Ekor</span>
+                        </p>
+                        <p class="text-[11px] text-slate-400 font-medium mt-0.5">
+                            Afkir: {{ $afkirHariIni ?? 0 }} Ekor
+                        </p>
+                    </div>
                 </div>
-                <div class="mt-3">
-                    <p class="text-xs font-semibold text-slate-500">Vaksin / Obat</p>
-                    <p class="text-lg sm:text-xl font-black text-slate-900 tracking-tight leading-tight mt-0.5">
-                        {{ $totalHealthActivities }} <span class="text-xs font-bold text-slate-500">Kegiatan</span>
-                    </p>
-                    <p class="text-[11px] text-slate-400 font-medium mt-0.5">
-                        Perlakuan Medis
-                    </p>
+
+                <div class="mt-2 pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px]">
+                    <span class="text-slate-400 font-medium">Riwayat Kematian</span>
+                    @if($canClickMortality)
+                        <span class="text-rose-700 font-bold group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
+                            Kelola &raquo;
+                        </span>
+                    @else
+                        <span class="text-slate-400 font-semibold flex items-center gap-1">
+                            <i data-lucide="lock" class="w-2.5 h-2.5"></i> Terkunci
+                        </span>
+                    @endif
+                </div>
+            @if($canClickMortality)
+            </a>
+            @else
+            </div>
+            @endif
+            @endif
+
+            <!-- Card 5: Vaksin / Obat (Maroon - Col 1) -->
+            @if(!auth()->check() || auth()->user()->canAccess('dash_card_health'))
+            <div class="farm-card p-3 sm:p-3.5 border-l-4 border-l-maroon-800 bg-white flex flex-col justify-between hover:shadow-md transition-all">
+                <div>
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-xl bg-maroon-50 text-maroon-800 flex items-center justify-center shrink-0 border border-maroon-100 shadow-xs">
+                                <i data-lucide="syringe" class="w-4.5 h-4.5 stroke-[2.2]"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-slate-700 leading-tight">Vaksin / Obat</p>
+                                <span class="text-[10px] text-maroon-800 font-semibold">Tindakan Medis</span>
+                            </div>
+                        </div>
+                        <span class="text-[9px] font-black px-1.5 py-0.5 rounded bg-maroon-50 text-maroon-800 border border-maroon-200">Medis</span>
+                    </div>
+                    <div class="mt-2.5">
+                        <span class="text-[10px] font-semibold text-slate-500">Kegiatan Hari Ini</span>
+                        <p class="text-lg sm:text-xl font-black text-slate-900 tracking-tight leading-tight mt-0.5 font-mono">
+                            {{ $totalHealthActivities }} <span class="text-xs font-bold text-slate-500">Kegiatan</span>
+                        </p>
+                        <p class="text-[11px] text-slate-400 font-medium mt-0.5">
+                            Perlakuan Medis Farm
+                        </p>
+                    </div>
+                </div>
+
+                <div class="mt-2 pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px]">
+                    <span class="text-slate-400 font-medium">Kesehatan Kandang</span>
+                    <span class="text-maroon-800 font-bold flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-maroon-800"></span> Tercatat
+                    </span>
                 </div>
             </div>
             @endif
 
-            <!-- Card 6: Karantina Ayam (Amber/Orange) -->
+            <!-- Card 6: Karantina Ayam (Amber/Orange - Col 1) -->
             @if(!auth()->check() || auth()->user()->canAccess('dash_card_quarantine'))
             @php
                 $canClickQuarantine = auth()->check() && auth()->user()->canAccess('dash_card_quarantine_click');
             @endphp
             @if($canClickQuarantine)
-            <a href="{{ route('warehouse.karantina') }}" class="farm-card p-3.5 sm:p-4 border-l-4 border-l-amber-500 bg-white flex flex-col justify-between hover:border-amber-600 hover:shadow-md transition-all cursor-pointer group">
+            <a href="{{ route('warehouse.karantina') }}" class="farm-card p-3 sm:p-3.5 border-l-4 border-l-amber-500 bg-white flex flex-col justify-between hover:border-amber-600 hover:shadow-md transition-all cursor-pointer group">
             @else
-            <div class="farm-card p-3.5 sm:p-4 border-l-4 border-l-amber-500 bg-white flex flex-col justify-between cursor-default">
+            <div class="farm-card p-3 sm:p-3.5 border-l-4 border-l-amber-500 bg-white flex flex-col justify-between cursor-default">
             @endif
-                <div class="flex items-start justify-between gap-2">
-                    <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100 shadow-xs {{ $canClickQuarantine ? 'group-hover:scale-105 transition-transform' : '' }}">
-                        <i data-lucide="shield-alert" class="w-5 h-5 stroke-[2.2]"></i>
-                    </div>
-                    <div class="flex items-center gap-1.5">
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-md {{ $currentQuarantineCount > 0 ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200' }}">
+                <div>
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100 shadow-xs {{ $canClickQuarantine ? 'group-hover:scale-105 transition-transform' : '' }}">
+                                <i data-lucide="shield-alert" class="w-4.5 h-4.5 stroke-[2.2]"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-slate-700 leading-tight">Ayam Karantina</p>
+                                <span class="text-[10px] text-amber-700 font-semibold">Isolasi Medis</span>
+                            </div>
+                        </div>
+                        <span class="text-[9px] font-black px-1.5 py-0.5 rounded-md {{ $currentQuarantineCount > 0 ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200' }}">
                             {{ $currentQuarantineCount > 0 ? 'Isolasi' : 'Nihil' }}
                         </span>
-                        @if($canClickQuarantine)
-                            <div class="w-5 h-5 rounded-full bg-amber-50 text-amber-700 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
-                                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                            </div>
-                        @else
-                            <div class="w-5 h-5 rounded-full bg-slate-50 text-slate-300 flex items-center justify-center">
-                                <i data-lucide="lock" class="w-3 h-3"></i>
-                            </div>
-                        @endif
+                    </div>
+                    <div class="mt-2.5">
+                        <span class="text-[10px] font-semibold text-slate-500">Populasi Diisolasi</span>
+                        <p class="text-lg sm:text-xl font-black {{ $currentQuarantineCount > 0 ? 'text-amber-700' : 'text-slate-900' }} tracking-tight leading-tight mt-0.5 font-mono">
+                            {{ $currentQuarantineCount }} <span class="text-xs font-bold text-slate-500">Ekor</span>
+                        </p>
+                        <p class="text-[11px] font-medium mt-0.5 {{ $currentQuarantineCount > 0 ? 'text-amber-700' : 'text-slate-400' }}">
+                            @if($todaySickCount > 0 || $todayRecoveredCount > 0)
+                                +{{ $todaySickCount }} Sakit • -{{ $todayRecoveredCount }} Sembuh
+                            @elseif($currentQuarantineCount > 0)
+                                Sedang Diisolasi
+                            @else
+                                Kondisi Sehat
+                            @endif
+                        </p>
                     </div>
                 </div>
-                <div class="mt-3">
-                    <p class="text-xs font-semibold text-slate-500">Ayam Karantina</p>
-                    <p class="text-lg sm:text-xl font-black {{ $currentQuarantineCount > 0 ? 'text-amber-700' : 'text-slate-900' }} tracking-tight leading-tight mt-0.5">
-                        {{ $currentQuarantineCount }} <span class="text-xs font-bold text-slate-500">Ekor</span>
-                    </p>
-                    <p class="text-[11px] font-medium mt-0.5 {{ $currentQuarantineCount > 0 ? 'text-amber-700' : 'text-slate-400' }}">
-                        @if($todaySickCount > 0 || $todayRecoveredCount > 0)
-                            +{{ $todaySickCount }} Sakit • -{{ $todayRecoveredCount }} Sembuh
-                        @elseif($currentQuarantineCount > 0)
-                            Sedang Diisolasi
-                        @else
-                            Kondisi Sehat
-                        @endif
-                    </p>
+
+                <div class="mt-2 pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px]">
+                    <span class="text-slate-400 font-medium">Gudang Isolasi</span>
+                    @if($canClickQuarantine)
+                        <span class="text-amber-700 font-bold group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
+                            Kelola &raquo;
+                        </span>
+                    @else
+                        <span class="text-slate-400 font-semibold flex items-center gap-1">
+                            <i data-lucide="lock" class="w-2.5 h-2.5"></i> Terkunci
+                        </span>
+                    @endif
                 </div>
             @if($canClickQuarantine)
             </a>

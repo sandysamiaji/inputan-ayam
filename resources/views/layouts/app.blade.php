@@ -262,8 +262,8 @@
         @endif
     </div>
 
-    <!-- Main Content Slot (Expands smoothly on desktop) -->
-    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 pb-24 md:pb-10">
+    <!-- Main Content Slot (Expands smoothly on desktop, ample breathing room on mobile) -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 pb-36 sm:pb-32 md:pb-16">
         @yield('content')
     </main>
 
@@ -277,7 +277,7 @@
         $navCount = ($showDashboard ? 1 : 0) + ($showWarehouse ? 1 : 0) + ($showInput ? 1 : 0) + ($showRekap ? 1 : 0) + ($showMaster ? 1 : 0);
         if ($navCount < 1) $navCount = 1;
     @endphp
-    <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[440px] z-40 bg-white border-t border-slate-200 shadow-2xl">
+    <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[440px] z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/90 shadow-2xl pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         <div class="grid py-2 px-1 text-center items-center" style="grid-template-columns: repeat({{ $navCount }}, minmax(0, 1fr));">
             @if($showDashboard)
             <!-- 1. Dashboard -->

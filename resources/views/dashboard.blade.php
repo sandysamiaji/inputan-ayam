@@ -551,7 +551,7 @@
                     @endif
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     @foreach($coops as $coop)
                         @php
                             $capacityPercent = $coop->capacity > 0 ? min(100, round(($coop->active_chickens / $coop->capacity) * 100)) : 0;
@@ -569,112 +569,106 @@
                             $targetHd = (float) ($cStd['hd_target'] ?? 0);
                             $isHdMet = $coopHd !== null && ((float) $coopHd >= $targetHd);
                         @endphp
-                        <div class="farm-card p-4 bg-white border border-slate-200 hover:border-maroon-300 transition-all flex flex-col justify-between shadow-xs">
-                            <div>
-                                <!-- Header Blok, Klotter & HD DI DEPAN -->
-                                <div class="flex items-center justify-between mb-2 gap-1.5 flex-wrap">
-                                    <div class="flex items-center gap-1.5 flex-wrap">
-                                        <h4 class="font-black text-slate-900 text-sm sm:text-base flex items-center gap-1.5 whitespace-nowrap">
-                                            <span class="w-2.5 h-2.5 rounded-full bg-maroon-800 shrink-0"></span>
-                                            <span>{{ $coop->name }}</span>
-                                        </h4>
-                                        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
-                                            {{ $coop->flock ? $coop->flock->name : 'Klotter' }}
+                        <div class="farm-card p-4 sm:p-5 bg-white border border-slate-200/90 hover:border-maroon-300 transition-all duration-200 rounded-2xl flex flex-col justify-between shadow-xs hover:shadow-md space-y-3.5">
+                            <div class="space-y-3">
+                                <!-- 1. Header Blok, Kloter & HD Badge -->
+                                <div class="flex items-center justify-between pb-2.5 border-b border-slate-100 gap-2 flex-wrap">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <span class="w-2.5 h-2.5 rounded-full bg-maroon-800 shrink-0 shadow-2xs"></span>
+                                        <h4 class="font-black text-slate-900 text-base tracking-tight">{{ $coop->name }}</h4>
+                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                                            {{ $coop->flock ? $coop->flock->name : 'Kloter' }}
+                                        </span>
+                                        <span class="text-[10.5px] font-extrabold px-2 py-0.5 rounded-full bg-rose-50 text-maroon-800 border border-rose-100">
+                                            {{ $coop->chicken_age_weeks }} Mgg
                                         </span>
                                     </div>
-                                    <div class="flex items-center gap-1.5">
-                                        <!-- BADGE HD UTAMA DI DEPAN: HANYA MUNCUL JIKA TELUR SUDAH DIINPUT -->
+                                    <div class="flex items-center gap-1.5 shrink-0">
                                         @if(!auth()->check() || auth()->user()->canAccess('dash_coop_hd'))
                                             @if($coopHd !== null)
-                                                @if($isHdMet)
-                                                    <span class="inline-flex items-center gap-1 text-[11px] font-black px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs" title="Hen-Day Production (HD) Blok {{ $coop->name }} Hari Ini: {{ number_format($coopHd, 1, ',', '.') }}% (Target Standar Master: {{ $targetHd }}% - Sesuai/Di Atas Target)">
-                                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
-                                                        HD {{ number_format($coopHd, 1, ',', '.') }}%
-                                                    </span>
-                                                @else
-                                                    <span class="inline-flex items-center gap-1 text-[11px] font-black px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 border border-rose-300 shadow-2xs" title="Hen-Day Production (HD) Blok {{ $coop->name }} Hari Ini: {{ number_format($coopHd, 1, ',', '.') }}% (Target Standar Master: {{ $targetHd }}% - Di Bawah Standar Master)">
-                                                        <span class="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse"></span>
-                                                        HD {{ number_format($coopHd, 1, ',', '.') }}%
-                                                    </span>
-                                                @endif
+                                                <span class="inline-flex items-center gap-1 text-[11px] font-black px-2.5 py-0.5 rounded-full {{ $isHdMet ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-rose-100 text-rose-800 border border-rose-300' }} shadow-2xs" title="Hen-Day Production: {{ number_format($coopHd, 1, ',', '.') }}% (Target: {{ $targetHd }}%)">
+                                                    <span class="w-1.5 h-1.5 rounded-full {{ $isHdMet ? 'bg-emerald-600' : 'bg-rose-600' }} animate-pulse"></span>
+                                                    HD {{ number_format($coopHd, 1, ',', '.') }}%
+                                                </span>
                                             @else
-                                                <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200" title="Belum ada data input telur untuk tanggal ini">
+                                                <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200" title="Belum ada data input telur hari ini">
                                                     <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
                                                     HD: Belum Input
                                                 </span>
                                             @endif
                                         @endif
-
                                         @if(!auth()->check() || auth()->user()->canAccess('dash_coop_fase_info'))
-                                        <button type="button" 
-                                                onclick="openModal('modalFasePenjelasan')"
-                                                title="Klik untuk melihat panduan lengkap fase {{ $cStd['pill'] }}"
-                                                class="inline-flex items-center gap-1 text-[10px] font-extrabold px-1.5 py-0.5 rounded-md border {{ $cStd['pill_class'] ?? 'bg-emerald-50 text-emerald-700 border-emerald-200' }} hover:shadow-xs transition-all cursor-pointer">
-                                            <span>{{ $cStd['pill'] }}</span>
-                                            <i data-lucide="help-circle" class="w-3 h-3 opacity-75"></i>
-                                        </button>
+                                            <button type="button" 
+                                                    onclick="openModal('modalFasePenjelasan')"
+                                                    title="Panduan Fase {{ $cStd['pill'] }}"
+                                                    class="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full border {{ $cStd['pill_class'] ?? 'bg-emerald-50 text-emerald-700 border-emerald-200' }} hover:shadow-xs transition-all cursor-pointer">
+                                                <span>{{ $cStd['pill'] }}</span>
+                                            </button>
                                         @endif
                                     </div>
                                 </div>
 
-                                <!-- Umur, HD & Kapasitas Aktif -->
-                                <div class="space-y-1.5 mt-2">
-                                    <div class="flex justify-between items-center text-xs text-slate-500">
-                                        <div class="flex items-center gap-1.5">
-                                            <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-rose-50 text-maroon-800 border border-rose-100">
-                                                {{ $coop->chicken_age_weeks }} Minggu
+                                <!-- 2. Populasi Ayam & Target Standar Master -->
+                                <div class="space-y-2">
+                                    <div>
+                                        <div class="flex justify-between items-baseline text-xs mb-1">
+                                            <span class="text-slate-500 font-medium text-[11px]">Kapasitas Ayam Aktif:</span>
+                                            <span class="font-extrabold text-slate-900 text-[11.5px] font-mono">
+                                                {{ number_format($coop->active_chickens, 0, ',', '.') }} <span class="text-slate-400 font-normal font-sans">/ {{ number_format($coop->capacity, 0, ',', '.') }}</span>
+                                                <span class="text-[10px] text-maroon-700 font-bold ml-1">({{ $capacityPercent }}%)</span>
                                             </span>
-                                            @if(!auth()->check() || auth()->user()->canAccess('dash_coop_hd'))
-                                                @if($coopHd !== null)
-                                                    <span class="text-[11px] font-bold {{ $isHdMet ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-rose-700 bg-rose-50 border-rose-200' }} px-1.5 py-0.5 rounded border" title="Target Standar Master: {{ $targetHd }}% ({{ $isHdMet ? 'Tercapai/Lebih' : 'Di Bawah Standar' }})">
-                                                        HD: {{ number_format($coopHd, 1, ',', '.') }}% ({{ number_format($todayEgg, 0, ',', '.') }} butir)
-                                                    </span>
-                                                @else
-                                                    <span class="text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-                                                        Telur: Belum Input
-                                                    </span>
-                                                @endif
-                                            @endif
                                         </div>
-                                        <span class="text-xs">Kapasitas: <b class="text-slate-900 font-bold">{{ number_format($coop->active_chickens, 0, ',', '.') }} / {{ number_format($coop->capacity, 0, ',', '.') }}</b></span>
+                                        <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                                            <div class="bg-maroon-700 h-full rounded-full transition-all duration-300" style="width: {{ $capacityPercent }}%"></div>
+                                        </div>
+                                        <div class="flex justify-between items-center text-[10px] text-slate-400 mt-1">
+                                            <span>Kloter HD: <b class="text-slate-600">{{ $flockHd !== null ? number_format($flockHd, 1, ',', '.') . '%' : 'Belum Input' }}</b></span>
+                                            <span>Target HD Master: <b class="{{ $coopHd !== null ? ($isHdMet ? 'text-emerald-700 font-extrabold' : 'text-rose-600 font-extrabold') : 'text-slate-600' }}">{{ $cStd['hd_target'] }}%</b></span>
+                                        </div>
                                     </div>
-                                    <!-- Progress Bar -->
-                                    <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                        <div class="bg-maroon-700 h-full rounded-full transition-all" style="width: {{ $capacityPercent }}%"></div>
+
+                                    <!-- Duo Tile: Acuan Telur & Standar Pakan Master -->
+                                    @if(!auth()->check() || auth()->user()->canAccess('dash_coop_standards'))
+                                    <div class="grid grid-cols-2 gap-2 text-[11px]">
+                                        <div class="bg-slate-50/90 p-2 rounded-xl border border-slate-100">
+                                            <span class="text-slate-400 block text-[9.5px] font-bold uppercase tracking-wider">Acuan Telur Master</span>
+                                            <b class="text-slate-800 font-black text-xs">{{ $cStd['berat_telur'] !== '-' ? $cStd['berat_telur'] : 'Grower' }}</b>
+                                            <span class="text-[9px] text-slate-400 block mt-0.5">Target: {{ $cStd['berat_telur'] }}</span>
+                                        </div>
+                                        <div class="bg-slate-50/90 p-2 rounded-xl border border-slate-100">
+                                            <span class="text-slate-400 block text-[9.5px] font-bold uppercase tracking-wider">Standar Pakan Master</span>
+                                            <b class="text-slate-800 font-black text-xs">{{ $cStd['gram_pakan'] }} g/ekor</b>
+                                            <span class="text-[9px] text-slate-400 block mt-0.5">Pagi {{ $cStd['pagi_gram'] }}g • Sore {{ $cStd['sore_gram'] }}g</span>
+                                        </div>
                                     </div>
-                                    <div class="flex justify-between items-center text-[10px] text-slate-400">
-                                        <span>Kloter: <b>{{ $coop->flock ? $coop->flock->name : 'Klotter' }} (HD: {{ $flockHd !== null ? number_format($flockHd, 1, ',', '.') . '%' : 'Belum Input' }})</b></span>
-                                        <span>Target HD Master: <b class="{{ $coopHd !== null ? ($isHdMet ? 'text-emerald-700 font-extrabold' : 'text-rose-600 font-extrabold') : 'text-slate-600' }}">{{ $cStd['hd_target'] }}%</b></span>
-                                    </div>
+                                    @endif
                                 </div>
 
-                                <!-- KOTAK PENJELASAN ALASAN STATUS: PENDEK DULU, BISA DI-KLIK DETAIL MEMANJANG OTOMATIS -->
+                                <!-- 3. Alasan Fase & Panduan (Collapsible) -->
                                 @if(!auth()->check() || auth()->user()->canAccess('dash_coop_fase_info'))
-                                <div class="mt-2.5 p-2 rounded-lg bg-emerald-50/70 border border-emerald-100 text-[11px] text-emerald-950 transition-all">
+                                <div class="p-2.5 rounded-xl bg-emerald-50/50 border border-emerald-100/80 text-[11px] text-emerald-950 transition-all">
                                     <div class="flex items-center justify-between font-bold text-emerald-900 text-[10.5px]">
-                                        <span class="flex items-center gap-1">
-                                            <i data-lucide="trending-up" class="w-3.5 h-3.5 text-emerald-600 shrink-0"></i>
+                                        <span class="flex items-center gap-1.5">
+                                            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-emerald-600 shrink-0"></i>
                                             <span>Alasan: {{ $cStd['pill'] }}</span>
                                         </span>
                                         <button type="button" 
                                                 id="coopDetailBtn_{{ $coop->id }}"
                                                 onclick="toggleCoopDetail({{ $coop->id }})"
-                                                class="text-[10.5px] text-emerald-700 hover:text-emerald-900 underline font-bold cursor-pointer">
+                                                class="text-[10px] text-emerald-700 hover:text-emerald-900 font-bold underline cursor-pointer">
                                             Detail &raquo;
                                         </button>
                                     </div>
-                                    <!-- Versi Pendek (Default Singkat Sesuai Request) -->
-                                    <p id="coopShortText_{{ $coop->id }}" class="text-[10.5px] text-emerald-800 mt-0.5 leading-snug">
+                                    <p id="coopShortText_{{ $coop->id }}" class="text-[10.5px] text-emerald-800 mt-1 leading-snug">
                                         Umur <b>{{ $coop->chicken_age_weeks }} mgg</b>: {{ $cStd['keterangan'] }} (Target HD {{ $cStd['hd_target'] }}%)...
                                     </p>
-                                    <!-- Versi Panjang (Expand Otomatis Saat Klik Detail) -->
                                     <div id="coopFullText_{{ $coop->id }}" class="hidden text-[10.5px] text-emerald-800 mt-1.5 leading-relaxed border-t border-emerald-200/60 pt-1.5 space-y-1">
                                         <p>
-                                             Umur <b>{{ $coop->chicken_age_weeks }} mgg</b> masuk fase <b>{{ $cStd['fase'] }}</b> (rentang 21–25 mgg). Oviduk matang, masa subur & lonjakan bertelur pesat menuju puncak.
+                                            Umur <b>{{ $coop->chicken_age_weeks }} mgg</b> masuk fase <b>{{ $cStd['fase'] }}</b> (rentang 21–25 mgg). Oviduk matang, masa subur & lonjakan bertelur pesat menuju puncak.
                                         </p>
-                                        <div class="text-[10px] text-emerald-950 font-medium bg-white/70 p-1.5 rounded border border-emerald-200/50">
+                                        <div class="text-[10px] text-emerald-950 font-medium bg-white/70 p-2 rounded-lg border border-emerald-200/50 space-y-0.5">
                                             <div>• Target Standar HD: <b>{{ $cStd['hd_target'] }}%</b> (Acuan Master Umur {{ $coop->chicken_age_weeks }} Mgg)</div>
-                                            <div>• HD Aktual Hari Ini: <b class="{{ $coopHd !== null ? ($isHdMet ? 'text-emerald-700 font-extrabold' : 'text-rose-700 font-extrabold') : '' }}">{{ $coopHd !== null ? number_format($coopHd, 1, ',', '.') . '% (' . number_format($todayEgg, 0, ',', '.') . ' butir)' . ($isHdMet ? ' [✓ Sesuai Target]' : ' [⚠ Di Bawah Standar Master]') : 'Belum Diinput (Klik tombol input di bawah)' }}</b></div>
+                                            <div>• HD Aktual Hari Ini: <b class="{{ $coopHd !== null ? ($isHdMet ? 'text-emerald-700 font-extrabold' : 'text-rose-700 font-extrabold') : '' }}">{{ $coopHd !== null ? number_format($coopHd, 1, ',', '.') . '% (' . number_format($todayEgg, 0, ',', '.') . ' butir)' . ($isHdMet ? ' [✓ Sesuai Target]' : ' [⚠ Di Bawah Standar Master]') : 'Belum Diinput' }}</b></div>
                                             <div>• Kebutuhan Pakan: <b>{{ $cStd['gram_pakan'] }} g/ekor</b> ({{ number_format($totalPakanCoopKg, 1, ',', '.') }} kg/hari)</div>
                                         </div>
                                         <div class="pt-0.5 flex justify-end">
@@ -686,21 +680,8 @@
                                 </div>
                                 @endif
 
-                                <!-- Data Acuan Master Standar Produksi Otomatis -->
+                                <!-- 4. 3 Sampel Bobot Ayam & Telur (Depan, Tengah, Belakang) -->
                                 @if(!auth()->check() || auth()->user()->canAccess('dash_coop_standards'))
-                                <div class="mt-2.5 pt-2.5 border-t border-slate-100 grid grid-cols-2 gap-2 text-[11px]">
-                                    <div class="bg-slate-50 p-2 rounded-lg border border-slate-100">
-                                        <span class="text-slate-400 block text-[10px] font-medium">Acuan Telur</span>
-                                        <b class="text-slate-800 font-bold text-xs">{{ $cStd['berat_telur'] !== '-' ? $cStd['berat_telur'] : 'Grower' }}</b>
-                                        <span class="text-[9px] text-slate-400 block mt-0.5">Target: {{ $cStd['berat_telur'] }}</span>
-                                    </div>
-                                    <div class="bg-slate-50 p-2 rounded-lg border border-slate-100">
-                                        <span class="text-slate-400 block text-[10px] font-medium">Standar Pakan</span>
-                                        <b class="text-slate-800 font-bold text-xs">{{ $cStd['gram_pakan'] }} g/ekor</b>
-                                        <span class="text-[9px] text-slate-400 block mt-0.5">Pagi {{ $cStd['pagi_gram'] }}g • Sore {{ $cStd['sore_gram'] }}g</span>
-                                    </div>
-                                </div>
-                                @if(isset($coopWeightData[$coop->id]) && $coopWeightData[$coop->id])
                                     @php
                                         $cDetail = $coopWeightDetails[$coop->id] ?? [];
                                         $sampleList = $cDetail['samples'] ?? [];
@@ -725,22 +706,22 @@
                                         }
                                     @endphp
                                     <div onclick="openModal('modalBobot6Blok')" 
-                                         class="mt-2 p-2 rounded-xl bg-slate-50 hover:bg-slate-100/90 border border-slate-200 text-xs cursor-pointer transition-all shadow-2xs"
+                                         class="p-2.5 rounded-xl bg-slate-50/70 hover:bg-sky-50/50 border border-slate-200/90 text-xs cursor-pointer transition-all shadow-2xs group"
                                          title="Klik untuk membuka Evaluasi Sampel Bobot Ayam & Telur vs Data Master">
                                         
                                         <!-- Header 3 Titik Sampel -->
-                                        <div class="flex items-center justify-between gap-1 pb-1.5 border-b border-slate-200/70">
-                                            <div class="flex items-center gap-1.5 font-extrabold text-slate-800 text-[10.5px]">
+                                        <div class="flex items-center justify-between gap-1 pb-1.5 border-b border-slate-200/60">
+                                            <div class="flex items-center gap-1.5 font-black text-slate-800 text-[10.5px]">
                                                 <i data-lucide="scale" class="w-3.5 h-3.5 text-sky-600"></i>
                                                 <span>3 Sampel Bobot Ayam & Telur:</span>
                                             </div>
-                                            <span class="text-[9.5px] font-bold text-sky-700 hover:underline flex items-center gap-0.5">
+                                            <span class="text-[9.5px] font-bold text-sky-700 group-hover:underline flex items-center gap-0.5">
                                                 Adu Data Master &raquo;
                                             </span>
                                         </div>
 
                                         <!-- 3 Titik Sampel (Depan, Tengah, Belakang) -->
-                                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-1.5 mt-1.5 text-[9.5px]">
+                                        <div class="grid grid-cols-3 gap-1.5 mt-2 text-[9.5px]">
                                             @foreach($slots as $slotNum => $slotInfo)
                                                 @php
                                                     $sData = $slotInfo['data'];
@@ -749,37 +730,37 @@
                                                     $sEgg = ($sData && !empty($sData['egg_weight_gram'])) ? (float)$sData['egg_weight_gram'] : null;
                                                     $sEggGood = ($sEgg !== null && $eggStdVal > 0 ? ($sEgg >= $eggTolMin && $sEgg <= $eggTolMax) : true);
                                                 @endphp
-                                                <div class="p-1.5 rounded-lg border {{ $sW === null ? 'bg-white/60 border-dashed border-slate-200 text-slate-400' : ($sIsGood ? 'bg-emerald-50/70 border-emerald-200 text-emerald-950' : 'bg-rose-50/70 border-rose-200 text-rose-950') }}">
+                                                <div class="p-1.5 rounded-lg border {{ $sW === null ? 'bg-white/80 border-dashed border-slate-200 text-slate-400' : ($sIsGood ? 'bg-emerald-50/80 border-emerald-200/90 text-emerald-950' : 'bg-rose-50/80 border-rose-200/90 text-rose-950') }}">
                                                     <div class="flex items-center justify-between text-[10px] font-bold">
                                                         <span class="{{ $sW === null ? 'text-slate-400' : 'text-slate-700' }}">{{ $slotInfo['title'] }}</span>
                                                         @if($sW !== null)
-                                                            <span class="text-[8.5px] font-black px-1 py-0.2 rounded {{ $sIsGood ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-rose-100 text-rose-800 border border-rose-300' }}">
+                                                            <span class="text-[8px] font-black px-1 py-0.2 rounded {{ $sIsGood ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-rose-100 text-rose-800 border border-rose-300' }}">
                                                                 {{ $sIsGood ? 'Capai' : 'Kurang' }}
                                                             </span>
                                                         @else
-                                                            <span class="text-[8.5px] font-semibold text-slate-400">-</span>
+                                                            <span class="text-[8px] font-semibold text-slate-400">-</span>
                                                         @endif
                                                     </div>
 
                                                     @if($sW !== null)
-                                                        <div class="flex items-baseline justify-between mt-0.5">
+                                                        <div class="flex items-baseline justify-between mt-1">
                                                             <span class="text-xs font-black {{ $sIsGood ? 'text-emerald-700' : 'text-rose-700' }} font-mono">
                                                                 {{ number_format($sW, 2, ',', '.') }} kg
                                                             </span>
                                                             @if($sEgg !== null)
-                                                                <span class="text-[9.5px] font-bold {{ $sEggGood ? 'text-amber-800' : 'text-rose-600' }}" title="Telur: {{ number_format($sEgg, 1, ',', '.') }}g (Toleransi: {{ number_format($eggTolMin, 1, ',', '.') }}–{{ number_format($eggTolMax, 1, ',', '.') }}g)">
+                                                                <span class="text-[9.5px] font-bold {{ $sEggGood ? 'text-amber-800' : 'text-rose-600' }}" title="Telur: {{ number_format($sEgg, 1, ',', '.') }}g">
                                                                     {{ number_format($sEgg, 1, ',', '.') }}g
                                                                 </span>
                                                             @endif
                                                         </div>
-                                                        <div class="mt-0.5 flex items-center justify-between text-[9px] text-slate-500 truncate" title="{{ $sData['battery_number'] ?? 'Baterai' }}">
-                                                            <span class="truncate">{{ $sData['battery_number'] ? 'Btr: ' . $sData['battery_number'] : '-' }}</span>
+                                                        <div class="mt-0.5 flex items-center justify-between text-[8.5px] text-slate-500 truncate" title="{{ $sData['battery_number'] ?? 'Baterai' }}">
+                                                            <span class="truncate">{{ $sData['battery_number'] ? $sData['battery_number'] : '-' }}</span>
                                                             @if(!empty($sData['date']))
                                                                 <span class="text-slate-400 shrink-0 ml-1">{{ $sData['date'] }}</span>
                                                             @endif
                                                         </div>
                                                     @else
-                                                        <div class="mt-1 text-[9.5px] text-slate-400 italic">
+                                                        <div class="mt-1.5 text-[9px] text-slate-400 italic">
                                                             Belum diinput
                                                         </div>
                                                     @endif
@@ -787,19 +768,9 @@
                                             @endforeach
                                         </div>
                                     </div>
-                                @else
-                                    <a href="{{ route('input.index', ['type' => 'bobot']) }}" 
-                                       class="mt-2 p-2 rounded-xl bg-slate-50 hover:bg-sky-50/60 border border-dashed border-slate-200 text-xs flex items-center justify-between text-slate-500 hover:text-sky-700 transition-all">
-                                        <span class="flex items-center gap-1.5 font-bold text-[10.5px]">
-                                            <i data-lucide="scale" class="w-3.5 h-3.5 text-slate-400"></i>
-                                            <span>3 Sampel Bobot: Belum ada data</span>
-                                        </span>
-                                        <span class="text-[9.5px] font-bold text-sky-700 underline">+ Input 3 Sampel</span>
-                                    </a>
-                                @endif
                                 @endif
 
-                                <!-- ESTIMASI TELUR DARI ACUAN & ADU DATA REALISASI INPUT KARYAWAN -->
+                                <!-- 5. Realisasi Panen Telur (Adu Data Master vs Aktual) -->
                                 @if(!auth()->check() || auth()->user()->canAccess('dash_coop_egg_comparison'))
                                 @php
                                     $eggGram = (!empty($cStd['berat_telur_val']) && $cStd['berat_telur_val'] > 0) ? (float) $cStd['berat_telur_val'] : 60.0;
@@ -819,24 +790,24 @@
                                     $hasEggInput = ($todayEgg > 0 || $actTotalKg > 0);
                                     $isEggMatch = ($hasEggInput && $actTotalKg >= $estKg && $estKg > 0);
                                 @endphp
-                                <div class="mt-2.5 p-2.5 rounded-lg text-xs {{ !$hasEggInput ? 'bg-slate-50 border border-slate-200' : ($isEggMatch ? 'bg-emerald-50/80 border border-emerald-200' : 'bg-rose-50/80 border border-rose-200') }}">
+                                <div class="p-2.5 rounded-xl text-xs {{ !$hasEggInput ? 'bg-slate-50/70 border border-slate-200/80' : ($isEggMatch ? 'bg-emerald-50/70 border border-emerald-200/80' : 'bg-rose-50/70 border border-rose-200/80') }}">
                                     <!-- Header Realisasi vs Acuan -->
-                                    <div class="flex flex-wrap items-center justify-between gap-1 font-bold text-[11px]">
+                                    <div class="flex items-center justify-between gap-1 font-bold text-[11px] pb-1.5 border-b {{ !$hasEggInput ? 'border-slate-200/60' : ($isEggMatch ? 'border-emerald-200/60' : 'border-rose-200/60') }}">
                                         <span class="flex items-center gap-1.5 {{ !$hasEggInput ? 'text-slate-700' : ($isEggMatch ? 'text-emerald-900' : 'text-rose-900') }}">
-                                            <span class="text-sm">🥚</span>
-                                            <span>Realisasi Panen Telur:</span>
+                                            <span>🥚</span>
+                                            <span class="font-extrabold text-[11px]">Realisasi Panen Telur:</span>
                                         </span>
                                         @if(!$hasEggInput)
-                                            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-200/80 text-slate-600 border border-slate-300/60">
+                                            <span class="text-[9.5px] font-bold px-2 py-0.5 rounded-md bg-slate-200/70 text-slate-600 border border-slate-300/50">
                                                 Belum Input
                                             </span>
                                         @elseif($isEggMatch)
-                                            <span class="text-[10px] font-black px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 shadow-2xs">
+                                            <span class="text-[9.5px] font-black px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 shadow-2xs">
                                                 <i data-lucide="check-circle-2" class="w-3 h-3 text-emerald-600"></i>
-                                                {{ $eggDiffKg > 0 ? 'Lebih ' . number_format($eggDiffKg, 1, ',', '.') . ' kg' : 'Sesuai Hitungan' }}
+                                                {{ $eggDiffKg > 0 ? 'Lebih +' . number_format($eggDiffKg, 1, ',', '.') . ' kg' : 'Sesuai Hitungan' }}
                                             </span>
                                         @else
-                                            <span class="text-[10px] font-black px-2 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-300 flex items-center gap-1 shadow-2xs">
+                                            <span class="text-[9.5px] font-black px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 border border-rose-300 flex items-center gap-1 shadow-2xs">
                                                 <i data-lucide="alert-circle" class="w-3 h-3 text-rose-600"></i>
                                                 Kurang {{ number_format(abs($eggDiffKg), 1, ',', '.') }} kg
                                             </span>
@@ -844,70 +815,44 @@
                                     </div>
 
                                     <!-- Angka Realisasi vs Perkiraan -->
-                                    <div class="mt-1 flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 text-[11px]">
+                                    <div class="mt-1.5 flex items-baseline justify-between text-[11px]">
                                         <div>
-                                            <span class="text-sm font-black {{ !$hasEggInput ? 'text-slate-500' : ($isEggMatch ? 'text-emerald-800' : 'text-rose-800') }}">
+                                            <span class="text-xs font-black {{ !$hasEggInput ? 'text-slate-500' : ($isEggMatch ? 'text-emerald-800' : 'text-rose-800') }}">
                                                 {{ $hasEggInput ? $actPetiText : '0 Peti' }}
                                             </span>
                                             @if($actTotalKg > 0)
                                                 <span class="text-[10px] text-slate-500 font-medium ml-1">({{ number_format($actTotalKg, 1, ',', '.') }} kg)</span>
                                             @endif
                                         </div>
-                                        <div class="text-[10.5px] text-slate-500 font-medium text-left sm:text-right">
+                                        <div class="text-[10.5px] text-slate-500 font-medium">
                                             Perkiraan: <b class="text-slate-800">{{ $estPetiText }}</b>
                                             @if($estKg > 0)
-                                                <span class="text-[10px] text-slate-400">({{ number_format($estKg, 1, ',', '.') }} kg)</span>
+                                                <span class="text-[9.5px] text-slate-400">({{ number_format($estKg, 1, ',', '.') }} kg)</span>
                                             @endif
                                         </div>
                                     </div>
 
-                                    <!-- Keterangan Status -->
                                     @if($hasEggInput)
-                                        <div class="mt-1.5 pt-1.5 border-t {{ $isEggMatch ? 'border-emerald-200/60 text-emerald-800' : 'border-rose-200/60 text-rose-900' }} text-[10.5px] leading-snug font-medium">
+                                        <div class="mt-1 pt-1 border-t {{ $isEggMatch ? 'border-emerald-200/50 text-emerald-800' : 'border-rose-200/50 text-rose-900' }} text-[10px] leading-snug">
                                             @if($isEggMatch)
-                                                ✔ <b>Input telur karyawan sesuai / melebihi estimasi aplikasi</b> (acuan {{ number_format($todayEgg, 0, ',', '.') }} butir × {{ $cStd['berat_telur'] }} = {{ number_format($estKg, 1, ',', '.') }} kg).
+                                                ✔ Input telur sesuai estimasi (acuan {{ number_format($todayEgg, 0, ',', '.') }} butir × {{ $cStd['berat_telur'] }} = {{ number_format($estKg, 1, ',', '.') }} kg).
                                             @else
-                                                ⚠️ <b>Input telur karyawan belum sesuai hitungan aplikasi</b> (masih kurang {{ number_format(abs($eggDiffKg), 1, ',', '.') }} kg dari estimasi {{ $estPetiText }} / {{ number_format($estKg, 1, ',', '.') }} kg).
+                                                ⚠️ Input telur kurang {{ number_format(abs($eggDiffKg), 1, ',', '.') }} kg dari estimasi acuan master.
+                                            @endif
+                                            @if(!empty($coopEggUserInputData[$coop->id]))
+                                                <span class="text-slate-500 block mt-0.5">• Petugas: <b class="text-slate-700">{{ $coopEggUserInputData[$coop->id] }}</b></span>
                                             @endif
                                         </div>
-                                        @if(!empty($coopEggUserInputData[$coop->id]))
-                                        <div class="mt-1 text-[9.5px] text-slate-500 font-medium">
-                                            Diinput oleh: <b class="text-slate-700">{{ $coopEggUserInputData[$coop->id] }}</b>
-                                        </div>
-                                        @endif
                                     @else
-                                        <div class="mt-1 text-[10px] text-slate-400">
+                                        <div class="mt-1 text-[10px] text-slate-400 italic">
                                             Belum ada pencatatan panen telur untuk {{ $coop->name }} hari ini.
                                         </div>
                                     @endif
                                 </div>
                                 @endif
 
-                                <!-- TOTAL KEBUTUHAN PAKAN BLOK INI & ADU DATA REALISASI -->
+                                <!-- 6. Kebutuhan & Realisasi Pakan -->
                                 @if(!auth()->check() || auth()->user()->canAccess('dash_coop_feed_comparison'))
-                                <div class="mt-2 p-2.5 rounded-lg bg-amber-50/70 border border-amber-200/80 text-slate-800">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-[10px] font-bold text-amber-900 uppercase tracking-wide flex items-center gap-1">
-                                            <span>🌾</span> Standar Pakan Blok Ini:
-                                        </span>
-                                        <span class="text-[10px] text-amber-800 font-semibold">({{ number_format($coop->active_chickens, 0, ',', '.') }} ekor × {{ $cStd['gram_pakan'] }}g)</span>
-                                    </div>
-                                    <div class="mt-1 flex items-baseline justify-between">
-                                        <div>
-                                            <span class="text-base font-black text-maroon-800">{{ number_format($totalPakanCoopKg, 1, ',', '.') }}</span>
-                                            <span class="text-xs font-bold text-slate-700">kg / hari</span>
-                                        </div>
-                                        <span class="text-xs font-bold text-slate-700 bg-white/90 px-2 py-0.5 rounded border border-amber-200/70 shadow-2xs">
-                                            {{ $cKarungText }}
-                                        </span>
-                                    </div>
-                                    <div class="mt-1.5 pt-1.5 border-t border-amber-200/60 flex justify-between text-[10px] text-slate-600 font-medium">
-                                        <span>Jadwal Pagi (40%): <b class="text-slate-800">{{ number_format($pagiKg, 1, ',', '.') }} kg</b></span>
-                                        <span>Sore (60%): <b class="text-slate-800">{{ number_format($soreKg, 1, ',', '.') }} kg</b></span>
-                                    </div>
-                                </div>
-
-                                <!-- ADU DATA: REALISASI INPUT PAKAN VS HITUNGAN STANDAR -->
                                 @php
                                     $actualFeedKg = $coopFeedTodayData[$coop->id] ?? 0;
                                     $feedDiffKg = round($actualFeedKg - $totalPakanCoopKg, 1);
@@ -918,88 +863,59 @@
                                     $uPagi = $coopFeedPagiUserData[$coop->id] ?? null;
                                     $uSore = $coopFeedSoreUserData[$coop->id] ?? null;
                                 @endphp
-                                <div class="mt-2 p-2.5 rounded-lg text-xs {{ $actualFeedKg == 0 ? 'bg-slate-50 border border-slate-200' : (abs($feedDiffKg) <= 1.0 ? 'bg-emerald-50/80 border border-emerald-200' : ($feedDiffKg > 1.0 ? 'bg-amber-50/80 border border-amber-200' : 'bg-rose-50/80 border border-rose-200')) }}">
-                                    <div class="flex items-center justify-between font-bold text-[11px]">
-                                        <span class="flex items-center gap-1.5 {{ $actualFeedKg == 0 ? 'text-slate-700' : (abs($feedDiffKg) <= 1.0 ? 'text-emerald-900' : ($feedDiffKg > 1.0 ? 'text-amber-900' : 'text-rose-900')) }}">
-                                            <i data-lucide="scale" class="w-3.5 h-3.5"></i>
-                                            <span>Realisasi Input Pakan:</span>
+                                <div class="p-2.5 rounded-xl text-xs {{ $actualFeedKg == 0 ? 'bg-amber-50/60 border border-amber-200/70' : (abs($feedDiffKg) <= 1.0 ? 'bg-emerald-50/70 border border-emerald-200/80' : ($feedDiffKg > 1.0 ? 'bg-amber-50/80 border border-amber-200' : 'bg-rose-50/70 border border-rose-200/80')) }}">
+                                    <!-- Header Standar & Realisasi Pakan -->
+                                    <div class="flex items-center justify-between font-bold text-[11px] pb-1.5 border-b border-amber-200/50">
+                                        <span class="flex items-center gap-1.5 text-slate-800">
+                                            <span>🌾</span>
+                                            <span class="font-extrabold text-[11px]">Kebutuhan & Realisasi Pakan:</span>
                                         </span>
                                         @if($actualFeedKg == 0)
-                                            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-200/80 text-slate-600 border border-slate-300/60">
+                                            <span class="text-[9.5px] font-bold px-2 py-0.5 rounded-md bg-slate-200/70 text-slate-600 border border-slate-300/50">
                                                 Belum Input
                                             </span>
                                         @elseif(abs($feedDiffKg) <= 1.0)
-                                            <span class="text-[10px] font-black px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 shadow-2xs">
+                                            <span class="text-[9.5px] font-black px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 shadow-2xs">
                                                 <i data-lucide="check-circle-2" class="w-3 h-3 text-emerald-600"></i>
                                                 Sesuai Standar
                                             </span>
                                         @elseif($feedDiffKg > 1.0)
-                                            <span class="text-[10px] font-black px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1 shadow-2xs">
+                                            <span class="text-[9.5px] font-black px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1 shadow-2xs">
                                                 <i data-lucide="alert-triangle" class="w-3 h-3 text-amber-600"></i>
-                                                Lebih {{ number_format(abs($feedDiffKg), 1, ',', '.') }} kg
+                                                Lebih +{{ number_format(abs($feedDiffKg), 1, ',', '.') }} kg
                                             </span>
                                         @else
-                                            <span class="text-[10px] font-black px-2 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-300 flex items-center gap-1 shadow-2xs">
+                                            <span class="text-[9.5px] font-black px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 border border-rose-300 flex items-center gap-1 shadow-2xs">
                                                 <i data-lucide="alert-circle" class="w-3 h-3 text-rose-600"></i>
                                                 Kurang {{ number_format(abs($feedDiffKg), 1, ',', '.') }} kg
                                             </span>
                                         @endif
                                     </div>
 
-                                    <div class="mt-1 flex items-baseline justify-between text-[11px]">
-                                        <div>
-                                            <span class="text-sm font-black {{ $actualFeedKg == 0 ? 'text-slate-500' : (abs($feedDiffKg) <= 1.0 ? 'text-emerald-800' : ($feedDiffKg > 1.0 ? 'text-amber-800' : 'text-rose-800')) }}">
+                                    <!-- Ringkasan Angka Kebutuhan vs Aktual -->
+                                    <div class="mt-1.5 grid grid-cols-2 gap-2 text-[11px]">
+                                        <div class="bg-white/80 p-1.5 rounded-lg border border-amber-200/50">
+                                            <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Standar Kebutuhan</span>
+                                            <b class="text-maroon-800 font-black text-xs font-mono">{{ number_format($totalPakanCoopKg, 1, ',', '.') }} kg</b>
+                                            <span class="text-[9px] text-slate-500 block truncate font-medium">{{ $cKarungText }}</span>
+                                        </div>
+                                        <div class="bg-white/80 p-1.5 rounded-lg border border-amber-200/50">
+                                            <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Realisasi Aktual</span>
+                                            <b class="font-black text-xs font-mono {{ $actualFeedKg == 0 ? 'text-slate-400' : 'text-slate-800' }}">
                                                 {{ number_format($actualFeedKg, 1, ',', '.') }} kg
-                                            </span>
-                                            <span class="text-[10px] text-slate-500 font-medium ml-1">diinput hari ini</span>
-                                        </div>
-                                        <div class="text-[10.5px] text-slate-500 font-medium">
-                                            Standar Hitungan: <b class="text-slate-800">{{ number_format($totalPakanCoopKg, 1, ',', '.') }} kg</b>
+                                            </b>
+                                            <span class="text-[9px] text-slate-500 block font-medium">diinput hari ini</span>
                                         </div>
                                     </div>
 
-                                    <!-- Jadwal Pagi & Sore Realisasi Samping-Sampingan -->
-                                    <div class="mt-1.5 pt-1.5 border-t border-slate-200/60 flex items-center justify-between text-[10px] text-slate-600 font-medium">
-                                        <span>Jadwal Pagi (40%): <b class="{{ $hasPagi ? 'text-slate-900 font-extrabold' : 'text-slate-400 font-normal' }}">{{ $hasPagi ? number_format($actPagiKg, 1, ',', '.') . ' kg' : 'Belum Input' }}</b></span>
-                                        <span>Sore (60%): <b class="{{ $hasSore ? 'text-slate-900 font-extrabold' : 'text-slate-400 font-normal' }}">{{ $hasSore ? number_format($actSoreKg, 1, ',', '.') . ' kg' : 'Belum Input' }}</b></span>
+                                    <!-- Jadwal Pagi & Sore -->
+                                    <div class="mt-1.5 pt-1.5 border-t border-amber-200/40 flex items-center justify-between text-[9.5px] text-slate-600 font-medium">
+                                        <span>Pagi (40%): <b class="text-slate-800">{{ number_format($pagiKg, 1, ',', '.') }} kg</b> &bull; <span class="{{ $hasPagi ? 'text-emerald-700 font-bold' : 'text-slate-400' }}">{{ $hasPagi ? number_format($actPagiKg, 1, ',', '.') . 'kg' : 'Belum' }}</span></span>
+                                        <span>Sore (60%): <b class="text-slate-800">{{ number_format($soreKg, 1, ',', '.') }} kg</b> &bull; <span class="{{ $hasSore ? 'text-emerald-700 font-bold' : 'text-slate-400' }}">{{ $hasSore ? number_format($actSoreKg, 1, ',', '.') . 'kg' : 'Belum' }}</span></span>
                                     </div>
 
-                                    @if($actualFeedKg > 0)
-                                        <div class="mt-1.5 pt-1.5 border-t {{ abs($feedDiffKg) <= 1.0 ? 'border-emerald-200/60 text-emerald-800' : ($feedDiffKg > 1.0 ? 'border-amber-200/60 text-amber-900' : 'border-rose-200/60 text-rose-900') }} text-[10.5px] leading-snug font-medium">
-                                            @if(abs($feedDiffKg) <= 1.0)
-                                                ✔ <b>Pemberian pakan tepat & sesuai hitungan standar</b> (selisih {{ number_format(abs($feedDiffKg), 1, ',', '.') }} kg dari {{ number_format($totalPakanCoopKg, 1, ',', '.') }} kg).
-                                            @elseif($feedDiffKg > 1.0)
-                                                ⚠️ <b>Pemberian pakan MELEBIHI standar</b> sebesar {{ number_format(abs($feedDiffKg), 1, ',', '.') }} kg dari acuan {{ number_format($totalPakanCoopKg, 1, ',', '.') }} kg.
-                                            @else
-                                                ⚠️ <b>Pemberian pakan KURANG dari standar</b> sebesar {{ number_format(abs($feedDiffKg), 1, ',', '.') }} kg dari acuan {{ number_format($totalPakanCoopKg, 1, ',', '.') }} kg.
-                                            @endif
-                                        </div>
-                                        @php
-                                            $feedUsersText = '';
-                                            if ($hasPagi && $hasSore) {
-                                                if ($uPagi === $uSore && !empty($uPagi)) {
-                                                    $feedUsersText = $uPagi;
-                                                } else {
-                                                    $parts = [];
-                                                    if ($uPagi) $parts[] = 'Pagi: ' . $uPagi;
-                                                    if ($uSore) $parts[] = 'Sore: ' . $uSore;
-                                                    $feedUsersText = implode(' • ', $parts);
-                                                }
-                                            } elseif ($hasPagi && !empty($uPagi)) {
-                                                $feedUsersText = $uPagi . ' (Pagi)';
-                                            } elseif ($hasSore && !empty($uSore)) {
-                                                $feedUsersText = $uSore . ' (Sore)';
-                                            } elseif (!empty($coopFeedUserInputData[$coop->id])) {
-                                                $feedUsersText = $coopFeedUserInputData[$coop->id];
-                                            }
-                                        @endphp
-                                        @if(!empty($feedUsersText))
-                                        <div class="mt-1 text-[9.5px] text-slate-500 font-medium">
-                                            Diinput oleh: <b class="text-slate-700">{{ $feedUsersText }}</b>
-                                        </div>
-                                        @endif
-                                    @else
-                                        <div class="mt-1 text-[10px] text-slate-400">
+                                    @if($actualFeedKg == 0)
+                                        <div class="mt-1 text-[9.5px] text-slate-400 italic">
                                             Belum ada pencatatan pakan untuk {{ $coop->name }} hari ini.
                                         </div>
                                     @endif
@@ -1007,6 +923,24 @@
                                 @endif
                             </div>
 
+                            <!-- 7. Quick Action Bar (Tombol Cepat Input) -->
+                            <div class="pt-2 border-t border-slate-100 flex items-center gap-1.5">
+                                <a href="{{ route('input.index', ['type' => 'produksi']) }}" 
+                                   class="flex-1 py-1.5 px-2 rounded-xl bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 border border-slate-200 hover:border-emerald-300 font-bold text-[10.5px] text-center flex items-center justify-center gap-1 transition-all shadow-2xs">
+                                    <i data-lucide="egg" class="w-3 h-3 text-amber-600"></i>
+                                    <span>+ Telur</span>
+                                </a>
+                                <a href="{{ route('input.index', ['type' => 'pakan']) }}" 
+                                   class="flex-1 py-1.5 px-2 rounded-xl bg-slate-50 hover:bg-amber-50 text-slate-700 hover:text-amber-800 border border-slate-200 hover:border-amber-300 font-bold text-[10.5px] text-center flex items-center justify-center gap-1 transition-all shadow-2xs">
+                                    <i data-lucide="wheat" class="w-3 h-3 text-amber-600"></i>
+                                    <span>+ Pakan</span>
+                                </a>
+                                <a href="{{ route('input.index', ['type' => 'bobot']) }}" 
+                                   class="flex-1 py-1.5 px-2 rounded-xl bg-slate-50 hover:bg-sky-50 text-slate-700 hover:text-sky-800 border border-slate-200 hover:border-sky-300 font-bold text-[10.5px] text-center flex items-center justify-center gap-1 transition-all shadow-2xs">
+                                    <i data-lucide="scale" class="w-3 h-3 text-sky-600"></i>
+                                    <span>⚖️ Bobot</span>
+                                </a>
+                            </div>
                         </div>
                     @endforeach
                 </div>
@@ -1277,6 +1211,19 @@
         </div>
 
     </div>
+
+    <!-- Spacing Tambahan Khusus Mobile & Footer Aplikasi Dashboard -->
+    <div class="h-8 sm:h-10 md:hidden"></div>
+
+    <footer class="pt-6 pb-8 mt-6 border-t border-slate-200/80 text-center text-xs text-slate-400 space-y-1.5">
+        <div class="flex items-center justify-center gap-2 font-bold text-slate-600">
+            <div class="w-5 h-5 rounded-full bg-white border border-slate-200 shadow-2xs overflow-hidden flex items-center justify-center">
+                <img src="{{ asset('images/logo-nochi.png') }}" class="w-full h-full object-contain" alt="Logo">
+            </div>
+            <span>NOCHI FARM &bull; Peternak Telur Modern</span>
+        </div>
+        <p class="text-[11px] text-slate-400">Monitoring Kandang &bull; Gudang Telur & Pakan &bull; Rekapitulasi Realtime</p>
+    </footer>
 
 </div>
 

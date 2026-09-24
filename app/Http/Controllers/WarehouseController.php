@@ -1123,8 +1123,13 @@ class WarehouseController extends Controller
 
         $collection = collect();
 
+        // 0. Ambil Katalog Lengkap Obat & Vaksin Real-Time
+        $medicines = \App\Services\MedicineCatalogService::getAllMedicines(true, $startDate, $endDate);
+        $medicineCategories = \App\Services\MedicineCatalogService::getCategories();
+        $inventorySummary = \App\Services\MedicineCatalogService::getMedicineSummary($medicines);
+
         // 1. Data Pembelian & Stok Obat/Vaksin/Vitamin dari FarmStock
-        $fsQuery = FarmStock::with('user')->whereIn('category', ['obat', 'vaksin', 'vitamin']);
+        $fsQuery = FarmStock::with('user')->whereIn('category', ['obat', 'vaksin', 'vitamin', 'disinfektan', 'mineral']);
         if ($startDate && $endDate) {
             $fsQuery->whereBetween('date', [$startDate, $endDate]);
         }
@@ -1143,7 +1148,7 @@ class WarehouseController extends Controller
                 'item_name' => $fs->item_name,
                 'type' => $fs->type,
                 'quantity' => (float) $fs->quantity,
-                'unit' => $fs->unit,
+                'unit' => $fs->unit ?: 'Botol',
                 'date' => Carbon::parse($fs->date),
                 'created_at' => $fs->created_at ? Carbon::parse($fs->created_at) : Carbon::parse($fs->date),
                 'source' => $fs->source ?: 'CV Medika Farma',
@@ -1164,15 +1169,26 @@ class WarehouseController extends Controller
                 $val = (float) preg_replace('/[^0-9.]/', '', $ht->dosage);
                 if ($val <= 0) $val = 1;
 
+                // Tentukan satuan aktual dari dosage string atau katalog
+                $unit = 'Botol';
+                if (preg_match('/(botol|box|kg|gram|liter|dosis|ampul|sachet|pack)/i', (string) $ht->dosage, $mUnit)) {
+                    $unit = ucfirst(strtolower($mUnit[1]));
+                } else {
+                    $medDetail = \App\Services\MedicineCatalogService::findMedicineByName($ht->medicine_name);
+                    if ($medDetail && !empty($medDetail['unit'])) {
+                        $unit = $medDetail['unit'];
+                    }
+                }
+
                 $collection->push((object) [
                     'id' => 'ht_' . $ht->id,
                     'raw_id' => $ht->id,
                     'source_type' => 'health_treatment',
                     'category' => strtolower($ht->type ?: 'obat'),
-                    'item_name' => ($ht->type ? ucfirst($ht->type) . ': ' : 'Obat: ') . $ht->medicine_name . ($ht->dosage ? ' (' . $ht->dosage . ')' : ''),
+                    'item_name' => $ht->medicine_name,
                     'type' => 'keluar',
                     'quantity' => $val,
-                    'unit' => 'Dosis',
+                    'unit' => $unit,
                     'date' => Carbon::parse($ht->date),
                     'created_at' => $ht->created_at ? Carbon::parse($ht->created_at) : Carbon::parse($ht->date),
                     'source' => $ht->coop ? ($ht->coop->name . ($ht->flock ? ' (' . $ht->flock->name . ')' : '')) : 'Kandang',
@@ -1217,33 +1233,16 @@ class WarehouseController extends Controller
             ['path' => LengthAwarePaginator::resolveCurrentPath(), 'query' => $request->query()]
         );
 
-        // Ringkasan Obat, Vaksin & Vitamin (Sesuai Periode Tanggal)
-        $fsMasukQ = FarmStock::whereIn('category', ['obat', 'vaksin', 'vitamin'])->where('type', 'masuk');
-        $fsKeluarQ = FarmStock::whereIn('category', ['obat', 'vaksin', 'vitamin'])->where('type', 'keluar');
-        $htSummaryQ = HealthTreatment::query();
-        if ($startDate && $endDate) {
-            $fsMasukQ->whereBetween('date', [$startDate, $endDate]);
-            $fsKeluarQ->whereBetween('date', [$startDate, $endDate]);
-            $htSummaryQ->whereBetween('date', [$startDate, $endDate]);
-        }
-        $totalMasuk = (float) $fsMasukQ->sum('quantity');
-        $totalKeluarManual = (float) $fsKeluarQ->sum('quantity');
-        
-        $obatKeluarKandang = 0;
-        foreach ($htSummaryQ->get() as $ht) {
-            $val = (float) preg_replace('/[^0-9.]/', '', $ht->dosage);
-            if ($val == 0) $val = 1;
-            $obatKeluarKandang += $val;
-        }
-        
-        $totalKeluar = $totalKeluarManual + $obatKeluarKandang;
-        $stokSaatIni = round($totalMasuk - $totalKeluar, 1);
+        // Ringkasan Total Obat & Vaksin yang Sinkron 100%
+        $totalMasuk = (float) $inventorySummary['total_masuk'];
+        $totalKeluar = (float) $inventorySummary['total_keluar'];
+        $stokSaatIni = (float) $inventorySummary['total_stock'];
 
         $flocks = \App\Models\Flock::where('is_active', true)->get();
         $coops = Coop::where('is_active', true)->get();
 
         return view('warehouse.obat', compact(
-            'user', 'items', 'tab', 'search', 'startDate', 'endDate', 'totalMasuk', 'totalKeluar', 'stokSaatIni', 'coops', 'flocks'
+            'user', 'items', 'tab', 'search', 'startDate', 'endDate', 'totalMasuk', 'totalKeluar', 'stokSaatIni', 'coops', 'flocks', 'medicines', 'medicineCategories', 'inventorySummary'
         ));
     }
 
@@ -1467,6 +1466,92 @@ class WarehouseController extends Controller
             ]);
 
             return back()->with('success', 'Data transaksi ayam karantina berhasil dicatat!');
+        }
+
+        $inputCat = strtolower($request->input('category', ''));
+        $isMedicineCat = in_array($inputCat, ['obat', 'vaksin', 'vitamin', 'disinfektan', 'mineral', 'obat_cacing', 'antibiotik', 'antikoksidia']);
+
+        if ($isMedicineCat) {
+            $validated = $request->validate([
+                'category' => 'required|string',
+                'type' => 'required|in:masuk,keluar',
+                'medicine_name' => 'nullable|string|max:255',
+                'item_name' => 'nullable|string|max:255',
+                'quantity' => 'nullable|numeric|min:0.01',
+                'dosage' => 'nullable|string',
+                'unit' => 'required|string|max:50',
+                'date' => 'required|date',
+                'time' => 'nullable|string',
+                'coop_id' => 'nullable|exists:coops,id',
+                'application_method' => 'nullable|string|max:255',
+                'source' => 'nullable|string|max:255',
+                'notes' => 'nullable|string|max:1000',
+            ]);
+
+            $user = Auth::user() ?? User::where('role', 'user')->orWhere('username', 'petugas')->first() ?? User::first();
+            $userId = $user ? $user->id : null;
+
+            $medName = $validated['medicine_name'] ?? $validated['item_name'] ?? 'Obat Unggas';
+            $qty = (float) ($validated['quantity'] ?? (float) preg_replace('/[^0-9.]/', '', $validated['dosage'] ?? '1') ?: 1);
+            $unit = $validated['unit'] ?? 'Botol';
+            $cat = $validated['category'];
+
+            $createdAt = Carbon::parse($validated['date']);
+            if (!empty($validated['time'])) {
+                $timeParts = explode(':', $validated['time']);
+                $createdAt->setTime((int) ($timeParts[0] ?? 0), (int) ($timeParts[1] ?? 0));
+            } else {
+                $createdAt->setTime(Carbon::now()->hour, Carbon::now()->minute);
+            }
+
+            if ($validated['type'] === 'keluar') {
+                $flockId = null;
+                $coopName = 'Kandang';
+                if (!empty($validated['coop_id'])) {
+                    $coop = Coop::find($validated['coop_id']);
+                    if ($coop) {
+                        $flockId = $coop->flock_id;
+                        $coopName = $coop->name;
+                    }
+                }
+
+                $dosageStr = $qty . ' ' . $unit;
+                $ht = HealthTreatment::create([
+                    'flock_id' => $flockId,
+                    'coop_id' => $validated['coop_id'] ?? null,
+                    'user_id' => $userId,
+                    'date' => $validated['date'],
+                    'time' => $validated['time'] ?? Carbon::now()->format('H:i:s'),
+                    'type' => $cat,
+                    'medicine_name' => $medName,
+                    'dosage' => $dosageStr,
+                    'application_method' => $validated['application_method'] ?? 'Air minum',
+                    'notes' => $validated['notes'] ?? null,
+                    'created_at' => $createdAt,
+                    'updated_at' => $createdAt,
+                ]);
+
+                return redirect()->route('warehouse.obat', ['tab' => 'keluar'])
+                    ->with('success', "Pemakaian {$medName} ({$dosageStr}) di {$coopName} berhasil dicatat dan stok Gudang Obat otomatis terpotong!");
+            } else {
+                // Masuk / Restok
+                FarmStock::create([
+                    'user_id' => $userId,
+                    'date' => $validated['date'],
+                    'category' => in_array($cat, ['obat', 'vaksin', 'vitamin']) ? $cat : 'obat',
+                    'item_name' => $medName,
+                    'type' => 'masuk',
+                    'quantity' => $qty,
+                    'unit' => $unit,
+                    'source' => $validated['source'] ?? 'CV Medika Farma',
+                    'notes' => $validated['notes'] ?? null,
+                    'created_at' => $createdAt,
+                    'updated_at' => $createdAt,
+                ]);
+
+                return redirect()->route('warehouse.obat', ['tab' => 'masuk'])
+                    ->with('success', "Stok masuk {$medName} ({$qty} {$unit}) berhasil dicatat dan stok Gudang Obat otomatis bertambah!");
+            }
         }
 
         $validated = $request->validate([

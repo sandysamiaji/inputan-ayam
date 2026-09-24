@@ -2,6 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\FarmStock;
+use App\Models\HealthTreatment;
+use Illuminate\Support\Facades\Schema;
+
 class MedicineCatalogService
 {
     /**
@@ -78,9 +82,9 @@ class MedicineCatalogService
     }
 
     /**
-     * Master Data Katalog Lengkap Obat & Vaksin Peternakan Ayam Petelur
+     * Master Data Katalog Dasar Obat & Vaksin Peternakan Ayam Petelur
      */
-    public static function getAllMedicines(): array
+    public static function getBaseMedicines(): array
     {
         return [
             // =========================================================================
@@ -449,5 +453,307 @@ class MedicineCatalogService
                 'notes' => 'Desinfektan konsentrat wangi tidak mengiritasi pernapasan ayam dan pekerja kandang.',
             ],
         ];
+    }
+
+    /**
+     * Dapatkan Katalog Lengkap dengan Sinkronisasi Stok Real-time (Masuk, Terpakai, Sisa)
+     */
+    public static function getAllMedicines(bool $withLiveStock = true, $startDate = null, $endDate = null): array
+    {
+        $baseMedicines = self::getBaseMedicines();
+
+        // Siapkan atribut kalkulasi stok untuk setiap obat dasar
+        foreach ($baseMedicines as &$med) {
+            $initial = (float) ($med['stock'] ?? 0);
+            $med['initial_stock'] = $initial;
+            $med['total_masuk'] = $initial; // Stok awal dianggap sebagai stok masuk mula-mula
+            $med['total_keluar'] = 0.0;
+            $med['current_stock'] = $initial;
+            $med['status'] = $initial > 5 ? 'aman' : ($initial > 0 ? 'menipis' : 'habis');
+            $med['status_label'] = $initial > 5 ? 'Stok Aman' : ($initial > 0 ? 'Menipis' : 'Habis');
+            $med['status_color'] = $initial > 5 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : ($initial > 0 ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-rose-50 text-rose-700 border-rose-200');
+        }
+        unset($med);
+
+        if (!$withLiveStock) {
+            return $baseMedicines;
+        }
+
+        try {
+            // Index array berdasarkan id
+            $medicinesById = [];
+            foreach ($baseMedicines as $med) {
+                $medicinesById[$med['id']] = $med;
+            }
+
+            // 1. Tarik Data Transaksi FarmStock (Masuk & Keluar)
+            if (Schema::hasTable('farm_stocks')) {
+                $fsQuery = FarmStock::whereIn('category', ['obat', 'vaksin', 'vitamin', 'disinfektan', 'mineral'])
+                    ->where(function ($q) {
+                        $q->whereNull('notes')->orWhere('notes', 'NOT LIKE', '[NONAKTIF]%');
+                    });
+
+                if ($startDate && $endDate) {
+                    $fsQuery->whereBetween('date', [$startDate, $endDate]);
+                }
+
+                $farmStocks = $fsQuery->get();
+                foreach ($farmStocks as $fs) {
+                    $qty = (float) $fs->quantity;
+                    if ($qty <= 0) continue;
+
+                    $matchedId = self::matchMedicineId($fs->item_name, $baseMedicines);
+                    if ($matchedId && isset($medicinesById[$matchedId])) {
+                        if ($fs->type === 'masuk') {
+                            $medicinesById[$matchedId]['total_masuk'] += $qty;
+                        } elseif ($fs->type === 'keluar') {
+                            $medicinesById[$matchedId]['total_keluar'] += $qty;
+                        }
+                    } else {
+                        // Produk kustom / di luar 26 obat standar
+                        $customKey = 'custom_' . strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $fs->item_name));
+                        if (!isset($medicinesById[$customKey])) {
+                            $medicinesById[$customKey] = [
+                                'id' => count($medicinesById) + 1,
+                                'name' => $fs->item_name,
+                                'category_key' => $fs->category ?: 'obat',
+                                'category' => ucfirst($fs->category ?: 'Obat'),
+                                'initial_stock' => 0.0,
+                                'total_masuk' => 0.0,
+                                'total_keluar' => 0.0,
+                                'stock' => 0.0,
+                                'current_stock' => 0.0,
+                                'unit' => $fs->unit ?: 'Botol',
+                                'dosage' => 'Sesuai aturan pakai',
+                                'application' => 'Air minum / Pakan',
+                                'schedule' => 'Sesuai anjuran',
+                                'indication' => 'Obat / Suplemen peternakan khusus',
+                                'notes' => 'Tercatat otomatis dari transaksi gudang',
+                                'status' => 'habis',
+                                'status_label' => 'Habis',
+                                'status_color' => 'bg-rose-50 text-rose-700 border-rose-200',
+                            ];
+                        }
+                        if ($fs->type === 'masuk') {
+                            $medicinesById[$customKey]['total_masuk'] += $qty;
+                        } elseif ($fs->type === 'keluar') {
+                            $medicinesById[$customKey]['total_keluar'] += $qty;
+                        }
+                    }
+                }
+            }
+
+            // 2. Tarik Data Pemakaian dari HealthTreatment (Selalu Keluar / Pemakaian Kandang)
+            if (Schema::hasTable('health_treatments')) {
+                $htQuery = HealthTreatment::where(function ($q) {
+                    $q->whereNull('notes')->orWhere('notes', 'NOT LIKE', '[NONAKTIF]%');
+                });
+
+                if ($startDate && $endDate) {
+                    $htQuery->whereBetween('date', [$startDate, $endDate]);
+                }
+
+                $healthTreatments = $htQuery->get();
+                foreach ($healthTreatments as $ht) {
+                    $val = (float) preg_replace('/[^0-9.]/', '', $ht->dosage);
+                    if ($val <= 0) $val = 1.0;
+
+                    $matchedId = self::matchMedicineId($ht->medicine_name, $baseMedicines);
+                    if ($matchedId && isset($medicinesById[$matchedId])) {
+                        $medicinesById[$matchedId]['total_keluar'] += $val;
+                    } else {
+                        $customKey = 'custom_' . strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $ht->medicine_name));
+                        if (!isset($medicinesById[$customKey])) {
+                            $unit = 'Botol';
+                            if (preg_match('/(botol|box|kg|gram|liter|dosis|ampul|sachet)/i', (string) $ht->dosage, $mUnit)) {
+                                $unit = ucfirst(strtolower($mUnit[1]));
+                            }
+                            $medicinesById[$customKey] = [
+                                'id' => count($medicinesById) + 1,
+                                'name' => $ht->medicine_name,
+                                'category_key' => $ht->type ?: 'obat',
+                                'category' => ucfirst($ht->type ?: 'Obat'),
+                                'initial_stock' => 0.0,
+                                'total_masuk' => 0.0,
+                                'total_keluar' => 0.0,
+                                'stock' => 0.0,
+                                'current_stock' => 0.0,
+                                'unit' => $unit,
+                                'dosage' => $ht->dosage ?: 'Sesuai aturan pakai',
+                                'application' => $ht->application_method ?: 'Air minum',
+                                'schedule' => 'Sesuai anjuran',
+                                'indication' => 'Obat / Suplemen peternakan khusus',
+                                'notes' => 'Tercatat otomatis dari pemakaian kandang',
+                                'status' => 'habis',
+                                'status_label' => 'Habis',
+                                'status_color' => 'bg-rose-50 text-rose-700 border-rose-200',
+                            ];
+                        }
+                        $medicinesById[$customKey]['total_keluar'] += $val;
+                    }
+                }
+            }
+
+            // 3. Hitung Sisa Stok Akhir & Status untuk Setiap Obat
+            foreach ($medicinesById as &$item) {
+                $item['total_masuk'] = round((float) $item['total_masuk'], 2);
+                $item['total_keluar'] = round((float) $item['total_keluar'], 2);
+                $rem = max(0.0, round($item['total_masuk'] - $item['total_keluar'], 2));
+                $item['stock'] = $rem;
+                $item['current_stock'] = $rem;
+
+                if ($rem > 5) {
+                    $item['status'] = 'aman';
+                    $item['status_label'] = 'Stok Aman';
+                    $item['status_color'] = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                } elseif ($rem > 0) {
+                    $item['status'] = 'menipis';
+                    $item['status_label'] = 'Menipis';
+                    $item['status_color'] = 'bg-amber-50 text-amber-700 border-amber-200';
+                } else {
+                    $item['status'] = 'habis';
+                    $item['status_label'] = 'Habis';
+                    $item['status_color'] = 'bg-rose-50 text-rose-700 border-rose-200';
+                }
+            }
+            unset($item);
+
+            return array_values($medicinesById);
+
+        } catch (\Throwable $e) {
+            // Jika DB belum siap atau offline, kembalikan base catalog aman
+            return $baseMedicines;
+        }
+    }
+
+    /**
+     * Ringkasan Total Inventaris Obat & Vaksin
+     */
+    public static function getMedicineSummary(?array $medicines = null): array
+    {
+        $meds = $medicines ?? self::getAllMedicines(true);
+        $totalInitial = 0.0;
+        $totalMasuk = 0.0;
+        $totalKeluar = 0.0;
+        $totalStock = 0.0;
+        $safeCount = 0;
+        $lowCount = 0;
+        $emptyCount = 0;
+
+        foreach ($meds as $m) {
+            $totalInitial += (float) ($m['initial_stock'] ?? 0);
+            $totalMasuk += (float) ($m['total_masuk'] ?? 0);
+            $totalKeluar += (float) ($m['total_keluar'] ?? 0);
+            $stock = (float) ($m['stock'] ?? 0);
+            $totalStock += $stock;
+
+            $status = $m['status'] ?? 'aman';
+            if ($status === 'aman') {
+                $safeCount++;
+            } elseif ($status === 'menipis') {
+                $lowCount++;
+            } else {
+                $emptyCount++;
+            }
+        }
+
+        return [
+            'total_initial' => round($totalInitial, 1),
+            'total_masuk' => round($totalMasuk, 1),
+            'total_keluar' => round($totalKeluar, 1),
+            'total_stock' => round($totalStock, 1),
+            'total_products' => count($meds),
+            'safe_count' => $safeCount,
+            'low_count' => $lowCount,
+            'empty_count' => $emptyCount,
+        ];
+    }
+
+    /**
+     * Matching Nama Item Transaksi ke ID Obat Katalog
+     */
+    public static function matchMedicineId(string $itemName, array $baseMedicines): ?int
+    {
+        $normalizedItem = strtolower(trim($itemName));
+        if (empty($normalizedItem)) return null;
+
+        // 1. Direct exact or substring match with catalog name
+        foreach ($baseMedicines as $med) {
+            $normMedName = strtolower(trim($med['name']));
+            if ($normalizedItem === $normMedName) {
+                return $med['id'];
+            }
+        }
+
+        // 2. Specific alias/keyword map
+        $keywordMap = [
+            1  => ['vermixon'],
+            2  => ['wormzol'],
+            3  => ['levamisol', 'cestocide', 'levavit'],
+            4  => ['neomeditril'],
+            5  => ['amoxitin'],
+            6  => ['doxyvet'],
+            7  => ['theranest', 'koleridin'],
+            8  => ['trimycin'],
+            9  => ['toltrazuril', 'baycox', 'toltracox'],
+            10 => ['coccilin', 'amprolin'],
+            11 => ['vita stress', 'vitastress'],
+            12 => ['egg stimulant', 'eggstimulant'],
+            13 => ['vitamin b complex', 'b complex', 'b-complex'],
+            14 => ['fortevit'],
+            15 => ['vita chicks', 'vitachicks'],
+            16 => ['lasota', 'nd lasota'],
+            17 => ['nd ib', 'ib vaccine'],
+            18 => ['clone 45', 'clone g7', 'nd clone'],
+            19 => ['coryza', 'vaksin snot', 'medivac coryza'],
+            20 => ['medivac ai', 'avian influenza', 'flu burung'],
+            21 => ['kalsium & mineral', 'mineral premix', 'kalsium premix'],
+            22 => ['egg shell booster', 'eggshell', 'caco3'],
+            23 => ['dcp', 'dicalcium phosphate'],
+            24 => ['medisep'],
+            25 => ['antisep'],
+            26 => ['rodalon'],
+        ];
+
+        foreach ($keywordMap as $medId => $keywords) {
+            foreach ($keywords as $kw) {
+                if (str_contains($normalizedItem, $kw)) {
+                    return $medId;
+                }
+            }
+        }
+
+        // 3. Fallback: check if med name starts with or is contained in item name
+        foreach ($baseMedicines as $med) {
+            $baseNameOnly = explode(' (', $med['name'])[0];
+            $baseNameOnly = explode(' /', $baseNameOnly)[0];
+            $normBase = strtolower(trim($baseNameOnly));
+            if (strlen($normBase) >= 4 && (str_contains($normalizedItem, $normBase) || str_contains($normBase, $normalizedItem))) {
+                return $med['id'];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Cari detail obat berdasarkan nama
+     */
+    public static function findMedicineByName(string $name): ?array
+    {
+        $all = self::getAllMedicines(true);
+        $norm = strtolower(trim($name));
+        foreach ($all as $med) {
+            if (strtolower(trim($med['name'])) === $norm) {
+                return $med;
+            }
+        }
+        $matchedId = self::matchMedicineId($name, self::getBaseMedicines());
+        if ($matchedId) {
+            foreach ($all as $med) {
+                if ($med['id'] === $matchedId) return $med;
+            }
+        }
+        return null;
     }
 }

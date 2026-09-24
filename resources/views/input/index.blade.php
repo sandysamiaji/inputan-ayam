@@ -981,7 +981,7 @@
         <section class="form-card">
             <div class="cardhead">
                 <h2>💊 Vaksin & Obat</h2>
-                <span class="tag">↘ Gudang Obat</span>
+                <a href="{{ route('warehouse.obat') }}" class="tag" style="text-decoration:none; cursor:pointer;" title="Lihat Stok & Riwayat di Gudang Obat">↘ Gudang Obat</a>
             </div>
 
             <form method="POST" action="{{ route('health.store') }}" id="formObat">
@@ -1151,9 +1151,11 @@
                         <div class="stock-row stock-row-item" data-category="{{ $m['category_key'] }}" data-name="{{ strtolower($m['name']) }}" style="cursor:pointer; padding:6px 10px; border-radius:8px; border:1px solid #f1f5f9; background:#f8fafc; display:flex; justify-content:space-between; align-items:center;" onclick="selectProductFromStock('{{ $m['name'] }}', '{{ $m['category_key'] }}')">
                             <div style="display:flex; flex-direction:column;">
                                 <span style="font-weight:700; font-size:11.5px; color:#1e293b;">{{ $m['name'] }}</span>
-                                <span style="font-size:9.5px; color:#64748b;">{{ $m['category'] }}</span>
+                                <span style="font-size:9.5px; color:#64748b;">{{ $m['category'] }} • Masuk: {{ number_format($m['total_masuk'] ?? 0, 1, ',', '.') }} | Pakai: {{ number_format($m['total_keluar'] ?? 0, 1, ',', '.') }}</span>
                             </div>
-                            <b style="font-size:11.5px; color:#92002f;">{{ $m['stock'] }} {{ $m['unit'] }}</b>
+                            <div style="text-align:right;">
+                                <b style="font-size:11.5px; color:{{ ($m['stock'] ?? 0) <= 0 ? '#e11d48' : '#059669' }};">{{ number_format($m['stock'] ?? 0, 1, ',', '.') }} {{ $m['unit'] }}</b>
+                            </div>
                         </div>
                     @endforeach
                 </div>

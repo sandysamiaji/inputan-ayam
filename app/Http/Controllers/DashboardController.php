@@ -969,27 +969,49 @@ class DashboardController extends Controller
             $flockId = $coop ? $coop->flock_id : null;
         }
 
+        $dosage = $validated['dosage'] ?? '1';
+        if ($request->filled('unit')) {
+            $unit = trim($request->input('unit'));
+            if (!empty($unit) && !str_contains(strtolower($dosage), strtolower($unit))) {
+                $dosage = trim($dosage . ' ' . $unit);
+            }
+        } elseif (!preg_match('/[a-zA-Z]/', $dosage)) {
+            // Jika hanya angka, coba cocokkan satuan dari katalog master
+            $medDetail = \App\Services\MedicineCatalogService::findMedicineByName($validated['medicine_name']);
+            if ($medDetail && !empty($medDetail['unit'])) {
+                $dosage = trim($dosage . ' ' . $medDetail['unit']);
+            } else {
+                $dosage = trim($dosage . ' Botol');
+            }
+        }
+
+        $medType = $validated['type'] ?? 'obat';
+        if ($medType === 'all' || empty($medType)) {
+            $medDetail = \App\Services\MedicineCatalogService::findMedicineByName($validated['medicine_name']);
+            $medType = $medDetail['category_key'] ?? 'obat';
+        }
+
         $health = HealthTreatment::create([
             'flock_id' => $flockId,
             'coop_id' => $validated['coop_id'] ?? null,
             'user_id' => Auth::id() ?? User::where('username', 'petugas')->value('id') ?? User::value('id'),
             'date' => $validated['date'] ?? Carbon::today()->toDateString(),
             'time' => Carbon::now()->format('H:i:s'),
-            'type' => $validated['type'] ?? 'vaksin',
+            'type' => $medType,
             'medicine_name' => $validated['medicine_name'],
-            'dosage' => $validated['dosage'] ?? '1 Botol',
-            'application_method' => $validated['application_method'] ?? 'Air Minum',
+            'dosage' => $dosage,
+            'application_method' => $validated['application_method'] ?? 'Air minum',
             'notes' => $validated['notes'] ?? null,
         ]);
 
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Data vaksin/obat berhasil disimpan!',
+                'message' => "Data pemakaian {$health->medicine_name} ({$health->dosage}) berhasil disimpan dan otomatis memotong stok Gudang Obat!",
                 'data' => $health,
             ]);
         }
 
-        return redirect()->back()->with('success', 'Data vaksin/obat berhasil disimpan!');
+        return redirect()->back()->with('success', "Data pemakaian {$health->medicine_name} ({$health->dosage}) berhasil disimpan dan otomatis memotong stok Gudang Obat!");
     }
 }

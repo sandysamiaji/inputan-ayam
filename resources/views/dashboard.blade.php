@@ -904,14 +904,67 @@
                                             <b class="font-black text-xs font-mono {{ $actualFeedKg == 0 ? 'text-slate-400' : 'text-slate-800' }}">
                                                 {{ number_format($actualFeedKg, 1, ',', '.') }} kg
                                             </b>
-                                            <span class="text-[9px] text-slate-500 block font-medium">diinput hari ini</span>
+                                            @if(!empty($coopFeedUserInputData[$coop->id]))
+                                                <span class="text-[9.5px] text-slate-600 block font-semibold truncate" title="Petugas Penginput: {{ $coopFeedUserInputData[$coop->id] }}">
+                                                    Oleh: <b class="text-slate-800">{{ $coopFeedUserInputData[$coop->id] }}</b>
+                                                </span>
+                                            @else
+                                                <span class="text-[9px] text-slate-500 block font-medium">diinput hari ini</span>
+                                            @endif
                                         </div>
                                     </div>
 
-                                    <!-- Jadwal Pagi & Sore -->
-                                    <div class="mt-1.5 pt-1.5 border-t border-amber-200/40 flex items-center justify-between text-[9.5px] text-slate-600 font-medium">
-                                        <span>Pagi (40%): <b class="text-slate-800">{{ number_format($pagiKg, 1, ',', '.') }} kg</b> &bull; <span class="{{ $hasPagi ? 'text-emerald-700 font-bold' : 'text-slate-400' }}">{{ $hasPagi ? number_format($actPagiKg, 1, ',', '.') . 'kg' : 'Belum' }}</span></span>
-                                        <span>Sore (60%): <b class="text-slate-800">{{ number_format($soreKg, 1, ',', '.') }} kg</b> &bull; <span class="{{ $hasSore ? 'text-emerald-700 font-bold' : 'text-slate-400' }}">{{ $hasSore ? number_format($actSoreKg, 1, ',', '.') . 'kg' : 'Belum' }}</span></span>
+                                    <!-- Rincian Pagi & Sore: Standar Master vs Realisasi Aktual & Petugas Penginput -->
+                                    <div class="mt-2 pt-2 border-t border-amber-200/50 space-y-1.5 text-[10.5px]">
+                                        <!-- Jadwal Pagi -->
+                                        <div class="p-2 rounded-lg {{ $hasPagi ? 'bg-white/95 border border-emerald-200/80' : 'bg-white/60 border border-slate-200/60' }} flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                                            <div class="flex items-center gap-1.5">
+                                                <span class="text-xs">🌅</span>
+                                                <span class="font-extrabold text-slate-900">Pagi (40%):</span>
+                                                <span class="text-slate-500 font-medium">Standar <b class="text-slate-800">{{ number_format($pagiKg, 1, ',', '.') }} kg</b></span>
+                                            </div>
+                                            <div class="flex items-center justify-between sm:justify-end gap-2">
+                                                @if($hasPagi)
+                                                    <span class="font-black text-emerald-800 font-mono bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-[11px]">
+                                                        Input: {{ number_format($actPagiKg, 1, ',', '.') }} kg
+                                                    </span>
+                                                    @if(!empty($uPagi))
+                                                        <span class="text-[9.5px] font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200" title="Petugas Penginput Pagi">
+                                                            👤 {{ $uPagi }}
+                                                        </span>
+                                                    @endif
+                                                @else
+                                                    <span class="text-[9.5px] font-semibold text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
+                                                        Belum Input
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        </div>
+
+                                        <!-- Jadwal Sore -->
+                                        <div class="p-2 rounded-lg {{ $hasSore ? 'bg-white/95 border border-emerald-200/80' : 'bg-white/60 border border-slate-200/60' }} flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                                            <div class="flex items-center gap-1.5">
+                                                <span class="text-xs">🌇</span>
+                                                <span class="font-extrabold text-slate-900">Sore (60%):</span>
+                                                <span class="text-slate-500 font-medium">Standar <b class="text-slate-800">{{ number_format($soreKg, 1, ',', '.') }} kg</b></span>
+                                            </div>
+                                            <div class="flex items-center justify-between sm:justify-end gap-2">
+                                                @if($hasSore)
+                                                    <span class="font-black text-emerald-800 font-mono bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-[11px]">
+                                                        Input: {{ number_format($actSoreKg, 1, ',', '.') }} kg
+                                                    </span>
+                                                    @if(!empty($uSore))
+                                                        <span class="text-[9.5px] font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200" title="Petugas Penginput Sore">
+                                                            👤 {{ $uSore }}
+                                                        </span>
+                                                    @endif
+                                                @else
+                                                    <span class="text-[9.5px] font-semibold text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
+                                                        Belum Input
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        </div>
                                     </div>
 
                                     @if($actualFeedKg == 0)
@@ -921,25 +974,6 @@
                                     @endif
                                 </div>
                                 @endif
-                            </div>
-
-                            <!-- 7. Quick Action Bar (Tombol Cepat Input) -->
-                            <div class="pt-2 border-t border-slate-100 flex items-center gap-1.5">
-                                <a href="{{ route('input.index', ['type' => 'produksi']) }}" 
-                                   class="flex-1 py-1.5 px-2 rounded-xl bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 border border-slate-200 hover:border-emerald-300 font-bold text-[10.5px] text-center flex items-center justify-center gap-1 transition-all shadow-2xs">
-                                    <i data-lucide="egg" class="w-3 h-3 text-amber-600"></i>
-                                    <span>+ Telur</span>
-                                </a>
-                                <a href="{{ route('input.index', ['type' => 'pakan']) }}" 
-                                   class="flex-1 py-1.5 px-2 rounded-xl bg-slate-50 hover:bg-amber-50 text-slate-700 hover:text-amber-800 border border-slate-200 hover:border-amber-300 font-bold text-[10.5px] text-center flex items-center justify-center gap-1 transition-all shadow-2xs">
-                                    <i data-lucide="wheat" class="w-3 h-3 text-amber-600"></i>
-                                    <span>+ Pakan</span>
-                                </a>
-                                <a href="{{ route('input.index', ['type' => 'bobot']) }}" 
-                                   class="flex-1 py-1.5 px-2 rounded-xl bg-slate-50 hover:bg-sky-50 text-slate-700 hover:text-sky-800 border border-slate-200 hover:border-sky-300 font-bold text-[10.5px] text-center flex items-center justify-center gap-1 transition-all shadow-2xs">
-                                    <i data-lucide="scale" class="w-3 h-3 text-sky-600"></i>
-                                    <span>⚖️ Bobot</span>
-                                </a>
                             </div>
                         </div>
                     @endforeach

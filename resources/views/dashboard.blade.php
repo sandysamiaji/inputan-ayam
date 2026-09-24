@@ -75,7 +75,102 @@
             </span>
         </div>
 
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+        <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 sm:gap-4">
+
+            <!-- Card 0: Populasi & Kloter Ayam (Indigo) -->
+            @if(!auth()->check() || auth()->user()->canAccess('dash_card_flock'))
+            <div class="col-span-2 sm:col-span-1 farm-card p-3 sm:p-3.5 border-l-4 border-l-indigo-600 bg-white flex flex-col justify-between hover:border-indigo-500 hover:shadow-md transition-all cursor-pointer group"
+                 onclick="openModal('modalPopulasiKloter')">
+                <div>
+                    <!-- Header Kartu: Icon & Status Farm -->
+                    <div class="flex items-start justify-between gap-1.5">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center shrink-0 border border-indigo-100 shadow-xs group-hover:scale-105 transition-transform">
+                                <i data-lucide="layers" class="w-4 h-4 stroke-[2.2]"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-slate-700 leading-tight">Populasi Ayam</p>
+                                <span class="text-[10px] text-indigo-700 font-extrabold">{{ $flocks->count() }} Kloter • {{ $totalCoopsCount }} Blok</span>
+                            </div>
+                        </div>
+                        <span class="text-[9px] font-black px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-800 border border-indigo-200">
+                            Aktif
+                        </span>
+                    </div>
+
+                    <!-- Total Ayam Aktif & Persentase Farm -->
+                    <div class="mt-2.5">
+                        <div class="flex items-baseline justify-between">
+                            <span class="text-[10px] font-semibold text-slate-500">Ayam Aktif Farm</span>
+                            <span class="text-[9.5px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.2 rounded border border-indigo-100">100%</span>
+                        </div>
+                        <p class="text-lg sm:text-xl font-black text-slate-900 tracking-tight leading-tight mt-0.5">
+                            {{ number_format($totalActiveChickens, 0, ',', '.') }} <span class="text-xs font-bold text-slate-500">Ekor</span>
+                        </p>
+                    </div>
+
+                    <!-- Breakdown Per Kloter (Umur, Populasi, & % Populasi) -->
+                    <div class="mt-2.5 space-y-1.5 pt-2 border-t border-slate-100">
+                        @forelse($flocks as $flock)
+                            @php
+                                $fChx = (int) $flock->coops->sum('active_chickens');
+                                $fPct = $totalActiveChickens > 0 ? round(($fChx / $totalActiveChickens) * 100, 1) : 0;
+                                
+                                if ($flock->start_date) {
+                                    $refDate = $carbonDate ?? \Carbon\Carbon::today();
+                                    $weeksDiff = (int) \Carbon\Carbon::parse($flock->start_date)->diffInWeeks($refDate);
+                                    $fAgeWeeks = max(1, (int) ($flock->initial_age_weeks ?? 0) + $weeksDiff);
+                                } elseif ($flock->coops->isNotEmpty()) {
+                                    $fAgeWeeks = (int) $flock->coops->first()->chicken_age_weeks;
+                                } else {
+                                    $fAgeWeeks = (int) ($flock->initial_age_weeks ?? 0);
+                                }
+                            @endphp
+                            <div class="p-1.5 rounded-lg bg-slate-50/90 border border-slate-100 hover:bg-indigo-50/50 transition-colors">
+                                <div class="flex items-center justify-between gap-1 text-[11px]">
+                                    <span class="font-extrabold text-slate-800 flex items-center gap-1 truncate" title="{{ $flock->name }} ({{ $flock->coops->count() }} Blok)">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0"></span>
+                                        <span>{{ $flock->name }}</span>
+                                    </span>
+                                    <span class="text-[9.5px] font-black text-indigo-700 bg-white px-1.5 py-0.5 rounded border border-indigo-200/80 shadow-2xs whitespace-nowrap">
+                                        {{ $fAgeWeeks }} Mgg
+                                    </span>
+                                </div>
+                                <div class="flex items-center justify-between text-[10px] text-slate-500 mt-1">
+                                    <span class="font-medium">{{ number_format($fChx, 0, ',', '.') }} Ekor</span>
+                                    <span class="font-black text-indigo-950 font-mono">{{ $fPct }}%</span>
+                                </div>
+                                <!-- Mini visual progress ratio -->
+                                <div class="w-full bg-slate-200/80 h-1.5 rounded-full overflow-hidden mt-1 shadow-inner">
+                                    <div class="bg-gradient-to-r from-indigo-500 to-blue-600 h-full rounded-full transition-all duration-300" style="width: {{ $fPct }}%"></div>
+                                </div>
+                            </div>
+                        @empty
+                            @if($coops->whereNull('flock_id')->isNotEmpty())
+                                @php
+                                    $nChx = (int) $coops->whereNull('flock_id')->sum('active_chickens');
+                                    $nPct = $totalActiveChickens > 0 ? round(($nChx / $totalActiveChickens) * 100, 1) : 0;
+                                @endphp
+                                <div class="p-1.5 rounded-lg bg-slate-50 border border-slate-100 text-[10.5px]">
+                                    <div class="flex items-center justify-between">
+                                        <span class="font-bold text-slate-700">Non-Kloter</span>
+                                        <span class="font-black text-slate-800">{{ $nPct }}%</span>
+                                    </div>
+                                </div>
+                            @endif
+                        @endforelse
+                    </div>
+                </div>
+
+                <!-- Footer Card -->
+                <div class="mt-2 pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px]">
+                    <span class="text-slate-400 font-medium">Umur & Proporsi</span>
+                    <span class="text-indigo-700 font-bold group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
+                        Detail &raquo;
+                    </span>
+                </div>
+            </div>
+            @endif
 
             <!-- Card 1: Produksi Telur (Amber) -->
             @if(!auth()->check() || auth()->user()->canAccess('dash_card_egg'))
@@ -1360,6 +1455,250 @@
 <!-- MODAL 4: INPUT BERAT BADAN                                                -->
 <!-- ========================================================================= -->
 <!-- MODAL: DATA SAMPEL BOBOT AYAM 6 BLOK & INPUT CEPAT                         -->
+<!-- ========================================================================= -->
+<!-- MODAL: RINCIAN POPULASI, KLOTER & BLOK KANDANG AYAM                      -->
+<!-- ========================================================================= -->
+<div id="modalPopulasiKloter" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm opacity-0 invisible pointer-events-none transition-all duration-300 flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full sm:max-w-4xl rounded-t-3xl sm:rounded-2xl p-4 sm:p-6 shadow-2xl transform translate-y-full sm:translate-y-0 transition-transform duration-300 max-h-[92vh] overflow-y-auto">
+        
+        <!-- Header Modal -->
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div class="flex items-center gap-2.5">
+                <div class="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0 shadow-xs">
+                    <i data-lucide="layers" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h3 class="font-black text-slate-900 text-base sm:text-lg">Rincian Populasi, Kloter & Blok Kandang</h3>
+                    <p class="text-xs text-slate-500">Distribusi populasi ayam aktif, usia minggu, dan persentase keterisian per kloter & blok (Data per {{ $carbonDate->day }} {{ $namaBulan }} {{ $carbonDate->year }})</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeModal('modalPopulasiKloter')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition-colors">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <div class="py-4 space-y-5">
+            <!-- 3 Ringkasan Metrik Teratas -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="p-3.5 rounded-2xl bg-indigo-50/70 border border-indigo-100 flex items-center justify-between">
+                    <div>
+                        <span class="text-[10px] font-extrabold text-indigo-700 uppercase tracking-wider block">Total Ayam Aktif</span>
+                        <span class="text-xl sm:text-2xl font-black text-indigo-950 font-mono block mt-0.5">
+                            {{ number_format($totalActiveChickens, 0, ',', '.') }} <span class="text-xs font-bold text-slate-500">Ekor</span>
+                        </span>
+                    </div>
+                    <div class="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-800 flex items-center justify-center font-bold text-xs shadow-2xs">
+                        100%
+                    </div>
+                </div>
+
+                <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                    <div>
+                        <span class="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">Total Kloter Aktif</span>
+                        <span class="text-xl sm:text-2xl font-black text-slate-900 font-mono block mt-0.5">
+                            {{ $flocks->count() }} <span class="text-xs font-bold text-slate-500">Kloter</span>
+                        </span>
+                    </div>
+                    <div class="w-9 h-9 rounded-xl bg-slate-200/80 text-slate-700 flex items-center justify-center shadow-2xs">
+                        <i data-lucide="layers" class="w-4 h-4"></i>
+                    </div>
+                </div>
+
+                <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                    <div>
+                        <span class="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">Total Blok Kandang</span>
+                        <span class="text-xl sm:text-2xl font-black text-slate-900 font-mono block mt-0.5">
+                            {{ $totalCoopsCount }} <span class="text-xs font-bold text-slate-500">Blok</span>
+                        </span>
+                    </div>
+                    <div class="w-9 h-9 rounded-xl bg-slate-200/80 text-slate-700 flex items-center justify-center shadow-2xs">
+                        <i data-lucide="home" class="w-4 h-4"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visual Bar Distribusi Populasi Seluruh Farm -->
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-2">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="font-extrabold text-slate-800 flex items-center gap-1.5">
+                        <i data-lucide="pie-chart" class="w-3.5 h-3.5 text-indigo-600"></i>
+                        <span>Proporsi Populasi Antar Kloter</span>
+                    </span>
+                    <span class="text-slate-400 font-semibold text-[11px]">Total 100% ({{ number_format($totalActiveChickens, 0, ',', '.') }} Ekor)</span>
+                </div>
+                <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
+                    @php
+                        $barColors = [
+                            'bg-gradient-to-r from-indigo-500 to-indigo-600',
+                            'bg-gradient-to-r from-blue-500 to-cyan-500',
+                            'bg-gradient-to-r from-violet-500 to-purple-500',
+                            'bg-gradient-to-r from-teal-500 to-emerald-500',
+                        ];
+                    @endphp
+                    @foreach($flocks as $fIdx => $flock)
+                        @php
+                            $fChx = (int) $flock->coops->sum('active_chickens');
+                            $fPct = $totalActiveChickens > 0 ? round(($fChx / $totalActiveChickens) * 100, 1) : 0;
+                            $barCls = $barColors[$fIdx % count($barColors)];
+                        @endphp
+                        @if($fPct > 0)
+                            <div class="{{ $barCls }} h-full transition-all duration-500" style="width: {{ $fPct }}%" title="{{ $flock->name }}: {{ number_format($fChx, 0, ',', '.') }} Ekor ({{ $fPct }}%)"></div>
+                        @endif
+                    @endforeach
+                </div>
+                <div class="flex flex-wrap items-center gap-4 text-xs pt-1">
+                    @foreach($flocks as $fIdx => $flock)
+                        @php
+                            $fChx = (int) $flock->coops->sum('active_chickens');
+                            $fPct = $totalActiveChickens > 0 ? round(($fChx / $totalActiveChickens) * 100, 1) : 0;
+                            $dotColors = ['bg-indigo-500', 'bg-blue-500', 'bg-violet-500', 'bg-teal-500'];
+                            $dotCls = $dotColors[$fIdx % count($dotColors)];
+                        @endphp
+                        <span class="inline-flex items-center gap-1.5 text-slate-700 font-semibold text-[11px]">
+                            <span class="w-2.5 h-2.5 rounded-full {{ $dotCls }}"></span>
+                            <span class="font-extrabold">{{ $flock->name }}:</span>
+                            <strong class="text-slate-900">{{ number_format($fChx, 0, ',', '.') }} Ekor</strong>
+                            <span class="text-slate-400">({{ $fPct }}%)</span>
+                        </span>
+                    @endforeach
+                </div>
+            </div>
+
+            <!-- Detail Per Kloter Lengkap dengan Tabel Blok di Bawahnya -->
+            <div class="space-y-4">
+                @foreach($flocks as $fIdx => $flock)
+                    @php
+                        $fChx = (int) $flock->coops->sum('active_chickens');
+                        $fPct = $totalActiveChickens > 0 ? round(($fChx / $totalActiveChickens) * 100, 1) : 0;
+                        
+                        if ($flock->start_date) {
+                            $refDate = $carbonDate ?? \Carbon\Carbon::today();
+                            $weeksDiff = (int) \Carbon\Carbon::parse($flock->start_date)->diffInWeeks($refDate);
+                            $fAgeWeeks = max(1, (int) ($flock->initial_age_weeks ?? 0) + $weeksDiff);
+                            $daysDiff = (int) \Carbon\Carbon::parse($flock->start_date)->diffInDays($refDate);
+                            $fAgeDays = ($fAgeWeeks * 7) + ($daysDiff % 7);
+                        } elseif ($flock->coops->isNotEmpty()) {
+                            $fAgeWeeks = (int) $flock->coops->first()->chicken_age_weeks;
+                            $fAgeDays = $fAgeWeeks * 7;
+                        } else {
+                            $fAgeWeeks = (int) ($flock->initial_age_weeks ?? 0);
+                            $fAgeDays = $fAgeWeeks * 7;
+                        }
+                        
+                        $fStd = \App\Services\ProductionStandardService::getStandardForWeek($fAgeWeeks);
+                        $fPhase = $fStd['fase'] ?? 'Fase Layer';
+                    @endphp
+                    <div class="rounded-2xl border border-slate-200 overflow-hidden bg-white shadow-2xs">
+                        <!-- Header Kloter -->
+                        <div class="p-3.5 sm:p-4 bg-slate-50/90 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
+                            <div class="space-y-0.5">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-black text-slate-900 text-sm sm:text-base">{{ $flock->name }}</span>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">{{ $flock->code }}</span>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-700">{{ $flock->breed ?: 'Layer' }}</span>
+                                </div>
+                                <p class="text-xs text-slate-500">
+                                    Masuk: <b>{{ $flock->start_date ? \Carbon\Carbon::parse($flock->start_date)->translatedFormat('d F Y') : '-' }}</b>
+                                    @if($flock->initial_population)
+                                        • Populasi Awal: {{ number_format($flock->initial_population, 0, ',', '.') }} Ekor
+                                    @endif
+                                </p>
+                            </div>
+
+                            <div class="flex items-center gap-2 shrink-0">
+                                <span class="px-2.5 py-1 rounded-xl bg-indigo-100 text-indigo-900 border border-indigo-200 text-xs font-black">
+                                    Umur {{ $fAgeWeeks }} Minggu ({{ $fAgeDays }} Hari)
+                                </span>
+                                <span class="px-2.5 py-1 rounded-xl bg-white text-slate-800 border border-slate-200 text-xs font-black shadow-2xs">
+                                    {{ number_format($fChx, 0, ',', '.') }} Ekor ({{ $fPct }}%)
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Sub-bar Info Fase & Kebutuhan Pakan Master -->
+                        <div class="px-4 py-2 bg-indigo-50/40 border-b border-slate-100 flex flex-wrap items-center justify-between text-xs gap-2">
+                            <span class="text-indigo-900 font-semibold flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                <span>Fase: <strong class="text-indigo-950 font-bold">{{ $fPhase }}</strong></span>
+                            </span>
+                            <span class="text-slate-500 font-medium">
+                                Standar Pakan Master: <strong class="text-slate-800">{{ $fStd['gram_pakan'] ?? 105 }} g/ekor/hari</strong>
+                            </span>
+                        </div>
+
+                        <!-- Tabel Blok Kandang di Bawah Kloter Ini -->
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead>
+                                    <tr class="bg-slate-50/50 text-[10.5px] font-extrabold text-slate-500 uppercase tracking-wider border-b border-slate-100">
+                                        <th class="py-2.5 px-4">Blok Kandang</th>
+                                        <th class="py-2.5 px-4 text-center">Umur Ayam</th>
+                                        <th class="py-2.5 px-4 text-right">Ayam Aktif</th>
+                                        <th class="py-2.5 px-4 text-right">% Kloter</th>
+                                        <th class="py-2.5 px-4 text-right">% Farm</th>
+                                        <th class="py-2.5 px-4 text-right">Kapasitas</th>
+                                        <th class="py-2.5 px-4 text-center">Keterisian</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    @foreach($flock->coops as $c)
+                                        @php
+                                            $cChx = (int) $c->active_chickens;
+                                            $cPctFlock = $fChx > 0 ? round(($cChx / $fChx) * 100, 1) : 0;
+                                            $cPctFarm = $totalActiveChickens > 0 ? round(($cChx / $totalActiveChickens) * 100, 1) : 0;
+                                            $cap = (int) ($c->capacity ?: 0);
+                                            $capPct = $cap > 0 ? min(100, round(($cChx / $cap) * 100, 1)) : 0;
+                                        @endphp
+                                        <tr class="hover:bg-slate-50/70 transition-colors">
+                                            <td class="py-2.5 px-4 font-bold text-slate-800 flex items-center gap-1.5">
+                                                <i data-lucide="home" class="w-3.5 h-3.5 text-amber-600"></i>
+                                                <span>{{ $c->name }}</span>
+                                            </td>
+                                            <td class="py-2.5 px-4 text-center font-mono font-bold text-indigo-700">
+                                                {{ $c->chicken_age_weeks }} Mgg
+                                            </td>
+                                            <td class="py-2.5 px-4 text-right font-black text-slate-900 font-mono">
+                                                {{ number_format($cChx, 0, ',', '.') }}
+                                            </td>
+                                            <td class="py-2.5 px-4 text-right font-bold text-slate-600 font-mono">
+                                                {{ $cPctFlock }}%
+                                            </td>
+                                            <td class="py-2.5 px-4 text-right font-black text-indigo-950 font-mono">
+                                                {{ $cPctFarm }}%
+                                            </td>
+                                            <td class="py-2.5 px-4 text-right text-slate-500 font-mono">
+                                                {{ $cap > 0 ? number_format($cap, 0, ',', '.') : '-' }}
+                                            </td>
+                                            <td class="py-2.5 px-4 text-center">
+                                                @if($cap > 0)
+                                                    <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-black {{ $capPct >= 95 ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-amber-50 text-amber-800 border border-amber-200' }}">
+                                                        {{ $capPct }}%
+                                                    </span>
+                                                @else
+                                                    <span class="text-slate-400">-</span>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+
+        <!-- Footer Modal -->
+        <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
+            <span class="text-xs text-slate-400 font-medium">Informasi sinkron realtime dengan data master kandang & kloter</span>
+            <button type="button" onclick="closeModal('modalPopulasiKloter')" class="py-2 px-4 rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-xs shadow-2xs transition-colors">
+                Tutup
+            </button>
+        </div>
+
+    </div>
+</div>
+
 <!-- ========================================================================= -->
 <!-- MODAL: DATA SAMPEL BOBOT AYAM & EVALUASI ADU DATA MASTER (6 BLOK)          -->
 <!-- ========================================================================= -->

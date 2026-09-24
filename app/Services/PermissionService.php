@@ -62,6 +62,11 @@ class PermissionService
                         'desc' => 'Akses untuk mengubah tanggal (Pilih Tanggal) di dashboard',
                         'default' => true,
                     ],
+                    'dash_card_flock' => [
+                        'label' => 'Kartu Kloter & Populasi Ayam',
+                        'desc' => 'Menampilkan metrik total kloter, total blok, populasi ayam aktif, umur, dan persentase populasi per kloter',
+                        'default' => true,
+                    ],
                     'dash_card_egg' => [
                         'label' => 'Kartu Produksi Telur Hari Ini',
                         'desc' => 'Menampilkan metrik panen telur (Peti & Butir) hari ini',

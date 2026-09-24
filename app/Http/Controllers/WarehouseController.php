@@ -122,30 +122,14 @@ class WarehouseController extends Controller
         $pakanConsumptionKarung = $feedSummary['consumption_karung'];
         $pakanRevenue = $feedSummary['total_revenue'];
 
-        // 3. Gudang Obat, Vaksin & Vitamin (Satuan: Item / Botol)
-        $obatMasukQuery = FarmStock::whereIn('category', ['obat', 'vaksin', 'vitamin'])->where('type', 'masuk');
-        $obatKeluarManualQuery = FarmStock::whereIn('category', ['obat', 'vaksin', 'vitamin'])->where('type', 'keluar');
-        $htQuery = \App\Models\HealthTreatment::query();
-
-        if ($startDate && $endDate) {
-            $obatMasukQuery->whereBetween('date', [$startDate, $endDate]);
-            $obatKeluarManualQuery->whereBetween('date', [$startDate, $endDate]);
-            $htQuery->whereBetween('date', [$startDate, $endDate]);
-        }
-
-        $obatMasuk = (float) $obatMasukQuery->sum('quantity');
-        $obatKeluarManual = (float) $obatKeluarManualQuery->sum('quantity');
-        
-        $healthTreatments = $htQuery->get();
-        $obatKeluarKandang = 0;
-        foreach ($healthTreatments as $ht) {
-            $val = (float) preg_replace('/[^0-9.]/', '', $ht->dosage);
-            if ($val == 0) $val = 1;
-            $obatKeluarKandang += $val;
-        }
-        
-        $obatKeluar = $obatKeluarManual + $obatKeluarKandang;
-        $obatStok = round($obatMasuk - $obatKeluar, 1);
+        // 3. Gudang Obat, Vaksin & Vitamin (Satuan: Item / Botol) - Sinkron 100% dengan Katalog & Sub-menu Obat
+        \App\Services\MedicineCatalogService::ensureInitialStock();
+        $medSummary = \App\Services\MedicineCatalogService::getMedicineSummary(
+            \App\Services\MedicineCatalogService::getAllMedicines(true, $startDate, $endDate)
+        );
+        $obatMasuk = (float) $medSummary['total_masuk'];
+        $obatKeluar = (float) $medSummary['total_keluar'];
+        $obatStok = (float) $medSummary['total_stock'];
 
         // 4. Gudang Ayam Karantina (Satuan: Ekor)
         try {
@@ -291,15 +275,15 @@ class WarehouseController extends Controller
             $chartFeedTotalKeluar[] = round($feedTotalKeluarKg, 1);
 
             // 3. Obat & Vaksin (Satuan: Item/Dosis)
-            $fsObatList = $farmStockByDate->get($dt, collect())->whereIn('category', ['obat', 'vaksin', 'vitamin']);
+            $fsObatList = $farmStockByDate->get($dt, collect())->whereIn('category', \App\Services\MedicineCatalogService::getMedicineCategoryKeys());
             $obatMasukDay = (float) $fsObatList->where('type', 'masuk')->sum('total_qty');
             $obatManualKeluarDay = (float) $fsObatList->where('type', 'keluar')->sum('total_qty');
 
             $htDay = $healthByDate->get($dt, collect());
             $obatKonsumsiDay = 0;
             foreach ($htDay as $ht) {
-                $v = (float) preg_replace('/[^0-9.]/', '', $ht->dosage);
-                $obatKonsumsiDay += ($v > 0 ? $v : 1);
+                $v = \App\Services\MedicineCatalogService::parseDosageQuantity($ht->dosage, $ht->medicine_name);
+                $obatKonsumsiDay += $v;
             }
             $obatTotalKeluarDay = $obatKonsumsiDay + $obatManualKeluarDay;
 
@@ -1121,6 +1105,9 @@ class WarehouseController extends Controller
         $startDate = $request->query('start_date');
         $endDate = $request->query('end_date');
 
+        // Pastikan stok awal master obat sudah ada di DB
+        \App\Services\MedicineCatalogService::ensureInitialStock();
+
         $collection = collect();
 
         // 0. Ambil Katalog Lengkap Obat & Vaksin Real-Time
@@ -1129,14 +1116,12 @@ class WarehouseController extends Controller
         $inventorySummary = \App\Services\MedicineCatalogService::getMedicineSummary($medicines);
 
         // 1. Data Pembelian & Stok Obat/Vaksin/Vitamin dari FarmStock
-        $fsQuery = FarmStock::with('user')->whereIn('category', ['obat', 'vaksin', 'vitamin', 'disinfektan', 'mineral']);
+        $fsQuery = FarmStock::with('user')->whereIn('category', \App\Services\MedicineCatalogService::getMedicineCategoryKeys());
         if ($startDate && $endDate) {
-            $fsQuery->whereBetween('date', [$startDate, $endDate]);
-        }
-        if ($tab === 'masuk') {
-            $fsQuery->where('type', 'masuk');
-        } elseif ($tab === 'keluar') {
-            $fsQuery->where('type', 'keluar');
+            $fsQuery->where(function ($q) use ($startDate, $endDate) {
+                $q->whereBetween('date', [$startDate, $endDate])
+                  ->orWhere('source', 'Stok Awal Farm');
+            });
         }
 
         foreach ($fsQuery->get() as $fs) {
@@ -1158,51 +1143,48 @@ class WarehouseController extends Controller
             ]);
         }
 
-        // 2. Data Pemakaian Obat/Vaksin/Vitamin dari HealthTreatment
-        if ($tab === 'semua' || $tab === 'keluar') {
-            $htQuery = HealthTreatment::with(['coop', 'flock', 'user']);
-            if ($startDate && $endDate) {
-                $htQuery->whereBetween('date', [$startDate, $endDate]);
-            }
-            $healthTreatments = $htQuery->get();
-            foreach ($healthTreatments as $ht) {
-                $val = (float) preg_replace('/[^0-9.]/', '', $ht->dosage);
-                if ($val <= 0) $val = 1;
+        // 2. Data Pemakaian Obat/Vaksin/Vitamin dari HealthTreatment (Selalu Keluar / Pemakaian Kandang)
+        $htQuery = HealthTreatment::with(['coop', 'flock', 'user']);
+        if ($startDate && $endDate) {
+            $htQuery->whereBetween('date', [$startDate, $endDate]);
+        }
+        $healthTreatments = $htQuery->get();
+        foreach ($healthTreatments as $ht) {
+            $val = \App\Services\MedicineCatalogService::parseDosageQuantity($ht->dosage, $ht->medicine_name);
 
-                // Tentukan satuan aktual dari dosage string atau katalog
-                $unit = 'Botol';
-                if (preg_match('/(botol|box|kg|gram|liter|dosis|ampul|sachet|pack)/i', (string) $ht->dosage, $mUnit)) {
-                    $unit = ucfirst(strtolower($mUnit[1]));
-                } else {
-                    $medDetail = \App\Services\MedicineCatalogService::findMedicineByName($ht->medicine_name);
-                    if ($medDetail && !empty($medDetail['unit'])) {
-                        $unit = $medDetail['unit'];
-                    }
+            // Tentukan satuan aktual dari dosage string atau katalog
+            $unit = 'Botol';
+            if (preg_match('/(botol|box|kg|gram|liter|dosis|ampul|sachet|pack)/i', (string) $ht->dosage, $mUnit)) {
+                $unit = ucfirst(strtolower($mUnit[1]));
+            } else {
+                $medDetail = \App\Services\MedicineCatalogService::findMedicineByName($ht->medicine_name);
+                if ($medDetail && !empty($medDetail['unit'])) {
+                    $unit = $medDetail['unit'];
                 }
-
-                $collection->push((object) [
-                    'id' => 'ht_' . $ht->id,
-                    'raw_id' => $ht->id,
-                    'source_type' => 'health_treatment',
-                    'category' => strtolower($ht->type ?: 'obat'),
-                    'item_name' => $ht->medicine_name,
-                    'type' => 'keluar',
-                    'quantity' => $val,
-                    'unit' => $unit,
-                    'date' => Carbon::parse($ht->date),
-                    'created_at' => $ht->created_at ? Carbon::parse($ht->created_at) : Carbon::parse($ht->date),
-                    'source' => $ht->coop ? ($ht->coop->name . ($ht->flock ? ' (' . $ht->flock->name . ')' : '')) : 'Kandang',
-                    'notes' => ($ht->application_method ? 'Aplikasi: ' . $ht->application_method . '. ' : '') . ($ht->notes ?? 'Pemberian ke ayam kandang'),
-                    'user' => $ht->user,
-                    'is_nonaktif' => str_starts_with(trim($ht->notes ?? ''), '[NONAKTIF]'),
-                    'coop_id' => $ht->coop_id,
-                    'flock_id' => $ht->flock_id,
-                    'medicine_name' => $ht->medicine_name,
-                    'medicine_type' => $ht->type,
-                    'dosage' => $ht->dosage,
-                    'application_method' => $ht->application_method,
-                ]);
             }
+
+            $collection->push((object) [
+                'id' => 'ht_' . $ht->id,
+                'raw_id' => $ht->id,
+                'source_type' => 'health_treatment',
+                'category' => strtolower($ht->type ?: 'obat'),
+                'item_name' => $ht->medicine_name,
+                'type' => 'keluar',
+                'quantity' => $val,
+                'unit' => $unit,
+                'date' => Carbon::parse($ht->date),
+                'created_at' => $ht->created_at ? Carbon::parse($ht->created_at) : Carbon::parse($ht->date),
+                'source' => $ht->coop ? ($ht->coop->name . ($ht->flock ? ' (' . $ht->flock->name . ')' : '')) : 'Kandang',
+                'notes' => ($ht->application_method ? 'Aplikasi: ' . $ht->application_method . '. ' : '') . ($ht->notes ?? 'Pemberian ke ayam kandang'),
+                'user' => $ht->user,
+                'is_nonaktif' => str_starts_with(trim($ht->notes ?? ''), '[NONAKTIF]'),
+                'coop_id' => $ht->coop_id,
+                'flock_id' => $ht->flock_id,
+                'medicine_name' => $ht->medicine_name,
+                'medicine_type' => $ht->type,
+                'dosage' => $ht->dosage,
+                'application_method' => $ht->application_method,
+            ]);
         }
 
         // Filter pencarian
@@ -1215,6 +1197,18 @@ class WarehouseController extends Controller
                        str_contains(strtolower($item->category ?? ''), $s) ||
                        str_contains(strtolower($item->user ? ($item->user->username ?: $item->user->name) : ''), $s);
             });
+        }
+
+        // Hitung total data untuk setiap tab
+        $countMasuk = $collection->where('type', 'masuk')->count();
+        $countKeluar = $collection->where('type', 'keluar')->count();
+        $countSemua = $collection->count();
+
+        // Filter berdasarkan tab aktif
+        if ($tab === 'masuk') {
+            $collection = $collection->where('type', 'masuk');
+        } elseif ($tab === 'keluar') {
+            $collection = $collection->where('type', 'keluar');
         }
 
         // Urutkan tanggal desc, created_at desc
@@ -1242,7 +1236,10 @@ class WarehouseController extends Controller
         $coops = Coop::where('is_active', true)->get();
 
         return view('warehouse.obat', compact(
-            'user', 'items', 'tab', 'search', 'startDate', 'endDate', 'totalMasuk', 'totalKeluar', 'stokSaatIni', 'coops', 'flocks', 'medicines', 'medicineCategories', 'inventorySummary'
+            'user', 'items', 'tab', 'search', 'startDate', 'endDate',
+            'totalMasuk', 'totalKeluar', 'stokSaatIni', 'coops', 'flocks',
+            'medicines', 'medicineCategories', 'inventorySummary',
+            'countMasuk', 'countKeluar', 'countSemua'
         ));
     }
 
@@ -1492,7 +1489,7 @@ class WarehouseController extends Controller
             $userId = $user ? $user->id : null;
 
             $medName = $validated['medicine_name'] ?? $validated['item_name'] ?? 'Obat Unggas';
-            $qty = (float) ($validated['quantity'] ?? (float) preg_replace('/[^0-9.]/', '', $validated['dosage'] ?? '1') ?: 1);
+            $qty = (float) ($validated['quantity'] ?? \App\Services\MedicineCatalogService::parseDosageQuantity($validated['dosage'] ?? '1', $medName) ?: 1);
             $unit = $validated['unit'] ?? 'Botol';
             $cat = $validated['category'];
 

@@ -268,19 +268,19 @@
         <!-- Filter Tabs: Semua | Masuk | Pemakaian (Kandang) -->
         <div class="flex items-center border-b border-slate-200 gap-6 sm:gap-8 px-1">
             <a href="{{ route('warehouse.obat', array_filter(['tab' => 'semua', 'q' => $search, 'start_date' => $startDate ?? null, 'end_date' => $endDate ?? null])) }}" class="pb-3 text-xs sm:text-sm font-bold transition-all relative {{ $tab === 'semua' ? 'text-maroon-800' : 'text-slate-400 hover:text-slate-600' }}">
-                Semua Riwayat ({{ $items->total() }})
+                Semua Riwayat ({{ $countSemua ?? $items->total() }})
                 @if($tab === 'semua')
                     <span class="absolute bottom-0 left-0 right-0 h-0.5 bg-maroon-800 rounded-full"></span>
                 @endif
             </a>
             <a href="{{ route('warehouse.obat', array_filter(['tab' => 'masuk', 'q' => $search, 'start_date' => $startDate ?? null, 'end_date' => $endDate ?? null])) }}" class="pb-3 text-xs sm:text-sm font-bold transition-all relative {{ $tab === 'masuk' ? 'text-maroon-800' : 'text-slate-400 hover:text-slate-600' }}">
-                Masuk (Beli / Restok)
+                Masuk (Beli / Restok) ({{ $countMasuk ?? 0 }})
                 @if($tab === 'masuk')
                     <span class="absolute bottom-0 left-0 right-0 h-0.5 bg-maroon-800 rounded-full"></span>
                 @endif
             </a>
             <a href="{{ route('warehouse.obat', array_filter(['tab' => 'keluar', 'q' => $search, 'start_date' => $startDate ?? null, 'end_date' => $endDate ?? null])) }}" class="pb-3 text-xs sm:text-sm font-bold transition-all relative {{ $tab === 'keluar' ? 'text-maroon-800' : 'text-slate-400 hover:text-slate-600' }}">
-                Pemakaian Kandang
+                Pemakaian Kandang ({{ $countKeluar ?? 0 }})
                 @if($tab === 'keluar')
                     <span class="absolute bottom-0 left-0 right-0 h-0.5 bg-maroon-800 rounded-full"></span>
                 @endif

@@ -80,4 +80,25 @@ class MedicineCatalogServiceTest extends TestCase
         $this->assertNotNull($med2);
         $this->assertEquals('ND IB Vaccine', $med2['name']);
     }
+
+    public function test_parse_dosage_quantity(): void
+    {
+        $this->assertEquals(2.0, MedicineCatalogService::parseDosageQuantity('2 Botol (2000 dosis)'));
+        $this->assertEquals(1.0, MedicineCatalogService::parseDosageQuantity('1000 dosis'));
+        $this->assertEquals(2.0, MedicineCatalogService::parseDosageQuantity('2000 dosis'));
+        $this->assertEquals(5.0, MedicineCatalogService::parseDosageQuantity('5 Botol'));
+        $this->assertEquals(1.5, MedicineCatalogService::parseDosageQuantity('1.5 Liter'));
+        $this->assertEquals(3.0, MedicineCatalogService::parseDosageQuantity('3 Box'));
+        $this->assertEquals(1.0, MedicineCatalogService::parseDosageQuantity(null));
+        $this->assertEquals(1.0, MedicineCatalogService::parseDosageQuantity(''));
+    }
+
+    public function test_medicine_category_keys(): void
+    {
+        $keys = MedicineCatalogService::getMedicineCategoryKeys();
+        $this->assertContains('obat', $keys);
+        $this->assertContains('vaksin', $keys);
+        $this->assertContains('vitamin', $keys);
+    }
 }
+

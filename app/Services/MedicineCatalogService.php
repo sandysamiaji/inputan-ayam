@@ -458,15 +458,151 @@ class MedicineCatalogService
     /**
      * Dapatkan Katalog Lengkap dengan Sinkronisasi Stok Real-time (Masuk, Terpakai, Sisa)
      */
+    /**
+     * Kunci kategori untuk database farm_stocks
+     */
+    public static function getMedicineCategoryKeys(): array
+    {
+        return ['obat', 'vaksin', 'vitamin', 'disinfektan', 'mineral', 'obat_cacing', 'antibiotik', 'antikoksidia'];
+    }
+
+    /**
+     * Parsing kuantitas riil dari string dosis / pemakaian untuk menghindari penggelembungan angka.
+     * Contoh:
+     * - "2 Botol (2000 dosis)" => 2.0
+     * - "1000 dosis" / "1000 ds" => 1.0 (1 botol/vial standar farm)
+     * - "2000 dosis" => 2.0
+     * - "1.5 Liter" => 1.5
+     */
+    public static function parseDosageQuantity(?string $dosage, ?string $medicineName = null): float
+    {
+        if (empty($dosage)) {
+            return 1.0;
+        }
+
+        $str = trim($dosage);
+
+        // 1. Pola kemasan di awal: "2 Botol", "3 Box", "1.5 Liter", "2 Pack", "5 Sachet", "2 Vial", "500 ml"
+        if (preg_match('/^([0-9]+(?:[\.,][0-9]+)?)\s*(?:botol|box|pack|sachet|ampul|vial|strip|karung|kg|liter|ltr|gram|gr)\b/i', $str, $matches)) {
+            $num = (float) str_replace(',', '.', $matches[1]);
+            return $num > 0 ? $num : 1.0;
+        }
+
+        // 2. Angka di awal sebelum kurung: "2 (2000 dosis)"
+        if (preg_match('/^([0-9]+(?:[\.,][0-9]+)?)\s*\(/i', $str, $matches)) {
+            $num = (float) str_replace(',', '.', $matches[1]);
+            return $num > 0 ? $num : 1.0;
+        }
+
+        // 3. Format dosis besar vaksin: "1000 dosis", "2000 dosis", "500 dosis"
+        if (preg_match('/([0-9]+)\s*(?:dosis|ds)\b/i', $str, $matches)) {
+            $doses = (int) $matches[1];
+            if ($doses >= 500) {
+                return max(1.0, round($doses / 1000, 1));
+            }
+        }
+
+        // 4. Bersihkan teks dalam kurung lalu ambil angka pertama
+        $cleanStr = trim(preg_replace('/\([^)]*\)/', '', $str));
+        if (preg_match('/^([0-9]+(?:[\.,][0-9]+)?)/', $cleanStr, $matches)) {
+            $num = (float) str_replace(',', '.', $matches[1]);
+            if ($num > 0 && $num < 100) {
+                return $num;
+            } elseif ($num >= 500 && preg_match('/dosis/i', $str)) {
+                return max(1.0, round($num / 1000, 1));
+            }
+        }
+
+        return 1.0;
+    }
+
+    /**
+     * Pastikan 26 Data Master Obat & Vaksin Memiliki Stok Awal Tercatat di Database (farm_stocks)
+     */
+    public static function ensureInitialStock(): void
+    {
+        try {
+            if (!Schema::hasTable('farm_stocks')) {
+                return;
+            }
+
+            $medCategories = self::getMedicineCategoryKeys();
+            $hasMasuk = FarmStock::whereIn('category', $medCategories)
+                ->where('type', 'masuk')
+                ->exists();
+
+            if ($hasMasuk) {
+                return;
+            }
+
+            $baseMedicines = self::getBaseMedicines();
+            $defaultDate = '2026-01-01';
+            $defaultCreatedAt = \Carbon\Carbon::parse('2026-01-01 08:00:00');
+
+            foreach ($baseMedicines as $med) {
+                $stockQty = (float) ($med['stock'] ?? 0);
+                if ($stockQty <= 0) continue;
+
+                $cat = $med['category_key'] ?? 'obat';
+                $dbCat = match($cat) {
+                    'vaksin' => 'vaksin',
+                    'vitamin' => 'vitamin',
+                    'disinfektan' => 'disinfektan',
+                    'mineral' => 'mineral',
+                    default => 'obat',
+                };
+
+                FarmStock::create([
+                    'user_id' => null,
+                    'date' => $defaultDate,
+                    'category' => $dbCat,
+                    'item_name' => $med['name'],
+                    'type' => 'masuk',
+                    'quantity' => $stockQty,
+                    'unit' => $med['unit'] ?? 'Botol',
+                    'source' => 'Stok Awal Farm',
+                    'notes' => 'Stok Awal Master Katalog Peternakan Nochi Farm (' . ($med['category'] ?? 'Obat') . ')',
+                    'created_at' => $defaultCreatedAt,
+                    'updated_at' => $defaultCreatedAt,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            // Gracefully ignore jika DB offline atau belum migrate
+        }
+    }
+
+    /**
+     * Dapatkan Katalog Lengkap dengan Sinkronisasi Stok Real-time (Masuk, Terpakai, Sisa)
+     */
     public static function getAllMedicines(bool $withLiveStock = true, $startDate = null, $endDate = null): array
     {
+        if ($withLiveStock) {
+            self::ensureInitialStock();
+        }
+
         $baseMedicines = self::getBaseMedicines();
+
+        $hasDbMasuk = false;
+        if ($withLiveStock) {
+            try {
+                if (Schema::hasTable('farm_stocks')) {
+                    $hasDbMasuk = FarmStock::whereIn('category', self::getMedicineCategoryKeys())
+                        ->where('type', 'masuk')
+                        ->where(function ($q) {
+                            $q->whereNull('notes')->orWhere('notes', 'NOT LIKE', '[NONAKTIF]%');
+                        })
+                        ->exists();
+                }
+            } catch (\Throwable $e) {}
+        }
 
         // Siapkan atribut kalkulasi stok untuk setiap obat dasar
         foreach ($baseMedicines as &$med) {
             $initial = (float) ($med['stock'] ?? 0);
             $med['initial_stock'] = $initial;
-            $med['total_masuk'] = $initial; // Stok awal dianggap sebagai stok masuk mula-mula
+            // Jika DB sudah memiliki transaksi masuk farm_stocks, total_masuk dihitung murni dari DB (dimulai 0).
+            // Jika DB belum ada transaksi masuk atau offline, gunakan baseline stok katalog.
+            $med['total_masuk'] = $hasDbMasuk ? 0.0 : $initial;
             $med['total_keluar'] = 0.0;
             $med['current_stock'] = $initial;
             $med['status'] = $initial > 5 ? 'aman' : ($initial > 0 ? 'menipis' : 'habis');
@@ -488,13 +624,16 @@ class MedicineCatalogService
 
             // 1. Tarik Data Transaksi FarmStock (Masuk & Keluar)
             if (Schema::hasTable('farm_stocks')) {
-                $fsQuery = FarmStock::whereIn('category', ['obat', 'vaksin', 'vitamin', 'disinfektan', 'mineral'])
+                $fsQuery = FarmStock::whereIn('category', self::getMedicineCategoryKeys())
                     ->where(function ($q) {
                         $q->whereNull('notes')->orWhere('notes', 'NOT LIKE', '[NONAKTIF]%');
                     });
 
                 if ($startDate && $endDate) {
-                    $fsQuery->whereBetween('date', [$startDate, $endDate]);
+                    $fsQuery->where(function ($q) use ($startDate, $endDate) {
+                        $q->whereBetween('date', [$startDate, $endDate])
+                          ->orWhere('source', 'Stok Awal Farm');
+                    });
                 }
 
                 $farmStocks = $fsQuery->get();
@@ -541,6 +680,16 @@ class MedicineCatalogService
                         }
                     }
                 }
+
+                // Jika DB masuk aktif, pastikan obat dasar yang belum ada transaksi tetap memiliki stok awal katalog
+                if ($hasDbMasuk) {
+                    foreach ($baseMedicines as $bm) {
+                        $bmId = $bm['id'];
+                        if (isset($medicinesById[$bmId]) && $medicinesById[$bmId]['total_masuk'] <= 0) {
+                            $medicinesById[$bmId]['total_masuk'] = (float) ($bm['stock'] ?? 0);
+                        }
+                    }
+                }
             }
 
             // 2. Tarik Data Pemakaian dari HealthTreatment (Selalu Keluar / Pemakaian Kandang)
@@ -555,8 +704,7 @@ class MedicineCatalogService
 
                 $healthTreatments = $htQuery->get();
                 foreach ($healthTreatments as $ht) {
-                    $val = (float) preg_replace('/[^0-9.]/', '', $ht->dosage);
-                    if ($val <= 0) $val = 1.0;
+                    $val = self::parseDosageQuantity($ht->dosage, $ht->medicine_name);
 
                     $matchedId = self::matchMedicineId($ht->medicine_name, $baseMedicines);
                     if ($matchedId && isset($medicinesById[$matchedId])) {

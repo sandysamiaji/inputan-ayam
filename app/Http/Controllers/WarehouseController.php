@@ -883,11 +883,22 @@ class WarehouseController extends Controller
         }
 
         foreach ($fsQuery->get() as $fs) {
+            // Deteksi jenis pakan dari item_name / notes untuk feed_name field
+            $fsItemLower = strtolower($fs->item_name . ' ' . ($fs->notes ?? ''));
+            $fsFeedName = null;
+            if (str_contains($fsItemLower, 'grower') || str_contains($fsItemLower, 'pullet')) {
+                $fsFeedName = 'Pakan Grower';
+            } elseif (str_contains($fsItemLower, 'starter')) {
+                $fsFeedName = 'Pakan Starter';
+            } elseif (str_contains($fsItemLower, 'layer')) {
+                $fsFeedName = 'Pakan Layer';
+            }
             $collection->push((object) [
                 'id' => $fs->id,
                 'raw_id' => $fs->id,
                 'source_type' => 'farm_stock',
                 'item_name' => $fs->item_name,
+                'feed_name' => $fsFeedName,
                 'type' => $fs->type,
                 'quantity' => (float) $fs->quantity,
                 'unit' => $fs->unit,
@@ -937,11 +948,17 @@ class WarehouseController extends Controller
                 }
                 $sessionsStr = implode(' • ', $sessionsList);
 
+                // Tentukan label jenis pakan dari semua sub-record dalam grup ini
+                $allFeedNames = $group->pluck('feed_name')->filter()->unique()->values();
+                $feedNameLabel = $allFeedNames->count() === 1
+                    ? $allFeedNames->first()
+                    : ($allFeedNames->isNotEmpty() ? $allFeedNames->implode(' / ') : null);
+
                 $collection->push((object) [
                     'id' => 'fc_' . $first->id,
                     'raw_id' => $first->id,
                     'source_type' => 'feed_consumption',
-                    'item_name' => 'Pemberian Pakan - ' . ($coop ? $coop->name : 'Kandang'),
+                    'item_name' => 'Pemberian Pakan - ' . ($coop ? $coop->name : 'Kandang') . ($feedNameLabel ? ' (' . $feedNameLabel . ')' : ''),
                     'type' => 'keluar',
                     'quantity' => $totalQty,
                     'unit' => 'Kg',
@@ -955,7 +972,7 @@ class WarehouseController extends Controller
                     'coop_name' => $coop ? $coop->name : 'Tanpa Blok',
                     'flock_id' => $first->flock_id,
                     'flock_name' => $flock ? $flock->name : '',
-                    'feed_name' => $first->feed_name,
+                    'feed_name' => $feedNameLabel,
                     'feeding_time' => $sessionsStr,
                     'quantity_kg' => $totalQty,
                     'sub_records' => $subRecords,
@@ -964,13 +981,16 @@ class WarehouseController extends Controller
             }
         }
 
-        // Filter pencarian
+        // Filter pencarian — mencakup item_name, feed_name (jenis pakan), source, notes, user
         if (!empty($search)) {
             $s = strtolower($search);
             $collection = $collection->filter(function ($item) use ($s) {
                 return str_contains(strtolower($item->item_name), $s) ||
+                       str_contains(strtolower($item->feed_name ?? ''), $s) ||
                        str_contains(strtolower($item->source ?? ''), $s) ||
                        str_contains(strtolower($item->notes ?? ''), $s) ||
+                       str_contains(strtolower($item->coop_name ?? ''), $s) ||
+                       str_contains(strtolower($item->flock_name ?? ''), $s) ||
                        str_contains(strtolower($item->user ? ($item->user->username ?: $item->user->name) : ''), $s);
             });
         }

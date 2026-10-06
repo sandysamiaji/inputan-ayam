@@ -400,10 +400,21 @@
                                 </div>
 
                                 <div class="min-w-0 flex-1">
-                                    <div class="flex items-center gap-1.5 mb-0.5">
+                                    <div class="flex items-center gap-1.5 mb-0.5 flex-wrap">
                                         <span class="px-1.5 py-0.2 rounded text-[9.5px] font-extrabold uppercase {{ $isMasuk ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800' }}">
                                             {{ $isMasuk ? 'MASUK (BELI)' : 'PEMBERIAN PAKAN' }}
                                         </span>
+                                        @if(!empty($item->feed_name))
+                                            @php
+                                                $feedNameLower = strtolower($item->feed_name);
+                                                $feedBadgeClass = str_contains($feedNameLower, 'grower') || str_contains($feedNameLower, 'pullet')
+                                                    ? 'bg-sky-50 text-sky-700 border border-sky-200'
+                                                    : (str_contains($feedNameLower, 'starter') ? 'bg-violet-50 text-violet-700 border border-violet-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200');
+                                            @endphp
+                                            <span class="px-1.5 py-0.2 rounded text-[9px] font-bold {{ $feedBadgeClass }}">
+                                                🌾 {{ $item->feed_name }}
+                                            </span>
+                                        @endif
                                         @if(!empty($item->feeding_time))
                                             <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
                                                 {{ $item->feeding_time }}
@@ -588,10 +599,21 @@
                     </div>
 
                     <div class="min-w-0">
-                        <div class="flex items-center gap-2 mb-0.5">
+                        <div class="flex items-center gap-2 mb-0.5 flex-wrap">
                             <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase {{ $isMasuk ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-blue-50 text-blue-700 border border-blue-200' }}">
                                 {{ $item->type === 'keluar' ? 'PEMBERIAN PAKAN' : 'MASUK (BELI)' }}
                             </span>
+                            @if(!empty($item->feed_name))
+                                @php
+                                    $feedNameLower2 = strtolower($item->feed_name);
+                                    $feedBadgeClass2 = str_contains($feedNameLower2, 'grower') || str_contains($feedNameLower2, 'pullet')
+                                        ? 'bg-sky-50 text-sky-700 border border-sky-200'
+                                        : (str_contains($feedNameLower2, 'starter') ? 'bg-violet-50 text-violet-700 border border-violet-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200');
+                                @endphp
+                                <span class="px-1.5 py-0.2 rounded text-[9px] font-bold {{ $feedBadgeClass2 }}">
+                                    🌾 {{ $item->feed_name }}
+                                </span>
+                            @endif
                             @if(!empty($item->feeding_time))
                                 <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
                                     {{ $item->feeding_time }}

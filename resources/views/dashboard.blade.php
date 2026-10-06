@@ -1434,8 +1434,12 @@
 
             <div>
                 <label class="block text-xs font-bold text-slate-700 mb-1.5">Jenis Pakan</label>
-                <input type="text" name="feed_name" value="Pakan Layer" required
-                       class="w-full text-xs sm:text-sm font-bold px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-maroon-800 outline-none bg-slate-50">
+                <select name="feed_name" required
+                        class="w-full text-xs sm:text-sm font-bold px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-maroon-800 outline-none bg-slate-50">
+                    <option value="Pakan Layer" selected>🌾 Pakan Layer (Dewasa)</option>
+                    <option value="Pakan Grower">🌾 Pakan Grower (Pertumbuhan/Pullet)</option>
+                    <option value="Pakan Starter">🌾 Pakan Starter</option>
+                </select>
             </div>
 
             <div>

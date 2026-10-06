@@ -746,6 +746,7 @@
                         <select name="feed_name" id="pakanJenis">
                             <option value="Pakan Layer">Layer</option>
                             <option value="Pakan Grower">Grower</option>
+                            <option value="Pakan Starter">Starter</option>
                         </select>
                     </div>
                 </div>
@@ -1375,6 +1376,7 @@ const completedFeedMap = @json($completedFeedRecords ?? []);
 // Master copies of original option elements for iOS Safari WebKit compatibility
 const masterCoopOptions = {};
 const masterWaktuOptions = [];
+let isUserChangedPakanJenis = false;
 
 // 1. Switch Transaction Type Tabs
 function switchType(type) {
@@ -1522,6 +1524,19 @@ function updateCoopPop(prefix) {
             }
         }
 
+        // Set default jenis pakan based on coop standard ONLY if user hasn't manually selected/changed it
+        const pakanJenisSelect = document.getElementById('pakanJenis');
+        if (pakanJenisSelect && !isUserChangedPakanJenis && selectedOpt) {
+            const feedType = selectedOpt.getAttribute('data-feedtype') || 'Layer';
+            if (feedType.toLowerCase().includes('grower') || feedType.toLowerCase().includes('pullet')) {
+                pakanJenisSelect.value = 'Pakan Grower';
+            } else if (feedType.toLowerCase().includes('starter')) {
+                pakanJenisSelect.value = 'Pakan Starter';
+            } else {
+                pakanJenisSelect.value = 'Pakan Layer';
+            }
+        }
+
         calcPakan();
     } else if (prefix === 'mort') {
         document.getElementById('mortPopSebelum').textContent = pop + ' ekor';
@@ -1634,16 +1649,6 @@ function calcPakan() {
 
     document.getElementById('pakanStdTitle').textContent = `Umur ${age} minggu · ${feedType}`;
     document.getElementById('pakanStdGram').textContent = feedGram.toString().replace('.', ',');
-
-    // Auto-select Jenis Pakan dropdown based on feedType
-    const pakanJenisSelect = document.getElementById('pakanJenis');
-    if (pakanJenisSelect) {
-        if (feedType.toLowerCase().includes('grower') || feedType.toLowerCase().includes('pullet')) {
-            pakanJenisSelect.value = 'Pakan Grower';
-        } else {
-            pakanJenisSelect.value = 'Pakan Layer';
-        }
-    }
 
     const stdBlokKg = (pop * feedGram) / 1000;
     const pagiKg = (stdBlokKg * 0.40).toFixed(1);
@@ -1947,6 +1952,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const pakanWaktuSelect = document.getElementById('pakanWaktu');
     if (pakanWaktuSelect) {
         masterWaktuOptions.push(...Array.from(pakanWaktuSelect.options).map(opt => opt.cloneNode(true)));
+    }
+
+    const pakanJenisSelect = document.getElementById('pakanJenis');
+    if (pakanJenisSelect) {
+        pakanJenisSelect.addEventListener('change', function () {
+            isUserChangedPakanJenis = true;
+        });
     }
 
     const medSelect = document.getElementById('obatProduk');

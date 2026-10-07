@@ -137,7 +137,7 @@ class RekapController extends Controller
             $eggQuery->where('flock_id', $flockId);
         }
         $totalTelurButir = (int) $eggQuery->sum('total_eggs');
-        $totalTelurPeti = (int) round($totalTelurButir / $isiTray); // Sesuai setting database (isi tray)
+        $totalTelurPeti = (float) $eggQuery->sum('crates_count'); // Sesuai inputan Realisasi Panen Telur
         $totalTelurBroken = (int) $eggQuery->sum('broken_eggs');
         $totalTelurGood = (int) $eggQuery->sum('good_eggs');
         $rejectRate = $totalTelurButir > 0 ? round(($totalTelurBroken / $totalTelurButir) * 100, 1) : 1.2;
@@ -244,7 +244,7 @@ class RekapController extends Controller
             foreach ($weeklyRanges as $wr) {
                 $wEggQuery = EggProduction::whereBetween('date', [$wr['start'], $wr['end']])->where('flock_id', $tf->id);
                 $wEggs = (int) $wEggQuery->sum('total_eggs');
-                $wPeti = (int) round($wEggs / $isiTray);
+                $wPeti = (float) $wEggQuery->sum('crates_count');
                 $wBroken = (int) $wEggQuery->sum('broken_eggs');
                 $wReject = $wEggs > 0 ? round(($wBroken / $wEggs) * 100, 1) : 1.2;
                 $wHdp = $tfActivePopulation > 0 ? round(($wEggs / ($tfActivePopulation * 7)) * 100, 1) : 0;
@@ -291,7 +291,7 @@ class RekapController extends Controller
         foreach ($activeCoops as $coop) {
             $cEggQuery = EggProduction::where('coop_id', $coop->id)->whereBetween('date', [$startDate, $endDate]);
             $cEggs = (int) $cEggQuery->sum('total_eggs');
-            $cPeti = (int) round($cEggs / 30);
+            $cPeti = (float) $cEggQuery->sum('crates_count');
             $cBroken = (int) $cEggQuery->sum('broken_eggs');
             $cReject = $cEggs > 0 ? round(($cBroken / $cEggs) * 100, 1) : 1.2;
             $rangeDays = Carbon::parse($startDate)->diffInDays(Carbon::parse($endDate)) + 1;
@@ -342,7 +342,7 @@ class RekapController extends Controller
         foreach ($allFlocks as $f) {
             $fEggQuery = EggProduction::where('flock_id', $f->id)->whereBetween('date', [$startDate, $endDate]);
             $fEggs = (int) $fEggQuery->sum('total_eggs');
-            $fPeti = (int) round($fEggs / 30);
+            $fPeti = (float) $fEggQuery->sum('crates_count');
             $fChickens = (int) $f->coops()->where('is_active', true)->sum('active_chickens');
             $rangeDays = Carbon::parse($startDate)->diffInDays(Carbon::parse($endDate)) + 1;
             $fHdp = $fChickens > 0 ? round(($fEggs / ($fChickens * $rangeDays)) * 100, 1) : 0;

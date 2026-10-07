@@ -37,58 +37,68 @@ class RekapController extends Controller
      * Menentukan rentang tanggal berdasarkan input atau preset
      */
     private function resolveDateRange(Request $request)
-    {
-        $preset = $request->query('preset');
-        $startDate = $request->query('start_date');
-        $endDate = $request->query('end_date');
+{
+    $preset = $request->query('preset');
+    $startDate = $request->query('start_date');
+    $endDate = $request->query('end_date');
 
-        $today = Carbon::today();
+    $today = Carbon::today();
 
-        if ($preset) {
-            switch ($preset) {
-                case 'hari_ini':
-                    $startDate = '2026-09-14';
-                    $endDate = '2026-09-14';
-                    break;
-                case 'kemarin':
-                    $startDate = '2026-09-13';
-                    $endDate = '2026-09-13';
-                    break;
-                case '7_hari':
-                    $startDate = '2026-09-08';
-                    $endDate = '2026-09-14';
-                    break;
-                case '30_hari':
-                    $startDate = '2026-08-16';
-                    $endDate = '2026-09-14';
-                    break;
-                case 'bulan_ini':
-                    $startDate = '2026-09-01';
-                    $endDate = '2026-09-27';
-                    break;
-                case 'bulan_lalu':
-                    $startDate = '2026-08-01';
-                    $endDate = '2026-08-31';
-                    break;
-            }
+    if ($preset) {
+        switch ($preset) {
+
+            case 'hari_ini':
+                $startDate = $today->copy()->startOfDay()->format('Y-m-d');
+                $endDate = $today->copy()->endOfDay()->format('Y-m-d');
+                break;
+
+            case 'kemarin':
+                $yesterday = $today->copy()->subDay();
+
+                $startDate = $yesterday->format('Y-m-d');
+                $endDate = $yesterday->format('Y-m-d');
+                break;
+
+            case '7_hari':
+                $startDate = $today->copy()->subDays(6)->format('Y-m-d');
+                $endDate = $today->format('Y-m-d');
+                break;
+
+            case '30_hari':
+                $startDate = $today->copy()->subDays(29)->format('Y-m-d');
+                $endDate = $today->format('Y-m-d');
+                break;
+
+            case 'bulan_ini':
+                $startDate = $today->copy()->startOfMonth()->format('Y-m-d');
+                $endDate = $today->format('Y-m-d');
+                break;
+
+            case 'bulan_lalu':
+                $lastMonth = $today->copy()->subMonth();
+
+                $startDate = $lastMonth->copy()->startOfMonth()->format('Y-m-d');
+                $endDate = $lastMonth->copy()->endOfMonth()->format('Y-m-d');
+                break;
         }
-
-        // Default ke Bulan Ini (1 Sep - 27 Sep 2026)
-        if (!$startDate || !$endDate) {
-            $startDate = '2026-09-01';
-            $endDate = '2026-09-27';
-            $preset = 'bulan_ini';
-        }
-
-        // Pastikan start <= end
-        if ($startDate > $endDate) {
-            $temp = $startDate;
-            $startDate = $endDate;
-            $endDate = $temp;
-        }
-
-        return [$startDate, $endDate, $preset];
     }
+
+    // Default ke Bulan Ini
+    if (!$startDate || !$endDate) {
+        $startDate = $today->copy()->startOfMonth()->format('Y-m-d');
+        $endDate = $today->format('Y-m-d');
+        $preset = 'bulan_ini';
+    }
+
+    // Pastikan start <= end
+    if ($startDate > $endDate) {
+        $temp = $startDate;
+        $startDate = $endDate;
+        $endDate = $temp;
+    }
+
+    return [$startDate, $endDate, $preset];
+}
 
     /**
      * 1. Halaman Utama Rekap Data (Filter, Ringkasan Metrik, dan Grafik Tren)

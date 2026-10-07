@@ -261,7 +261,9 @@
                 </div>
                 <div class="text-[10px] text-slate-400 font-medium pt-1 border-t border-slate-100 flex items-center justify-between">
                     <span>Target Master</span>
-                    <span class="text-emerald-700 font-bold">90.0%</span>
+                    <span class="font-bold {{ $hdp >= $globalAvgTarget ? 'text-emerald-700' : 'text-rose-600' }}">
+                        {{ number_format($globalAvgTarget, 1, ',', '.') }}%
+                    </span>
                 </div>
             </div>
 
@@ -337,7 +339,10 @@
                                 <span class="px-2 py-0.5 rounded-md text-xs font-black bg-maroon-100 text-maroon-800">{{ $fr['name'] }}</span>
                                 <span class="text-xs text-slate-500 font-medium">({{ number_format($fr['chickens'], 0, ',', '.') }} ekor aktif)</span>
                             </div>
-                            <span class="text-xs font-extrabold {{ $fr['hdp'] >= 70 ? 'text-emerald-700' : 'text-rose-600' }}">
+                            @php
+                                $isFrHdpGood = !isset($fr['target_hd']) || (float)$fr['hdp'] >= (float)$fr['target_hd'];
+                            @endphp
+                            <span class="text-xs font-extrabold {{ $isFrHdpGood ? 'text-emerald-700' : 'text-rose-600' }}">
                                 HDP {{ number_format($fr['hdp'], 1, ',', '.') }}%
                             </span>
                         </div>
@@ -435,7 +440,11 @@
                         </div>
                         <div class="mt-3 pt-2 border-t border-slate-200/70 flex items-center justify-between">
                             <span class="text-[10px] font-bold text-slate-400">Performa:</span>
-                            <span class="text-xs font-black {{ $w['hdp'] >= 70 ? 'text-emerald-700' : ($w['hdp'] > 0 ? 'text-amber-700' : 'text-slate-400') }}">
+                            @php
+                                $isWHdpGood = !isset($w['target_hd']) || (float)$w['hdp'] >= (float)$w['target_hd'];
+                                $wHdpColor = $w['hdp'] > 0 ? ($isWHdpGood ? 'text-emerald-700' : 'text-rose-600') : 'text-slate-400';
+                            @endphp
+                            <span class="text-xs font-black {{ $wHdpColor }}">
                                 HDP {{ number_format($w['hdp'], 1, ',', '.') }}%
                             </span>
                         </div>

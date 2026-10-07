@@ -143,11 +143,10 @@ class RekapController extends Controller
         $rejectRate = $totalTelurButir > 0 ? round(($totalTelurBroken / $totalTelurButir) * 100, 1) : 1.2;
 
         // HDP (Hen Day Production)
-        // Dihitung berdasarkan total butir terhadap populasi ayam aktif
-        $productionDays = (int) (clone $eggQuery)->distinct('date')->count('date') ?: 1;
-        $productionFactor = ($productionDays <= 4) ? 16.5 : $productionDays;
-        $calculatedHdp = $activePopulation > 0 ? round(($totalTelurButir / ($activePopulation * $productionFactor)) * 100, 1) : 92.4;
-        $hdp = ($calculatedHdp >= 50 && $calculatedHdp <= 100) ? $calculatedHdp : 92.4;
+        // Dihitung berdasarkan total butir terhadap akumulasi populasi (Hen-Days) pada rentang tanggal
+        $rangeDays = Carbon::parse($startDate)->diffInDays(Carbon::parse($endDate)) + 1;
+        $calculatedHdp = $activePopulation > 0 ? round(($totalTelurButir / ($activePopulation * $rangeDays)) * 100, 1) : 0;
+        $hdp = $calculatedHdp;
 
         // 2. Metrik Pemakaian Pakan
         $feedQuery = FeedConsumption::whereBetween('date', [$startDate, $endDate]);
@@ -248,7 +247,7 @@ class RekapController extends Controller
                 $wPeti = (int) round($wEggs / $isiTray);
                 $wBroken = (int) $wEggQuery->sum('broken_eggs');
                 $wReject = $wEggs > 0 ? round(($wBroken / $wEggs) * 100, 1) : 1.2;
-                $wHdp = $tfActivePopulation > 0 ? round(($wEggs / ($tfActivePopulation * 4.0)) * 100, 1) : 92.0;
+                $wHdp = $tfActivePopulation > 0 ? round(($wEggs / ($tfActivePopulation * 7)) * 100, 1) : 0;
 
                 $wFeedQuery = FeedConsumption::whereBetween('date', [$wr['start'], $wr['end']])->where('flock_id', $tf->id);
                 $wFeedKg = (float) $wFeedQuery->sum('quantity_kg');
@@ -268,6 +267,7 @@ class RekapController extends Controller
                     'eggs' => $wEggs,
                     'crates' => $wPeti,
                     'hdp' => $wHdp,
+                    'target_hd' => (float) (\App\Services\ProductionStandardService::getStandardForWeek($wr['age_week'])['hd_target'] ?? 90),
                     'reject' => $wReject,
                     'feed_kg' => round($wFeedKg),
                     'feed_karung_str' => $wFeedKarungStr,
@@ -294,7 +294,8 @@ class RekapController extends Controller
             $cPeti = (int) round($cEggs / 30);
             $cBroken = (int) $cEggQuery->sum('broken_eggs');
             $cReject = $cEggs > 0 ? round(($cBroken / $cEggs) * 100, 1) : 1.2;
-            $cHdp = $coop->active_chickens > 0 ? round(($cEggs / ($coop->active_chickens * 16.5)) * 100, 1) : 92.4;
+            $rangeDays = Carbon::parse($startDate)->diffInDays(Carbon::parse($endDate)) + 1;
+            $cHdp = $coop->active_chickens > 0 ? round(($cEggs / ($coop->active_chickens * $rangeDays)) * 100, 1) : 0;
             $cPercent = $totalTelurButir > 0 ? round(($cEggs / $totalTelurButir) * 100, 1) : 0;
 
             $cFeedQuery = FeedConsumption::where('coop_id', $coop->id)->whereBetween('date', [$startDate, $endDate]);
@@ -342,9 +343,12 @@ class RekapController extends Controller
             $fEggQuery = EggProduction::where('flock_id', $f->id)->whereBetween('date', [$startDate, $endDate]);
             $fEggs = (int) $fEggQuery->sum('total_eggs');
             $fPeti = (int) round($fEggs / 30);
-            $fChickens = (int) $f->coops()->sum('active_chickens');
-            $fHdp = $fChickens > 0 ? round(($fEggs / ($fChickens * 16.5)) * 100, 1) : 92.4;
+            $fChickens = (int) $f->coops()->where('is_active', true)->sum('active_chickens');
+            $rangeDays = Carbon::parse($startDate)->diffInDays(Carbon::parse($endDate)) + 1;
+            $fHdp = $fChickens > 0 ? round(($fEggs / ($fChickens * $rangeDays)) * 100, 1) : 0;
             $fPercent = $totalTelurButir > 0 ? round(($fEggs / $totalTelurButir) * 100, 1) : 0;
+            $fAvgAge = (int) $f->coops()->where('is_active', true)->avg('chicken_age_weeks');
+            $fTarget = (float) (\App\Services\ProductionStandardService::getStandardForWeek($fAvgAge)['hd_target'] ?? 90);
 
             $flockRekap[] = [
                 'id' => $f->id,
@@ -354,6 +358,7 @@ class RekapController extends Controller
                 'eggs' => $fEggs,
                 'crates' => $fPeti,
                 'hdp' => $fHdp,
+                'target_hd' => $fTarget,
                 'percent' => $fPercent,
             ];
         }
@@ -511,11 +516,18 @@ class RekapController extends Controller
             $cursor->addDays($step);
         }
 
+        $globalAvgTarget = 90.0;
+        if ($activeCoops->count() > 0) {
+            $globalAvgTarget = round($activeCoops->avg(function($c) {
+                return (float) (\App\Services\ProductionStandardService::getStandardForWeek($c->chicken_age_weeks)['hd_target'] ?? 90);
+            }), 1);
+        }
+
         return view('rekap.index', compact(
             'user',
             'startDate', 'endDate', 'preset', 'formattedRange', 'flockId', 'activeTab',
             'allFlocks', 'selectedFlock', 'activeCoops', 'activePopulation', 'totalFarmPopulation',
-            'totalTelurPeti', 'totalTelurButir', 'totalTelurBroken', 'totalTelurGood', 'rejectRate', 'hdp',
+            'totalTelurPeti', 'totalTelurButir', 'totalTelurBroken', 'totalTelurGood', 'rejectRate', 'hdp', 'globalAvgTarget',
             'totalPakanKg', 'totalPakanKarung', 'totalPakanSisaKg', 'totalPakanKarungStr',
             'totalMortalitas', 'mortalitasRate', 'avgBobot',
             'totalVaksin', 'totalObat', 'totalVitamin', 'totalVaksinKegiatan', 'healthTreatments',

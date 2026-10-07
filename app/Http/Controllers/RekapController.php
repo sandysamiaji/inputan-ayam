@@ -138,6 +138,7 @@ class RekapController extends Controller
         }
         $totalTelurButir = (int) $eggQuery->sum('total_eggs');
         $totalTelurPeti = (float) $eggQuery->sum('crates_count'); // Sesuai inputan Realisasi Panen Telur
+        $totalTelurKg = (float) $eggQuery->sum('weight_kg');
         $totalTelurBroken = (int) $eggQuery->sum('broken_eggs');
         $totalTelurGood = (int) $eggQuery->sum('good_eggs');
         $rejectRate = $totalTelurButir > 0 ? round(($totalTelurBroken / $totalTelurButir) * 100, 1) : 1.2;
@@ -245,6 +246,7 @@ class RekapController extends Controller
                 $wEggQuery = EggProduction::whereBetween('date', [$wr['start'], $wr['end']])->where('flock_id', $tf->id);
                 $wEggs = (int) $wEggQuery->sum('total_eggs');
                 $wPeti = (float) $wEggQuery->sum('crates_count');
+                $wTelurKg = (float) $wEggQuery->sum('weight_kg');
                 $wBroken = (int) $wEggQuery->sum('broken_eggs');
                 $wReject = $wEggs > 0 ? round(($wBroken / $wEggs) * 100, 1) : 1.2;
                 $wHdp = $tfActivePopulation > 0 ? round(($wEggs / ($tfActivePopulation * 7)) * 100, 1) : 0;
@@ -266,6 +268,7 @@ class RekapController extends Controller
                     'date_range' => $wr['label'],
                     'eggs' => $wEggs,
                     'crates' => $wPeti,
+                    'weight_kg' => $wTelurKg,
                     'hdp' => $wHdp,
                     'target_hd' => (float) (\App\Services\ProductionStandardService::getStandardForWeek($wr['age_week'])['hd_target'] ?? 90),
                     'reject' => $wReject,
@@ -292,6 +295,7 @@ class RekapController extends Controller
             $cEggQuery = EggProduction::where('coop_id', $coop->id)->whereBetween('date', [$startDate, $endDate]);
             $cEggs = (int) $cEggQuery->sum('total_eggs');
             $cPeti = (float) $cEggQuery->sum('crates_count');
+            $cTelurKg = (float) $cEggQuery->sum('weight_kg');
             $cBroken = (int) $cEggQuery->sum('broken_eggs');
             $cReject = $cEggs > 0 ? round(($cBroken / $cEggs) * 100, 1) : 1.2;
             $rangeDays = Carbon::parse($startDate)->diffInDays(Carbon::parse($endDate)) + 1;
@@ -326,6 +330,7 @@ class RekapController extends Controller
                 'chicken_age_weeks' => $coop->chicken_age_weeks,
                 'eggs' => $cEggs,
                 'crates' => $cPeti,
+                'weight_kg' => $cTelurKg,
                 'broken' => $cBroken,
                 'reject' => $cReject,
                 'hdp' => $cHdp,
@@ -343,6 +348,7 @@ class RekapController extends Controller
             $fEggQuery = EggProduction::where('flock_id', $f->id)->whereBetween('date', [$startDate, $endDate]);
             $fEggs = (int) $fEggQuery->sum('total_eggs');
             $fPeti = (float) $fEggQuery->sum('crates_count');
+            $fTelurKg = (float) $fEggQuery->sum('weight_kg');
             $fChickens = (int) $f->coops()->where('is_active', true)->sum('active_chickens');
             $rangeDays = Carbon::parse($startDate)->diffInDays(Carbon::parse($endDate)) + 1;
             $fHdp = $fChickens > 0 ? round(($fEggs / ($fChickens * $rangeDays)) * 100, 1) : 0;
@@ -357,6 +363,7 @@ class RekapController extends Controller
                 'chickens' => $fChickens,
                 'eggs' => $fEggs,
                 'crates' => $fPeti,
+                'weight_kg' => $fTelurKg,
                 'hdp' => $fHdp,
                 'target_hd' => $fTarget,
                 'percent' => $fPercent,
@@ -527,7 +534,7 @@ class RekapController extends Controller
             'user',
             'startDate', 'endDate', 'preset', 'formattedRange', 'flockId', 'activeTab',
             'allFlocks', 'selectedFlock', 'activeCoops', 'activePopulation', 'totalFarmPopulation',
-            'totalTelurPeti', 'totalTelurButir', 'totalTelurBroken', 'totalTelurGood', 'rejectRate', 'hdp', 'globalAvgTarget',
+            'totalTelurPeti', 'totalTelurKg', 'totalTelurButir', 'totalTelurBroken', 'totalTelurGood', 'rejectRate', 'hdp', 'globalAvgTarget',
             'totalPakanKg', 'totalPakanKarung', 'totalPakanSisaKg', 'totalPakanKarungStr',
             'totalMortalitas', 'mortalitasRate', 'avgBobot',
             'totalVaksin', 'totalObat', 'totalVitamin', 'totalVaksinKegiatan', 'healthTreatments',

@@ -234,7 +234,7 @@
                         {{ number_format($totalTelurButir, 0, ',', '.') }} <span class="text-xs font-bold text-slate-500">butir</span>
                     </div>
                     <div class="text-xs font-bold text-slate-600 mt-0.5">
-                        {{ number_format($totalTelurPeti, 0, ',', '.') }} Peti Telur
+                        {{ number_format($totalTelurPeti, 0, ',', '.') }} Peti Telur @if($totalTelurKg > 0)+ {{ rtrim(rtrim(number_format($totalTelurKg, 2, ',', '.'), '0'), ',') }} Kg Telur @endif
                     </div>
                 </div>
                 <div class="text-[10px] text-slate-400 font-medium pt-1 border-t border-slate-100 flex items-center justify-between">
@@ -348,7 +348,7 @@
                         </div>
                         <div class="mt-2 text-base sm:text-lg font-black text-slate-800">
                             {{ number_format($fr['eggs'], 0, ',', '.') }} <span class="text-xs font-bold text-slate-500">butir</span>
-                            <span class="text-xs font-bold text-slate-400">• {{ number_format($fr['crates'], 0, ',', '.') }} Peti</span>
+                            <span class="text-xs font-bold text-slate-400">• {{ number_format($fr['crates'], 0, ',', '.') }} Peti Telur @if(isset($fr['weight_kg']) && $fr['weight_kg'] > 0)+ {{ rtrim(rtrim(number_format($fr['weight_kg'], 2, ',', '.'), '0'), ',') }} Kg Telur @endif</span>
                         </div>
                     </div>
                 @endforeach
@@ -385,7 +385,7 @@
                                         {{ number_format($br['eggs'], 0, ',', '.') }} <span class="text-[10px] font-bold text-slate-500">butir</span>
                                     </div>
                                     <div class="text-[11px] text-slate-500 font-medium">
-                                        {{ number_format($br['crates'], 0, ',', '.') }} Peti Telur
+                                        {{ number_format($br['crates'], 0, ',', '.') }} Peti Telur @if(isset($br['weight_kg']) && $br['weight_kg'] > 0)+ {{ rtrim(rtrim(number_format($br['weight_kg'], 2, ',', '.'), '0'), ',') }} Kg Telur @endif
                                     </div>
                                 </div>
                                 <div class="text-right">
@@ -435,7 +435,7 @@
                                 {{ number_format($w['eggs'], 0, ',', '.') }}
                             </div>
                             <div class="text-[11px] text-slate-500 font-medium">
-                                butir · {{ number_format($w['crates'], 0, ',', '.') }} peti
+                                        butir · {{ number_format($w['crates'], 0, ',', '.') }} Peti Telur @if(isset($w['weight_kg']) && $w['weight_kg'] > 0)+ {{ rtrim(rtrim(number_format($w['weight_kg'], 2, ',', '.'), '0'), ',') }} Kg Telur @endif
                             </div>
                         </div>
                         <div class="mt-3 pt-2 border-t border-slate-200/70 flex items-center justify-between">

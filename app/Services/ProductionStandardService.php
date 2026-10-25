@@ -165,24 +165,30 @@ class ProductionStandardService
     }
 
     /**
-     * Hitung umur minggu dinamis untuk sebuah coop berdasarkan flock.start_date
-     * dan tanggal referensi (tanggal yang dipilih user).
+     * Hitung umur minggu dinamis untuk sebuah blok kandang (coop)
+     * berdasarkan umur ayam pada masing-masing data blok kandang
+     * dan tanggal referensi (misal tanggal yang dipilih user di dashboard).
      *
-     * Jika flock tidak punya start_date, fallback ke chicken_age_weeks statis di DB.
+     * Jika tanggal referensi maju ke masa depan, umur bertambah sesuai selisih minggu.
+     * Jika tanggal referensi mundur ke masa lalu, umur berkurang sesuai selisih minggu.
      */
     public static function getDynamicAgeWeeks(Coop $coop, $referenceDate = null): int
     {
-        $refDate = $referenceDate ? \Carbon\Carbon::parse($referenceDate) : \Carbon\Carbon::today();
+        $refDate = $referenceDate ? \Carbon\Carbon::parse($referenceDate)->startOfDay() : \Carbon\Carbon::today();
+        $today = \Carbon\Carbon::today();
 
-        if ($coop->flock && $coop->flock->start_date) {
-            $startDate = \Carbon\Carbon::parse($coop->flock->start_date);
-            $weeks = (int) $startDate->diffInWeeks($refDate);
-            $initialAge = (int) $coop->flock->initial_age_weeks;
-            return max(1, $initialAge + $weeks);
+        // Ambil data umur ayam yang tercatat pada masing-masing data blok kandang
+        $baseAge = (int) ($coop->getRawOriginal('chicken_age_weeks') ?: $coop->chicken_age_weeks);
+        if ($baseAge <= 0 && $coop->flock) {
+            $baseAge = (int) ($coop->flock->initial_age_weeks ?: 21);
         }
+        $baseAge = max(1, $baseAge);
 
-        // Fallback: hitung dari chicken_age_weeks statis
-        return max(1, (int) $coop->chicken_age_weeks);
+        // Hitung selisih minggu antara tanggal yang dipilih user dengan hari ini
+        $diffDays = $today->diffInDays($refDate, false);
+        $diffWeeks = (int) floor($diffDays / 7);
+
+        return max(1, $baseAge + $diffWeeks);
     }
 
     /**

@@ -595,6 +595,63 @@
   border-radius: 9px;
   padding: 8px 10px;
 }
+
+/* Styling Khusus Split 2 Kloter Standar Pakan */
+.master-v6-container .flock-chips {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+.master-v6-container .flock-chip {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .15s ease;
+  user-select: none;
+}
+.master-v6-container .flock-chip:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+.master-v6-container .flock-chip.active {
+  background: #fdf2f4;
+  border-color: #f7d0d6;
+  color: var(--m);
+  font-weight: 800;
+}
+.master-v6-container .simul-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  overflow-x: auto;
+}
+.master-v6-container .simul-tab {
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 9.5px;
+  font-weight: 700;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--mut);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .15s;
+}
+.master-v6-container .simul-tab:hover {
+  border-color: var(--m);
+  color: var(--m);
+}
+.master-v6-container .simul-tab.active {
+  background: var(--m);
+  color: #fff;
+  border-color: var(--m);
+}
 </style>
 
 <div class="master-v6-container">
@@ -763,52 +820,101 @@
     </div>
 
     <!-- ========================================== -->
-    <!-- 3. VIEW: STANDAR PAKAN (DEDICATED PAGE) -->
+    <!-- 3. VIEW: STANDAR PAKAN (DEDICATED PAGE - SPLIT 2 KLOTTER) -->
     <!-- ========================================== -->
     <div id="view-standar-pakan" style="{{ $section === 'standar-pakan' ? '' : 'display:none;' }}">
         <div class="head">
             <a href="{{ route('master.index') }}" onclick="openSection('hub'); return false;" class="back" title="Kembali ke Master Hub">‹</a>
             <div>
                 <h1>Standar Pakan</h1>
-                <p>Master per umur · 13 sampai 90 minggu</p>
+                <p>Simulasi per Klotter & Blok · 13 sampai 90 minggu</p>
             </div>
         </div>
 
-        <div class="label">Acuan Umur</div>
-        <section class="card">
-            <div class="ctop">
-                <div class="round" style="background:#fff1d7;color:#b97400">🌾</div>
-                <div>
-                    <h3>Standar Pakan</h3>
-                    <small>Master per umur · 13 sampai 90 minggu</small>
-                </div>
-                <a href="{{ route('master.standar-pakan') }}" class="chev" title="Buka Master Tabel Standar Pakan">›</a>
-            </div>
+        @php
+            $kgPerKarung = \App\Models\Setting::getKgPerKarung() ?: 50;
 
-            <div class="selectbox">
-                <label>PILIH UMUR</label>
-                <select id="selectUmurPakan">
-                    @for($w = 13; $w <= 90; $w++)
-                        <option value="{{ $w }}" {{ $w == $avgAgeWeeks ? 'selected' : '' }}>{{ $w }} minggu</option>
-                    @endfor
-                </select>
-            </div>
+            // Kelompokkan kandang berdasarkan Klotter (Flock)
+            $flockGroups = [];
+            foreach ($flocks as $flock) {
+                $fCoops = $flock->coops->where('is_active', true)->values();
+                if ($fCoops->isNotEmpty()) {
+                    $fAvgAge = (int) round($fCoops->avg('chicken_age_weeks') ?: 21);
+                    $flockGroups[$flock->id] = [
+                        'id' => $flock->id,
+                        'name' => $flock->name,
+                        'code' => $flock->code,
+                        'coops' => $fCoops,
+                        'total_chickens' => (int) $fCoops->sum('active_chickens'),
+                        'base_age' => $fAvgAge,
+                    ];
+                }
+            }
 
+            $orphanCoops = $coops->whereNull('flock_id')->where('is_active', true)->values();
+            if ($orphanCoops->isNotEmpty()) {
+                $oAvgAge = (int) round($orphanCoops->avg('chicken_age_weeks') ?: 21);
+                $flockGroups['non_kloter'] = [
+                    'id' => 'non_kloter',
+                    'name' => 'Non-Kloter',
+                    'code' => 'NK',
+                    'coops' => $orphanCoops,
+                    'total_chickens' => (int) $orphanCoops->sum('active_chickens'),
+                    'base_age' => $oAvgAge,
+                ];
+            }
+        @endphp
+
+        <!-- Filter Tab Antar Klotter -->
+        <div class="simul-tabs" style="margin-top: 10px;">
+            <button type="button" class="simul-tab active" id="tabPakanAll" onclick="filterPakanKloter('all')">
+                Semua Klotter (Split {{ count($flockGroups) }})
+            </button>
+            @foreach($flockGroups as $fId => $fg)
+                <button type="button" class="simul-tab" id="tabPakanFlock_{{ $fId }}" onclick="filterPakanKloter('{{ $fId }}')">
+                    {{ $fg['name'] }} (Umur {{ $fg['base_age'] }} Mgg)
+                </button>
+            @endforeach
+        </div>
+
+        <!-- Global Future Simulation Bar -->
+        <div style="background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px;">
+            <div>
+                <span style="font-size: 8px; font-weight: 800; color: var(--mut); text-transform: uppercase; letter-spacing: .04em; display: block;">Simulasi Serentak Masa Depan</span>
+                <span style="font-size: 10px; font-weight: 800; color: var(--t);">Maju Beberapa Minggu Bersama:</span>
+            </div>
+            <div class="flock-chips" style="margin-top:0;">
+                <button type="button" class="flock-chip" onclick="simulateFutureAll(0)" title="Kembalikan ke umur riil saat ini">↺ Umur Riil</button>
+                <button type="button" class="flock-chip" onclick="simulateFutureAll(1)">+1 Minggu</button>
+                <button type="button" class="flock-chip" onclick="simulateFutureAll(2)">+2 Minggu</button>
+                <button type="button" class="flock-chip" onclick="simulateFutureAll(4)">+4 Minggu</button>
+                <button type="button" class="flock-chip" onclick="simulateFutureAll(8)">+8 Minggu</button>
+            </div>
+        </div>
+
+        <!-- RENDER SETIAP KLOTTER SECARA TERPISAH (SPLIT) -->
+        @php
+            $grandInitialFeedKg = 0;
+        @endphp
+
+        @foreach($flockGroups as $fId => $fg)
             @php
-                $initialFeedGram = (float) ($currentStd['gram_pakan'] ?? 110);
-                $initialFeedHalf = round($initialFeedGram / 2, 1);
+                $fAge = $fg['base_age'];
+                $fStd = \App\Services\ProductionStandardService::getStandardForWeek($fAge);
+                $fGram = (float) ($fStd['gram_pakan'] ?? 110);
+                $fHalf = round($fGram / 2, 1);
                 
-                $actualTotalFeedKg = 0;
-                $coopCalculations = [];
-                foreach($coops as $coop) {
+                $fSubtotalKg = 0;
+                $fCoopCalculations = [];
+                foreach($fg['coops'] as $coop) {
                     $cAge = (int) $coop->chicken_age_weeks;
                     $cStd = \App\Services\ProductionStandardService::getStandardForWeek($cAge);
                     $cGram = (float) ($cStd['gram_pakan'] ?? 110);
                     $cPop = (int) $coop->active_chickens;
                     $cKg = round(($cPop * $cGram) / 1000, 1);
-                    $actualTotalFeedKg += $cKg;
+                    $fSubtotalKg += $cKg;
                     
-                    $coopCalculations[] = [
+                    $fCoopCalculations[] = [
                         'coop' => $coop,
                         'kg' => $cKg,
                         'pop' => $cPop,
@@ -816,59 +922,131 @@
                         'gram' => $cGram
                     ];
                 }
+                $grandInitialFeedKg += $fSubtotalKg;
                 
-                $initialKarung = floor($actualTotalFeedKg / 50);
-                $initialSisaKg = round(fmod($actualTotalFeedKg, 50), 1);
-                $initialKarungText = $initialKarung . ' krg' . ($initialSisaKg > 0 ? ' + ' . number_format($initialSisaKg, 1, ',', '.') . ' kg' : '');
+                $fKarung = floor($fSubtotalKg / $kgPerKarung);
+                $fSisaKg = round(fmod($fSubtotalKg, $kgPerKarung), 1);
+                $fKarungText = $fKarung . ' krg' . ($fSisaKg > 0 ? ' + ' . number_format($fSisaKg, 1, ',', '.') . ' kg' : '');
             @endphp
-            <div class="feed">
-                <div class="feedtop">
-                    <div class="feedicon">🌾</div>
-                    <div>
-                        <b id="feedUmurTitle">{{ $avgAgeWeeks }} Minggu · Layer</b>
-                        <small>Standar konsumsi per ekor / hari</small>
-                    </div>
-                </div>
-                <div class="feedval">
-                    <span>Gram / ekor / hari</span>
-                    <strong id="feedGramVal">{{ number_format($initialFeedGram, 1, ',', '.') }} g</strong>
-                </div>
 
-                <!-- Dynamic Block Calculations Grid -->
-                <div class="metrics" id="feedMetricsGrid">
-                    <div class="metric">
-                        <small>Standar Pagi</small>
-                        <b id="feedPagiVal">{{ number_format($initialFeedHalf, 1, ',', '.') }} g</b>
-                    </div>
-                    <div class="metric">
-                        <small>Standar Sore</small>
-                        <b id="feedSoreVal">{{ number_format($initialFeedHalf, 1, ',', '.') }} g</b>
-                    </div>
-                    @foreach($coopCalculations as $calc)
-                        <div class="metric">
-                            <small>{{ $calc['coop']->name }} ({{ number_format($calc['pop'], 0, ',', '.') }} ekor)</small>
-                            <b id="feedCoop_{{ $calc['coop']->id }}">{{ number_format($calc['kg'], 1, ',', '.') }} kg</b>
-                            <div style="font-size: 9px; color: #64748b; line-height: 1.2; margin-top: 2px;">(Umur {{ $calc['age'] }} Mgg × {{ rtrim(rtrim(number_format($calc['gram'], 1, ',', '.'), '0'), ',') }} g)</div>
-                        </div>
-                    @endforeach
-                    <div class="metric" style="background:#fef7ea; border-color:#fce0b0;">
-                        <small style="color:#b46900;">Total Pakan ({{ number_format($totalChickens, 0, ',', '.') }} ekor)</small>
-                        <b id="feedTotalVal" style="color:#92002f;">{{ number_format($actualTotalFeedKg, 1, ',', '.') }} kg ({{ $initialKarungText }})</b>
-                    </div>
-                </div>
-
-                <div style="display:flex; flex-direction:column; gap:8px; margin-top:12px;">
-                    <button type="button" onclick="openModalEditSelectedWeek('pakan')" class="edit" id="btnEditPakan" style="width:100%; text-align:center; background:#fff; color:#b97400; border:1.5px solid #f59e0b; font-weight:bold; cursor:pointer;">
-                        ✎ Edit Standar Pakan Minggu <span class="lbl-edit-feed">{{ $avgAgeWeeks }}</span>
-                    </button>
-                    <a href="{{ route('master.standar-pakan') }}" class="edit" style="width:100%; text-align:center; background:#92002f; color:#fff; font-weight:bold;">
-                        📊 Buka Master Tabel Lengkap & Panduan Pakan
-                    </a>
-                </div>
+            <div class="label flock-section-label flock-item-{{ $fId }}" style="display:flex; justify-content:space-between; align-items:center;">
+                <span>{{ strtoupper($fg['name']) }} ({{ $fg['coops']->pluck('name')->implode(', ') }})</span>
+                <span style="font-size: 8.5px; font-weight:800; color:var(--m); background:#fdf2f4; border:1px solid #f7d0d6; padding:2px 7px; border-radius:10px;">
+                    Umur Riil: {{ $fg['base_age'] }} Mgg
+                </span>
             </div>
 
-            <div class="note">
-                Perhitungan Blok kandang mengikuti populasi aktif masing-masing blok. Angka standar umur 13–90 tetap disimpan sebagai master; layar hanya menampilkan umur yang dipilih.
+            <section class="card flock-section-card flock-item-{{ $fId }}" style="margin-bottom: 16px;">
+                <div class="ctop">
+                    <div class="round" style="background:#fff1d7;color:#b97400">🌾</div>
+                    <div>
+                        <h3>{{ $fg['name'] }} · Standar Pakan</h3>
+                        <small>{{ number_format($fg['total_chickens'], 0, ',', '.') }} ekor · {{ $fg['coops']->count() }} Blok ({{ $fg['coops']->pluck('name')->implode(', ') }})</small>
+                    </div>
+                    <a href="{{ route('master.standar-pakan') }}" class="chev" title="Buka Master Tabel Standar Pakan">›</a>
+                </div>
+
+                <!-- PILIH UMUR KHUSUS KLOTTER INI -->
+                <div class="selectbox">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                        <label style="margin-bottom:0;">PILIH UMUR {{ strtoupper($fg['name']) }}</label>
+                        <span id="flockAgeBadge_{{ $fId }}" style="font-size:9px; font-weight:800; color:#b97400; background:#fef3c7; border:1px solid #fde68a; padding:1px 6px; border-radius:6px;">
+                            {{ $fAge }} Minggu
+                        </span>
+                    </div>
+                    <select id="selectUmurPakan_flock_{{ $fId }}" class="select-flock-feed" data-flock-id="{{ $fId }}" onchange="updateFlockFeed('{{ $fId }}', parseInt(this.value))">
+                        @for($w = 13; $w <= 90; $w++)
+                            <option value="{{ $w }}" {{ $w == $fAge ? 'selected' : '' }}>{{ $w }} minggu {{ $w == $fg['base_age'] ? '(Umur Riil)' : '' }}</option>
+                        @endfor
+                    </select>
+
+                    <!-- Quick Chips Simulasi Khusus Klotter ini -->
+                    <div class="flock-chips">
+                        <button type="button" class="flock-chip active" id="chip_current_{{ $fId }}" onclick="setFlockWeek('{{ $fId }}', {{ $fg['base_age'] }})">Saat Ini ({{ $fg['base_age'] }} Mgg)</button>
+                        <button type="button" class="flock-chip" id="chip_plus1_{{ $fId }}" onclick="setFlockWeek('{{ $fId }}', {{ $fg['base_age'] + 1 }})">+1 Mgg ({{ $fg['base_age'] + 1 }})</button>
+                        <button type="button" class="flock-chip" id="chip_plus2_{{ $fId }}" onclick="setFlockWeek('{{ $fId }}', {{ $fg['base_age'] + 2 }})">+2 Mgg ({{ $fg['base_age'] + 2 }})</button>
+                        <button type="button" class="flock-chip" id="chip_plus4_{{ $fId }}" onclick="setFlockWeek('{{ $fId }}', {{ $fg['base_age'] + 4 }})">+4 Mgg ({{ $fg['base_age'] + 4 }})</button>
+                        <button type="button" class="flock-chip" id="chip_plus8_{{ $fId }}" onclick="setFlockWeek('{{ $fId }}', {{ $fg['base_age'] + 8 }})">+8 Mgg ({{ $fg['base_age'] + 8 }})</button>
+                    </div>
+                </div>
+
+                <div class="feed">
+                    <div class="feedtop">
+                        <div class="feedicon">🌾</div>
+                        <div>
+                            <b id="feedUmurTitle_{{ $fId }}">{{ $fAge }} Minggu · {{ $fStd['fase'] }}</b>
+                            <small>Standar konsumsi {{ $fg['name'] }} per ekor / hari</small>
+                        </div>
+                    </div>
+                    <div class="feedval">
+                        <span>Gram / ekor / hari</span>
+                        <strong id="feedGramVal_{{ $fId }}">{{ number_format($fGram, 1, ',', '.') }} g</strong>
+                    </div>
+
+                    <!-- Dynamic Block Calculations Grid Khusus Klotter ini -->
+                    <div class="metrics" id="feedMetricsGrid_{{ $fId }}">
+                        <div class="metric">
+                            <small>Standar Pagi (50%)</small>
+                            <b id="feedPagiVal_{{ $fId }}">{{ number_format($fHalf, 1, ',', '.') }} g</b>
+                        </div>
+                        <div class="metric">
+                            <small>Standar Sore (50%)</small>
+                            <b id="feedSoreVal_{{ $fId }}">{{ number_format($fHalf, 1, ',', '.') }} g</b>
+                        </div>
+                        @foreach($fCoopCalculations as $calc)
+                            <div class="metric">
+                                <small>{{ $calc['coop']->name }} ({{ number_format($calc['pop'], 0, ',', '.') }} ekor)</small>
+                                <b id="feedCoopKg_{{ $calc['coop']->id }}">{{ number_format($calc['kg'], 1, ',', '.') }} kg</b>
+                                <div id="feedCoopSub_{{ $calc['coop']->id }}" style="font-size: 9px; color: #64748b; line-height: 1.2; margin-top: 2px;">
+                                    (Umur {{ $calc['age'] }} Mgg × {{ rtrim(rtrim(number_format($calc['gram'], 1, ',', '.'), '0'), ',') }} g)
+                                </div>
+                            </div>
+                        @endforeach
+                        <div class="metric" style="background:#fef7ea; border-color:#fce0b0; grid-column: span 2;">
+                            <small style="color:#b46900;">Subtotal Pakan {{ $fg['name'] }} ({{ number_format($fg['total_chickens'], 0, ',', '.') }} ekor)</small>
+                            <b id="flockTotalFeed_{{ $fId }}" style="color:#92002f; font-size: 11px;">
+                                {{ number_format($fSubtotalKg, 1, ',', '.') }} kg ({{ $fKarungText }})
+                            </b>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; flex-direction:column; gap:8px; margin-top:12px;">
+                        <button type="button" onclick="openModalEditSelectedWeek('pakan', document.getElementById('selectUmurPakan_flock_{{ $fId }}').value)" class="edit" style="width:100%; text-align:center; background:#fff; color:#b97400; border:1.5px solid #f59e0b; font-weight:bold; cursor:pointer;">
+                            ✎ Edit Standar Pakan Minggu <span id="lblEditFeed_{{ $fId }}">{{ $fAge }}</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+        @endforeach
+
+        <!-- KARTU GRAND TOTAL GABUNGAN SELURUH KANDANG -->
+        @php
+            $grandKarung = floor($grandInitialFeedKg / $kgPerKarung);
+            $grandSisaKg = round(fmod($grandInitialFeedKg, $kgPerKarung), 1);
+            $grandKarungText = $grandKarung . ' krg' . ($grandSisaKg > 0 ? ' + ' . number_format($grandSisaKg, 1, ',', '.') . ' kg' : '');
+        @endphp
+        <div class="label">Total Gabungan Seluruh Farm</div>
+        <section class="card" style="background: linear-gradient(135deg, #fff 0%, #fff8f9 100%); border: 1.5px solid #f7d0d6;">
+            <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:8px; border-bottom:1px solid #fee2e6;">
+                <div>
+                    <h3 style="font-size:12px; font-weight:800; color:#800020; margin:0;">Grand Total Pakan Seluruh Kandang</h3>
+                    <small style="font-size:8.5px; color:var(--mut);">Akumulasi seluruh klotter & blok aktif ({{ number_format($totalChickens, 0, ',', '.') }} ekor)</small>
+                </div>
+                <span style="font-size:16px;">🌾</span>
+            </div>
+            <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:baseline;">
+                <span style="font-size:10px; font-weight:700; color:var(--mut);">Kebutuhan Pakan Gabungan:</span>
+                <strong id="grandTotalFeedVal" style="font-size:15px; font-weight:900; color:#800020;">
+                    {{ number_format($grandInitialFeedKg, 1, ',', '.') }} kg ({{ $grandKarungText }})
+                </strong>
+            </div>
+            <div style="margin-top:12px;">
+                <a href="{{ route('master.standar-pakan') }}" class="edit" style="width:100%; text-align:center; background:#92002f; color:#fff; font-weight:bold; margin-top:0;">
+                    📊 Buka Master Tabel Lengkap & Panduan Pakan (13–90 Mgg)
+                </a>
+            </div>
+            <div class="note" style="margin-top:10px;">
+                💡 <b>Petunjuk Simulasi:</b> Ubah <i>PILIH UMUR</i> pada Klotter 1 atau Klotter 2 untuk melihat estimasi konsumsi pakan di masa depan. Angka kg pakan masing-masing blok dan subtotal/grand total akan otomatis terhitung secara <i>real-time</i>.
             </div>
         </section>
     </div>
@@ -1115,6 +1293,10 @@ window.addEventListener('hashchange', function () {
 document.addEventListener('DOMContentLoaded', function () {
     // 2. Data Populasi Blok Kandang Riil dari Database
     const coops = {!! json_encode($coopSummary) !!};
+    window.flockCoops = coops;
+    window.flockBaseAges = {!! json_encode(isset($flockGroups) ? collect($flockGroups)->mapWithKeys(fn($fg, $k) => [(string)$k => $fg['base_age']]) : []) !!};
+    window.flockSimulatedTotals = {};
+    window.kgPerKarung = {{ $kgPerKarung ?? 50 }};
 
     // 3. Lookup Dataset Standar Ayam Layer Umur 13 - 90 Minggu dari Database
     const dbStandards = {!! json_encode($weeklyStandards ?? []) !!};
@@ -1274,12 +1456,181 @@ document.addEventListener('DOMContentLoaded', function () {
     // Inisialisasi awal saat load
     const initialWeek = parseInt(selectUmurProduksi ? selectUmurProduksi.value : 21) || 21;
     window.updateStandardsView(initialWeek, 'init');
+
+    // Inisialisasi simulasi pakan per-klotter saat load
+    if (window.flockBaseAges) {
+        Object.keys(window.flockBaseAges).forEach(function(fId) {
+            const age = parseInt(window.flockBaseAges[fId]) || 21;
+            updateFlockFeed(fId, age);
+        });
+    }
 });
 
+// Filter Tab Tampilan Klotter Standar Pakan
+function filterPakanKloter(flockId) {
+    const tabs = document.querySelectorAll('.simul-tab');
+    tabs.forEach(function(t) { t.classList.remove('active'); });
+
+    const activeTab = document.getElementById(flockId === 'all' ? 'tabPakanAll' : 'tabPakanFlock_' + flockId);
+    if (activeTab) activeTab.classList.add('active');
+
+    const allCards = document.querySelectorAll('.flock-section-card');
+    const allLabels = document.querySelectorAll('.flock-section-label');
+
+    if (flockId === 'all') {
+        allCards.forEach(function(c) { c.style.display = 'block'; });
+        allLabels.forEach(function(l) { l.style.display = 'flex'; });
+    } else {
+        allCards.forEach(function(c) {
+            if (c.classList.contains('flock-item-' + flockId)) {
+                c.style.display = 'block';
+            } else {
+                c.style.display = 'none';
+            }
+        });
+        allLabels.forEach(function(l) {
+            if (l.classList.contains('flock-item-' + flockId)) {
+                l.style.display = 'flex';
+            } else {
+                l.style.display = 'none';
+            }
+        });
+    }
+}
+
+// Simulasi Update Pakan Per-Klotter
+function updateFlockFeed(flockId, week) {
+    week = parseInt(week) || 21;
+    const std = (window.standards && window.standards[week]) ? window.standards[week] : {
+        week: week,
+        gram: 110,
+        fase: 'Layer',
+        pill: 'LAYER'
+    };
+
+    // Update dropdown jika berbeda
+    const selectEl = document.getElementById('selectUmurPakan_flock_' + flockId);
+    if (selectEl && parseInt(selectEl.value) !== week) {
+        selectEl.value = week;
+    }
+
+    // Update judul, badge umur, gram per ekor, serta pembagian 50-50 pagi & sore
+    const titleEl = document.getElementById('feedUmurTitle_' + flockId);
+    if (titleEl) titleEl.textContent = `${week} Minggu · ${std.fase || 'Layer'}`;
+
+    const badgeEl = document.getElementById('flockAgeBadge_' + flockId);
+    if (badgeEl) badgeEl.textContent = `${week} Minggu`;
+
+    const gramValEl = document.getElementById('feedGramVal_' + flockId);
+    if (gramValEl) gramValEl.textContent = `${std.gram.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} g`;
+
+    const halfGram = (std.gram / 2).toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' g';
+    const pagiEl = document.getElementById('feedPagiVal_' + flockId);
+    if (pagiEl) pagiEl.textContent = halfGram;
+    const soreEl = document.getElementById('feedSoreVal_' + flockId);
+    if (soreEl) soreEl.textContent = halfGram;
+
+    const lblEditEl = document.getElementById('lblEditFeed_' + flockId);
+    if (lblEditEl) lblEditEl.textContent = week;
+
+    // Kalkulasi konsumsi pakan masing-masing blok di dalam klotter ini
+    let flockSubtotalKg = 0;
+    const flockCoops = (window.flockCoops || []).filter(function(c) {
+        if (flockId === 'non_kloter') return !c.flock_id;
+        return String(c.flock_id) === String(flockId);
+    });
+
+    flockCoops.forEach(function(coop) {
+        const cChickens = parseInt(coop.active_chickens) || 0;
+        const cKg = Math.round(((cChickens * std.gram) / 1000) * 10) / 10;
+        flockSubtotalKg += cKg;
+
+        const coopKgEl = document.getElementById('feedCoopKg_' + coop.id);
+        if (coopKgEl) {
+            coopKgEl.textContent = `${cKg.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kg`;
+        }
+        const coopSubEl = document.getElementById('feedCoopSub_' + coop.id);
+        if (coopSubEl) {
+            coopSubEl.textContent = `(Umur ${week} Mgg × ${std.gram} g)`;
+        }
+    });
+
+    flockSubtotalKg = Math.round(flockSubtotalKg * 10) / 10;
+    if (!window.flockSimulatedTotals) window.flockSimulatedTotals = {};
+    window.flockSimulatedTotals[flockId] = flockSubtotalKg;
+
+    // Hitung konversi Karung (50 kg)
+    const kgPerKarung = window.kgPerKarung || 50;
+    const karung = Math.floor(flockSubtotalKg / kgPerKarung);
+    const sisaKg = Math.round((flockSubtotalKg % kgPerKarung) * 10) / 10;
+    const karungText = karung + ' krg' + (sisaKg > 0 ? ' + ' + sisaKg.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' kg' : '');
+
+    const flockTotalEl = document.getElementById('flockTotalFeed_' + flockId);
+    if (flockTotalEl) {
+        flockTotalEl.textContent = `${flockSubtotalKg.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kg (${karungText})`;
+    }
+
+    // Toggle active state chip simulasi cepat
+    const baseAge = (window.flockBaseAges && window.flockBaseAges[flockId]) !== undefined ? parseInt(window.flockBaseAges[flockId]) : 21;
+    const chipOffsets = {
+        'chip_current_': 0,
+        'chip_plus1_': 1,
+        'chip_plus2_': 2,
+        'chip_plus4_': 4,
+        'chip_plus8_': 8
+    };
+    Object.keys(chipOffsets).forEach(function(prefix) {
+        const chip = document.getElementById(prefix + flockId);
+        if (chip) {
+            if (week === baseAge + chipOffsets[prefix]) {
+                chip.classList.add('active');
+            } else {
+                chip.classList.remove('active');
+            }
+        }
+    });
+
+    recalculateGrandTotalPakan();
+}
+
+function setFlockWeek(flockId, week) {
+    updateFlockFeed(flockId, week);
+}
+
+function simulateFutureAll(weeksToAdd) {
+    if (!window.flockBaseAges) return;
+    Object.keys(window.flockBaseAges).forEach(function(fId) {
+        const base = parseInt(window.flockBaseAges[fId]) || 21;
+        const target = Math.min(90, Math.max(13, base + weeksToAdd));
+        updateFlockFeed(fId, target);
+    });
+}
+
+function recalculateGrandTotalPakan() {
+    let grandKg = 0;
+    if (window.flockSimulatedTotals) {
+        Object.values(window.flockSimulatedTotals).forEach(function(kg) {
+            grandKg += (parseFloat(kg) || 0);
+        });
+    }
+    grandKg = Math.round(grandKg * 10) / 10;
+    const kgPerKarung = window.kgPerKarung || 50;
+    const grandKarung = Math.floor(grandKg / kgPerKarung);
+    const grandSisaKg = Math.round((grandKg % kgPerKarung) * 10) / 10;
+    const grandKarungText = grandKarung + ' krg' + (grandSisaKg > 0 ? ' + ' + grandSisaKg.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' kg' : '');
+
+    const el = document.getElementById('grandTotalFeedVal');
+    if (el) {
+        el.textContent = `${grandKg.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kg (${grandKarungText})`;
+    }
+}
+
 // Helper Buka Modal Edit Minggu Terpilih dari Card Hub
-function openModalEditSelectedWeek(type) {
+function openModalEditSelectedWeek(type, customWeek = null) {
     let week = 21;
-    if (type === 'prod') {
+    if (customWeek !== null && customWeek !== undefined) {
+        week = parseInt(customWeek) || 21;
+    } else if (type === 'prod') {
         const sel = document.getElementById('selectUmurProduksi');
         if (sel) week = parseInt(sel.value) || 21;
     } else if (type === 'pakan') {
@@ -1385,6 +1736,16 @@ function handleHubModalSubmit(e) {
                 bbMax: parseFloat(data.data.weight_max) || 0
             };
             window.updateStandardsView(w, 'modal_saved');
+
+            // Refresh flock feed jika ada klotter yang sedang melihat minggu ini
+            if (window.flockBaseAges) {
+                Object.keys(window.flockBaseAges).forEach(function(fId) {
+                    const sel = document.getElementById('selectUmurPakan_flock_' + fId);
+                    if (sel && parseInt(sel.value) === w) {
+                        updateFlockFeed(fId, w);
+                    }
+                });
+            }
         }
 
         alert(`Standar minggu ke-${w} berhasil diperbarui!`);

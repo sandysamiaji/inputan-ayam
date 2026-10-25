@@ -70,6 +70,7 @@ class MasterController extends Controller
                 'shortName' => $c->code ?: str_replace('Blok ', '', $c->name),
                 'active_chickens' => (int) $c->active_chickens,
                 'age_weeks' => (int) $c->chicken_age_weeks,
+                'flock_id' => $c->flock_id,
             ];
         })->values()->toArray();
 

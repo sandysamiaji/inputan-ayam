@@ -319,6 +319,7 @@ class RekapController extends Controller
             $cMortQuery = Mortality::where('coop_id', $coop->id)->whereBetween('date', [$startDate, $endDate]);
             $cMortCount = (int) $cMortQuery->sum('count');
 
+            $coopDynamicAge = \App\Services\ProductionStandardService::getDynamicAgeWeeks($coop, $endDate);
             $blokRekap[] = [
                 'id' => $coop->id,
                 'name' => $coop->name,
@@ -327,14 +328,14 @@ class RekapController extends Controller
                 'flock_name' => $coop->flock ? $coop->flock->name : 'Klotter',
                 'capacity' => $coop->capacity,
                 'active_chickens' => $coop->active_chickens,
-                'chicken_age_weeks' => $coop->chicken_age_weeks,
+                'chicken_age_weeks' => $coopDynamicAge,
                 'eggs' => $cEggs,
                 'crates' => $cPeti,
                 'weight_kg' => $cTelurKg,
                 'broken' => $cBroken,
                 'reject' => $cReject,
                 'hdp' => $cHdp,
-                'target_hd' => (float) (\App\Services\ProductionStandardService::getStandardForWeek($coop->chicken_age_weeks)['hd_target'] ?? 90),
+                'target_hd' => (float) (\App\Services\ProductionStandardService::getStandardForWeek($coopDynamicAge)['hd_target'] ?? 90),
                 'percent' => $cPercent,
                 'feed_kg' => round($cFeedKg),
                 'master_feed_kg' => round($cMasterFeedKg),

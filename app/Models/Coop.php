@@ -58,13 +58,17 @@ class Coop extends Model
     }
 
     /**
-     * Dapatkan umur ayam dalam minggu, otomatis mengikuti umur flock-nya.
+     * Dapatkan umur ayam dalam minggu untuk blok kandang ini.
+     * Mengutamakan data umur ayam yang tercatat pada masing-masing blok kandang.
      */
     public function getChickenAgeWeeksAttribute($value)
     {
+        if ($value !== null && (int)$value > 0) {
+            return (int) $value;
+        }
         if ($this->flock) {
             return $this->flock->current_age_weeks;
         }
-        return $value;
+        return (int) $value;
     }
 }

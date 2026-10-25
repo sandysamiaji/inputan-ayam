@@ -118,14 +118,14 @@
                                 $fChx = (int) $flock->coops->sum('active_chickens');
                                 $fPct = $totalActiveChickens > 0 ? round(($fChx / $totalActiveChickens) * 100, 1) : 0;
                                 
-                                if ($flock->start_date) {
+                                if ($flock->coops->isNotEmpty()) {
+                                    $fAgeWeeks = (int) round($flock->coops->avg('chicken_age_weeks'));
+                                } elseif ($flock->start_date) {
                                     $refDate = $carbonDate ?? \Carbon\Carbon::today();
                                     $weeksDiff = (int) \Carbon\Carbon::parse($flock->start_date)->diffInWeeks($refDate);
                                     $fAgeWeeks = max(1, (int) ($flock->initial_age_weeks ?? 0) + $weeksDiff);
-                                } elseif ($flock->coops->isNotEmpty()) {
-                                    $fAgeWeeks = (int) $flock->coops->first()->chicken_age_weeks;
                                 } else {
-                                    $fAgeWeeks = (int) ($flock->initial_age_weeks ?? 0);
+                                    $fAgeWeeks = (int) ($flock->initial_age_weeks ?? 21);
                                 }
                             @endphp
                             <div class="p-2 sm:p-2.5 rounded-xl bg-slate-50/90 border border-slate-100 hover:bg-indigo-50/50 hover:border-indigo-200 transition-all flex flex-col justify-between">
@@ -664,7 +664,7 @@
                                     </p>
                                     <div id="coopFullText_{{ $coop->id }}" class="hidden text-[10.5px] text-emerald-800 mt-1.5 leading-relaxed border-t border-emerald-200/60 pt-1.5 space-y-1">
                                         <p>
-                                            Umur <b>{{ $coop->chicken_age_weeks }} mgg</b> masuk fase <b>{{ $cStd['fase'] }}</b> (rentang 21–25 mgg). Oviduk matang, masa subur & lonjakan bertelur pesat menuju puncak.
+                                            Umur <b>{{ $coop->chicken_age_weeks }} mgg</b> masuk fase <b>{{ $cStd['fase'] }}</b>. {{ $cStd['keterangan'] }}
                                         </p>
                                         <div class="text-[10px] text-emerald-950 font-medium bg-white/70 p-2 rounded-lg border border-emerald-200/50 space-y-0.5">
                                             <div>• Target Standar HD: <b>{{ $cStd['hd_target'] }}%</b> (Acuan Master Umur {{ $coop->chicken_age_weeks }} Mgg)</div>
@@ -1667,17 +1667,17 @@
                         $fChx = (int) $flock->coops->sum('active_chickens');
                         $fPct = $totalActiveChickens > 0 ? round(($fChx / $totalActiveChickens) * 100, 1) : 0;
                         
-                        if ($flock->start_date) {
+                        if ($flock->coops->isNotEmpty()) {
+                            $fAgeWeeks = (int) round($flock->coops->avg('chicken_age_weeks'));
+                            $fAgeDays = $fAgeWeeks * 7;
+                        } elseif ($flock->start_date) {
                             $refDate = $carbonDate ?? \Carbon\Carbon::today();
                             $weeksDiff = (int) \Carbon\Carbon::parse($flock->start_date)->diffInWeeks($refDate);
                             $fAgeWeeks = max(1, (int) ($flock->initial_age_weeks ?? 0) + $weeksDiff);
                             $daysDiff = (int) \Carbon\Carbon::parse($flock->start_date)->diffInDays($refDate);
                             $fAgeDays = ($fAgeWeeks * 7) + ($daysDiff % 7);
-                        } elseif ($flock->coops->isNotEmpty()) {
-                            $fAgeWeeks = (int) $flock->coops->first()->chicken_age_weeks;
-                            $fAgeDays = $fAgeWeeks * 7;
                         } else {
-                            $fAgeWeeks = (int) ($flock->initial_age_weeks ?? 0);
+                            $fAgeWeeks = (int) ($flock->initial_age_weeks ?? 21);
                             $fAgeDays = $fAgeWeeks * 7;
                         }
                         

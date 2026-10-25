@@ -177,10 +177,11 @@ class ProductionStandardService
         $refDate = $referenceDate ? \Carbon\Carbon::parse($referenceDate)->startOfDay() : \Carbon\Carbon::today();
         $today = \Carbon\Carbon::today();
 
-        // Ambil data umur ayam yang tercatat pada masing-masing data blok kandang
-        $baseAge = (int) ($coop->getRawOriginal('chicken_age_weeks') ?: $coop->chicken_age_weeks);
-        if ($baseAge <= 0 && $coop->flock) {
-            $baseAge = (int) ($coop->flock->initial_age_weeks ?: 21);
+        // Setiap blok kandang yang tergabung dalam klotter WAJIB mengikuti umur klotternya
+        if ($coop->flock) {
+            $baseAge = (int) $coop->flock->current_age_weeks;
+        } else {
+            $baseAge = (int) ($coop->getRawOriginal('chicken_age_weeks') ?: 21);
         }
         $baseAge = max(1, $baseAge);
 

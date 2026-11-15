@@ -200,14 +200,11 @@
                     </div>
                     @php
                         $cNormPeti = (int) round($totalEggCrates);
-                        $cNormKg = (float) $totalEggKg;
-                        if ($cNormKg >= 10) {
-                            $extraP = (int) floor($cNormKg / 10);
-                            $cNormPeti += $extraP;
-                            $cNormKg = round($cNormKg - ($extraP * 10), 1);
-                        } else {
-                            $cNormKg = round($cNormKg, 1);
-                        }
+                        // Bulatkan dulu agar 9,96 kg (tampil "10 kg") tetap naik jadi 1 Peti
+                        $cNormKg = round((float) $totalEggKg, 1);
+                        $extraP = (int) floor($cNormKg / 10);
+                        $cNormPeti += $extraP;
+                        $cNormKg = round($cNormKg - ($extraP * 10), 1);
                         $cratesStr = number_format($cNormPeti, 0, ',', '.') . ' Peti';
                         $kgStr = $cNormKg > 0 ? ($cNormKg == floor($cNormKg) ? number_format($cNormKg, 0, ',', '.') : number_format($cNormKg, 1, ',', '.')) . ' kg' : '';
                         if ($cNormPeti > 0 && $cNormKg > 0) {

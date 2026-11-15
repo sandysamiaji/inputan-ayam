@@ -1594,6 +1594,18 @@ class WarehouseController extends Controller
             $createdAt->setTime(Carbon::now()->hour, Carbon::now()->minute);
         }
 
+        // Anti-duplikat: pembelian pakan yang sama sudah tersinkron otomatis dari aplikasi Pengeluaran
+        $syncedRow = ($validated['category'] === 'pakan' && $validated['type'] === 'masuk')
+            ? $this->findExpenseSyncedFeed($validated['item_name'], (float) $validated['quantity'], $validated['unit'], $validated['date'])
+            : null;
+
+        if ($syncedRow) {
+            // Ambil alih jadi data manual: lepas penanda agar tidak ikut terhapus bila pengeluarannya dihapus
+            $syncedRow->update(['notes' => trim(preg_replace('/\[EXP:[^\]]*\]\s*/', '', $syncedRow->notes ?? ''))]);
+            return redirect()->route('warehouse.pakan', ['tab' => 'masuk'])
+                ->with('success', 'Pembelian pakan ini sudah tercatat otomatis dari aplikasi Pengeluaran, jadi tidak dibuat ganda.');
+        }
+
         FarmStock::create([
             'user_id' => $userId,
             'date' => $validated['date'],
@@ -1643,6 +1655,28 @@ class WarehouseController extends Controller
         }
 
         return back()->with('success', "Transaksi Gudang {$namaJenis} berhasil disimpan!");
+    }
+
+    /**
+     * Cari baris stok pakan masuk hasil sinkron Pengeluaran ([EXP:...]) yang sama:
+     * jenis (layer/grower) sama, jumlah kg sama, selisih tanggal <= 3 hari.
+     */
+    private function findExpenseSyncedFeed(string $itemName, float $qty, string $unit, string $date): ?FarmStock
+    {
+        $perKarung = (float) \App\Models\Setting::getKgPerKarung();
+        $toKg = fn(float $q, ?string $u) => match (strtolower(trim($u ?? ''))) {
+            'karung', 'sak', 'krg' => $q * $perKarung,
+            'ton' => $q * 1000,
+            default => $q,
+        };
+        $isGrower = fn(?string $n) => (bool) preg_match('/grower|starter|pullet/i', $n ?? '');
+        $kg = $toKg($qty, $unit);
+
+        return FarmStock::whereRaw('LOWER(category) = ?', ['pakan'])->whereRaw('LOWER(type) = ?', ['masuk'])
+            ->where('notes', 'like', '%[EXP:%')
+            ->whereBetween('date', [Carbon::parse($date)->subDays(3)->toDateString(), Carbon::parse($date)->addDays(3)->toDateString()])
+            ->get()
+            ->first(fn($r) => $isGrower($r->item_name) === $isGrower($itemName) && abs($toKg((float) $r->quantity, $r->unit) - $kg) < 1);
     }
 
     /**

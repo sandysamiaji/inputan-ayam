@@ -354,7 +354,7 @@
                 </div>
 
                 <!-- Daftar Transaksi Blok Ini -->
-                <div class="space-y-2">
+                <div class="space-y-2 pakan-page-list">
                     @foreach($bData->items as $item)
                         @php
                             $isMasuk = $item->type === 'masuk';
@@ -371,8 +371,8 @@
                                 $convertedKgDisplay = ' (~' . \App\Models\Setting::formatKarungKg($item->quantity) . ')';
                             }
                         @endphp
-                        <div class="p-3 sm:p-3.5 rounded-xl border border-slate-100 bg-slate-50/60 hover:bg-white hover:border-maroon-200 transition-all flex items-center justify-between gap-3 {{ $isNonaktif ? 'opacity-60' : '' }}">
-                            
+                        <div class="pakan-page-item p-3 sm:p-3.5 rounded-xl border border-slate-100 bg-slate-50/60 hover:bg-white hover:border-maroon-200 transition-all flex items-center justify-between gap-3 {{ $isNonaktif ? 'opacity-60' : '' }}">
+
                             <!-- Left Detail (Click to Open Detail Modal) -->
                             <div class="flex items-center gap-3 min-w-0 cursor-pointer flex-1" onclick="openDetailPakanModal({{ json_encode([
                                 'id' => $item->id,
@@ -1396,6 +1396,39 @@
         modal.classList.remove('modal-active');
         content.classList.remove('modal-content-active');
     }
+
+    // 1a. PAGINASI PER BLOK (client-side, data sudah urut terbaru di atas)
+    document.addEventListener('DOMContentLoaded', function () {
+        const PER_PAGE = 10;
+        document.querySelectorAll('.pakan-page-list').forEach(list => {
+            const rows = list.querySelectorAll(':scope > .pakan-page-item');
+            const pages = Math.ceil(rows.length / PER_PAGE);
+            if (pages <= 1) return;
+
+            const nav = document.createElement('div');
+            nav.className = 'flex items-center justify-between pt-3 text-xs';
+            list.after(nav);
+
+            let page = 1;
+            const btn = 'px-3 py-1.5 rounded-lg border border-slate-200 bg-white font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed';
+            const render = () => {
+                rows.forEach((r, i) => r.classList.toggle('hidden', Math.floor(i / PER_PAGE) + 1 !== page));
+                nav.innerHTML = `<span class="text-slate-400 font-medium">${(page - 1) * PER_PAGE + 1}-${Math.min(page * PER_PAGE, rows.length)} dari ${rows.length}</span>
+                    <div class="flex items-center gap-2">
+                        <button type="button" class="${btn}" ${page === 1 ? 'disabled' : ''} data-d="-1">&laquo; Baru</button>
+                        <span class="font-bold text-slate-700">${page} / ${pages}</span>
+                        <button type="button" class="${btn}" ${page === pages ? 'disabled' : ''} data-d="1">Lama &raquo;</button>
+                    </div>`;
+            };
+            nav.addEventListener('click', e => {
+                const b = e.target.closest('button[data-d]');
+                if (!b || b.disabled) return;
+                page += parseInt(b.dataset.d, 10);
+                render();
+            });
+            render();
+        });
+    });
 
     // 1b. FILTER PER BLOK & SWITCHER VIEW LOGIC
     function setBlockFilter(blockKey) {

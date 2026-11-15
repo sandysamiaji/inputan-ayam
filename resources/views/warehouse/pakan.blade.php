@@ -1399,7 +1399,7 @@
 
     // 1a. PAGINASI PER BLOK (client-side, data sudah urut terbaru di atas)
     document.addEventListener('DOMContentLoaded', function () {
-        const PER_PAGE = 10;
+        const PER_PAGE = 3;
         document.querySelectorAll('.pakan-page-list').forEach(list => {
             const rows = list.querySelectorAll(':scope > .pakan-page-item');
             const pages = Math.ceil(rows.length / PER_PAGE);

@@ -1086,6 +1086,7 @@
                     <div class="field">
                         <label>Satuan</label>
                         <select name="unit" id="obatSatuan">
+                            <option value="ml" selected>Mili Liter (ml)</option>
                             <option value="Botol">Botol</option>
                             <option value="Box">Box</option>
                             <option value="Kg">Kg</option>
@@ -1833,17 +1834,6 @@ function updateMedDetails() {
             const optVal = appSelect.options[i].value.toLowerCase();
             if (appLower.includes(optVal) || (optVal === 'air minum' && appLower.includes('air'))) {
                 appSelect.selectedIndex = i;
-                break;
-            }
-        }
-    }
-
-    // Auto sync unit dropdown
-    const unitSelect = document.getElementById('obatSatuan');
-    if (unitSelect) {
-        for (let i = 0; i < unitSelect.options.length; i++) {
-            if (unitSelect.options[i].value.toLowerCase() === unit.toLowerCase()) {
-                unitSelect.selectedIndex = i;
                 break;
             }
         }

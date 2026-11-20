@@ -636,6 +636,7 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Satuan *</label>
                     <select name="unit" id="modalInputSatuan" onchange="calcModalObatSisa()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white font-medium focus:ring-2 focus:ring-purple-500/20 focus:border-purple-600">
+                        <option value="ml" selected>Mili Liter (ml)</option>
                         <option value="Botol">Botol</option>
                         <option value="Box">Box</option>
                         <option value="Kg">Kg</option>
@@ -893,6 +894,7 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Satuan *</label>
                     <select name="unit" id="editObatSatuan" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm bg-white font-medium">
+                        <option value="ml">Mili Liter (ml)</option>
                         <option value="Botol">Botol</option>
                         <option value="Box">Box</option>
                         <option value="Kg">Kg</option>
@@ -1184,17 +1186,6 @@
 
         const elNotes = document.getElementById('modalMedNotesText');
         if (elNotes) elNotes.textContent = notes ? `ℹ️ Catatan: ${notes}` : '';
-
-        // Auto sync unit select
-        const unitSelect = document.getElementById('modalInputSatuan');
-        if (unitSelect) {
-            for (let i = 0; i < unitSelect.options.length; i++) {
-                if (unitSelect.options[i].value.toLowerCase() === unit.toLowerCase()) {
-                    unitSelect.selectedIndex = i;
-                    break;
-                }
-            }
-        }
 
         // Auto sync application method select
         const appSelect = document.getElementById('modalInputAplikasi');
